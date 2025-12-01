@@ -1,0 +1,10 @@
+@import "tailwindcss";
+
+/* Optional global styles */
+body {
+  @apply bg-slate-100 text-slate-900;
+}
+
+#root {
+  @apply min-h-screen;
+}
