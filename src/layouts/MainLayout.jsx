@@ -27,11 +27,20 @@ export default function MainLayout() {
           <NavLink to="/dashboard" className={navLinkClasses}>
             Dashboard
           </NavLink>
+          <NavLink to="/customers" className={navLinkClasses}>
+            Customers
+          </NavLink>
           <NavLink to="/accounts" className={navLinkClasses}>
             Accounts
           </NavLink>
+          <NavLink to="/payments" className={navLinkClasses}>
+            Payments
+          </NavLink>
           <NavLink to="/transactions" className={navLinkClasses}>
             Transactions
+          </NavLink>
+          <NavLink to="/audit-logs" className={navLinkClasses}>
+            Audit Logs
           </NavLink>
           <NavLink to="/developers" className={navLinkClasses}>
             Developers

@@ -1,42 +1,57 @@
-// src/pages/AccountsPage.jsx
+import { useEffect, useState } from "react";
+import Table from "../components/Table";
+
 export default function AccountsPage() {
-  // later: fetch accounts from backend
   const dummyAccounts = [
-    { id: 1, type: "WALLET", currency: "THB", balance: 1000 },
-    { id: 2, type: "SAVINGS", currency: "USD", balance: 200 },
+    {
+      id: "acc_001",
+      type: "WALLET",
+      currency: "THB",
+      balance: 1000,
+      created_at: "2026-01-08T10:00:00Z",
+    },
+    {
+      id: "acc_002",
+      type: "SAVINGS",
+      currency: "USD",
+      balance: 200,
+      created_at: "2026-01-09T15:30:00Z",
+    },
   ];
+
+  const [accounts, setAccounts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    setAccounts(dummyAccounts);
+    setLoading(false);
+  }, []);
+
+  const columns = [
+    { key: "id", label: "Account ID" },
+    { key: "type", label: "Type" },
+    { key: "currency", label: "Currency" },
+    { key: "balance", label: "Balance" },
+    {
+      key: "created_at",
+      label: "Created At",
+      render: (row) =>
+        new Date(row.created_at).toLocaleString(),
+    },
+  ];
+
+  if (loading) {
+    return (
+      <p className="text-sm text-slate-500">
+        Loading accounts...
+      </p>
+    );
+  }
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Accounts</h1>
-        <button className="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700">
-          Create new account
-        </button>
-      </div>
-
-      <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-        <table className="min-w-full text-sm">
-          <thead className="bg-slate-50">
-            <tr>
-              <th className="px-4 py-2 text-left font-semibold text-slate-600">ID</th>
-              <th className="px-4 py-2 text-left font-semibold text-slate-600">Type</th>
-              <th className="px-4 py-2 text-left font-semibold text-slate-600">Currency</th>
-              <th className="px-4 py-2 text-left font-semibold text-slate-600">Balance</th>
-            </tr>
-          </thead>
-          <tbody>
-            {dummyAccounts.map((acc) => (
-              <tr key={acc.id} className="border-t border-slate-100">
-                <td className="px-4 py-2">{acc.id}</td>
-                <td className="px-4 py-2">{acc.type}</td>
-                <td className="px-4 py-2">{acc.currency}</td>
-                <td className="px-4 py-2">{acc.balance}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <h1 className="text-2xl font-bold">Accounts</h1>
+      <Table columns={columns} data={accounts} />
     </div>
   );
 }
