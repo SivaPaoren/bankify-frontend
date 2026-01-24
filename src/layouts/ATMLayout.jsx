@@ -1,48 +1,67 @@
-import { NavLink, Outlet, useNavigate } from "react-router-dom";
-
-const navLinkClasses = ({ isActive }) =>
-  `block px-4 py-3 rounded-xl text-base font-semibold transition
-   ${isActive ? "bg-lime-400 text-black" : "text-zinc-200 hover:bg-zinc-800"}`;
+import { useNavigate } from "react-router-dom";
 
 export default function ATMLayout() {
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    navigate("/atm-login");
-  };
+  // Mock data for UI
+  const date = "24 January 2026";
+  const userName = "User Name";
+  const accountNumber = "Account Number";
+  const balance = "123,432.42";
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <header className="flex items-center justify-between px-6 py-4 border-b border-zinc-800">
-        <div>
-          <h1 className="text-2xl font-bold">Bankify ATM</h1>
-          <p className="text-xs text-zinc-400">High-contrast kiosk mode</p>
+    <div className="min-h-screen bg-white text-black px-16 py-10 relative">
+
+      {/* Top row */}
+      <div className="flex justify-between items-start">
+        <span className="text-sm">{date}</span>
+
+        <div className="text-right">
+          <p className="text-xl font-semibold">
+            Welcome, {userName}
+          </p>
+          <p className="text-sm">{accountNumber}</p>
         </div>
-        <button
-          onClick={handleLogout}
-          className="px-4 py-2 rounded-lg bg-zinc-900 text-zinc-100 border border-zinc-700 hover:bg-zinc-800"
-        >
-          Exit
-        </button>
-      </header>
-
-      <div className="flex flex-col md:flex-row">
-        <aside className="md:w-72 border-b md:border-b-0 md:border-r border-zinc-800 p-4 space-y-2">
-          <NavLink to="/atm" end className={navLinkClasses}>
-            Home
-          </NavLink>
-          <NavLink to="/atm/actions" className={navLinkClasses}>
-            Transactions
-          </NavLink>
-          <NavLink to="/atm/history" className={navLinkClasses}>
-            History
-          </NavLink>
-        </aside>
-
-        <main className="flex-1 p-6">
-          <Outlet />
-        </main>
       </div>
+
+      {/* Center content */}
+      <div className="flex flex-col items-center justify-center mt-32 space-y-12">
+
+        {/* Balance */}
+        <div className="text-center">
+          <p className="text-4xl font-semibold">Balance</p>
+          <p className="text-2xl mt-2">{balance}</p>
+        </div>
+
+        {/* Deposit / Withdraw */}
+        <div className="flex gap-16 mt-10">
+          <button className="w-64 h-20 rounded-xl bg-gray-200 text-xl">
+            Deposit
+          </button>
+
+          <button className="w-64 h-20 rounded-xl bg-gray-200 text-xl">
+            Withdraw
+          </button>
+        </div>
+
+        {/* Transfer */}
+        <button className="w-64 h-20 rounded-xl bg-gray-200 text-xl">
+          Transfer
+        </button>
+
+        {/* View history */}
+        <button className="px-12 py-3 rounded-xl bg-gray-200 text-lg mt-4">
+          View Transaction History
+        </button>
+      </div>
+
+      {/* Exit */}
+      <button
+        onClick={() => navigate("/atm-login")}
+        className="absolute bottom-8 left-16 text-sm"
+      >
+        Exit
+      </button>
     </div>
   );
 }
