@@ -31,6 +31,33 @@ export default function LoginPage() {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
+            <p className="block text-sm font-medium text-slate-700 mb-2">
+              Role
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              {["admin", "client"].map((option) => (
+                <label
+                  key={option}
+                  className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium cursor-pointer transition ${
+                    role === option
+                      ? "border-indigo-500 bg-indigo-50 text-indigo-700"
+                      : "border-slate-200 text-slate-600 hover:border-slate-300"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="role"
+                    value={option}
+                    checked={role === option}
+                    onChange={(event) => setRole(event.target.value)}
+                    className="text-indigo-600 focus:ring-indigo-500"
+                  />
+                  {option === "admin" ? "Admin" : "Client"}
+                </label>
+              ))}
+            </div>
+          </div>
+          <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">
               Email
             </label>
@@ -73,30 +100,3 @@ export default function LoginPage() {
     </div>
   );
 }
-          <div>
-            <p className="block text-sm font-medium text-slate-700 mb-2">
-              Role
-            </p>
-            <div className="grid grid-cols-2 gap-2">
-              {["admin", "client"].map((option) => (
-                <label
-                  key={option}
-                  className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium cursor-pointer transition ${
-                    role === option
-                      ? "border-indigo-500 bg-indigo-50 text-indigo-700"
-                      : "border-slate-200 text-slate-600 hover:border-slate-300"
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="role"
-                    value={option}
-                    checked={role === option}
-                    onChange={(event) => setRole(event.target.value)}
-                    className="text-indigo-600 focus:ring-indigo-500"
-                  />
-                  {option === "admin" ? "Admin" : "Client"}
-                </label>
-              ))}
-            </div>
-          </div>
