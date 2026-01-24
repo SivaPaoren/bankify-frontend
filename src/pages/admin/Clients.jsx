@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 
 const initialClients = [
   {
@@ -32,7 +31,6 @@ const initialClients = [
 ];
 
 export default function Clients() {
-  const navigate = useNavigate();
   const [clients, setClients] = useState(initialClients);
   const [selectedClientId, setSelectedClientId] = useState(initialClients[0]?.id || "");
 
@@ -60,13 +58,6 @@ export default function Clients() {
             Monitor API clients, review usage, and enable or disable access in real time.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={() => navigate("/admin/clients/create")}
-          className="px-4 py-2 rounded-lg bg-slate-900 text-white text-sm font-semibold hover:bg-slate-800"
-        >
-          Create Client
-        </button>
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[2fr,1fr]">

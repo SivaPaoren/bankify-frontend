@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import Table from "../../components/Table.jsx";
+import Table from "../../components/common/Table.jsx";
 
 export default function MyAccounts() {
   const dummyAccounts = [

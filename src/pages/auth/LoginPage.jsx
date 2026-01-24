@@ -6,6 +6,7 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("admin@bankify.local");
   const [password, setPassword] = useState("password");
+  const [role, setRole] = useState("admin");
   const [error, setError] = useState("");
 
   const handleSubmit = (e) => {
@@ -14,7 +15,7 @@ export default function LoginPage() {
     // TEMP: fake login, you’ll replace with backend call
     if (email && password) {
       // localStorage.setItem("token", "dummy");
-      navigate("/admin/dashboard");
+      navigate(role === "admin" ? "/admin/dashboard" : "/client/dashboard");
     } else {
       setError("Invalid credentials");
     }
@@ -25,7 +26,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md bg-white shadow-lg rounded-2xl p-8">
         <h1 className="text-2xl font-bold mb-2 text-slate-900">Bankify Login</h1>
         <p className="text-sm text-slate-500 mb-6">
-          Enter your credentials to access the dashboard.
+          Choose a role and enter your credentials to continue.
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -72,3 +73,30 @@ export default function LoginPage() {
     </div>
   );
 }
+          <div>
+            <p className="block text-sm font-medium text-slate-700 mb-2">
+              Role
+            </p>
+            <div className="grid grid-cols-2 gap-2">
+              {["admin", "client"].map((option) => (
+                <label
+                  key={option}
+                  className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium cursor-pointer transition ${
+                    role === option
+                      ? "border-indigo-500 bg-indigo-50 text-indigo-700"
+                      : "border-slate-200 text-slate-600 hover:border-slate-300"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="role"
+                    value={option}
+                    checked={role === option}
+                    onChange={(event) => setRole(event.target.value)}
+                    className="text-indigo-600 focus:ring-indigo-500"
+                  />
+                  {option === "admin" ? "Admin" : "Client"}
+                </label>
+              ))}
+            </div>
+          </div>
