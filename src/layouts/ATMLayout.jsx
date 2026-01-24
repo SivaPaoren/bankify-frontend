@@ -1,47 +1,48 @@
-// src/layouts/ATMLayout.jsx
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
+
+const navLinkClasses = ({ isActive }) =>
+  `block px-4 py-3 rounded-xl text-base font-semibold transition
+   ${isActive ? "bg-lime-400 text-black" : "text-zinc-200 hover:bg-zinc-800"}`;
 
 export default function ATMLayout() {
-  const linkClass = ({ isActive }) =>
-    `px-4 py-2 rounded-lg text-sm font-medium transition
-     ${
-       isActive
-         ? "bg-slate-900 text-white"
-         : "text-slate-700 hover:bg-slate-200"
-     }`;
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    navigate("/atm-login");
+  };
 
   return (
-    <div className="min-h-screen bg-slate-100 flex flex-col">
-      {/* Top bar */}
-      <header className="bg-white border-b border-slate-200 px-6 py-4">
-        <h1 className="text-lg font-semibold text-slate-900">
-          Bankify ATM
-        </h1>
-        <p className="text-xs text-slate-500">
-          Self-service banking
-        </p>
+    <div className="min-h-screen bg-black text-white">
+      <header className="flex items-center justify-between px-6 py-4 border-b border-zinc-800">
+        <div>
+          <h1 className="text-2xl font-bold">Bankify ATM</h1>
+          <p className="text-xs text-zinc-400">High-contrast kiosk mode</p>
+        </div>
+        <button
+          onClick={handleLogout}
+          className="px-4 py-2 rounded-lg bg-zinc-900 text-zinc-100 border border-zinc-700 hover:bg-zinc-800"
+        >
+          Exit
+        </button>
       </header>
 
-      {/* Navigation */}
-      <nav className="bg-white border-b border-slate-200 px-6 py-3 flex gap-2">
-        <NavLink to="/atm/deposit" className={linkClass}>
-          Deposit
-        </NavLink>
-        <NavLink to="/atm/withdraw" className={linkClass}>
-          Withdraw
-        </NavLink>
-        <NavLink to="/atm/transfer" className={linkClass}>
-          Transfer
-        </NavLink>
-        <NavLink to="/atm/history" className={linkClass}>
-          History
-        </NavLink>
-      </nav>
+      <div className="flex flex-col md:flex-row">
+        <aside className="md:w-72 border-b md:border-b-0 md:border-r border-zinc-800 p-4 space-y-2">
+          <NavLink to="/atm" end className={navLinkClasses}>
+            Home
+          </NavLink>
+          <NavLink to="/atm/actions" className={navLinkClasses}>
+            Transactions
+          </NavLink>
+          <NavLink to="/atm/history" className={navLinkClasses}>
+            History
+          </NavLink>
+        </aside>
 
-      {/* Page content */}
-      <main className="flex-1 p-8">
-        <Outlet />
-      </main>
+        <main className="flex-1 p-6">
+          <Outlet />
+        </main>
+      </div>
     </div>
   );
 }

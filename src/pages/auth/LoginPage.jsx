@@ -1,4 +1,3 @@
-// src/pages/LoginPage.jsx
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 // later you’ll replace this with axios + real API
@@ -15,7 +14,7 @@ export default function LoginPage() {
     // TEMP: fake login, you’ll replace with backend call
     if (email && password) {
       // localStorage.setItem("token", "dummy");
-      navigate("/dashboard");
+      navigate("/admin/dashboard");
     } else {
       setError("Invalid credentials");
     }

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
-import Table from "../components/Table";
+import Table from "../../components/Table.jsx";
 
-export default function AccountsPage() {
+export default function MyAccounts() {
   const dummyAccounts = [
     {
       id: "acc_001",
@@ -35,22 +35,23 @@ export default function AccountsPage() {
     {
       key: "created_at",
       label: "Created At",
-      render: (row) =>
-        new Date(row.created_at).toLocaleString(),
+      render: (row) => new Date(row.created_at).toLocaleString(),
     },
   ];
 
   if (loading) {
-    return (
-      <p className="text-sm text-slate-500">
-        Loading accounts...
-      </p>
-    );
+    return <p className="text-sm text-slate-500">Loading accounts...</p>;
   }
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold">Accounts</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">My Accounts</h1>
+        <button className="px-4 py-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-700">
+          Create new account
+        </button>
+      </div>
+
       <Table columns={columns} data={accounts} />
     </div>
   );
