@@ -21,7 +21,9 @@ import ClientFinancialActions from "../pages/client/FinancialActions.jsx";
 
 /* ATM */
 import ATMHome from "../pages/atm/ATMHome.jsx";
-import ATMFinancialActions from "../pages/atm/FinancialActions.jsx";
+import ATMDeposit from "../pages/atm/ATMDeposit.jsx";
+import ATMWithdraw from "../pages/atm/ATMWithdraw.jsx";
+import ATMTransfer from "../pages/atm/ATMTransfer.jsx";
 import History from "../pages/atm/History.jsx";
 
 export default function AppRouter() {
@@ -49,7 +51,9 @@ export default function AppRouter() {
       {/* ATM layout */}
       <Route element={<ATMLayout />}>
         <Route path="/atm" element={<ATMHome />} />
-        <Route path="/atm/actions" element={<ATMFinancialActions />} />
+        <Route path="/atm/deposit" element={<ATMDeposit />} />
+        <Route path="/atm/withdraw" element={<ATMWithdraw />} />
+        <Route path="/atm/transfer" element={<ATMTransfer />} />
         <Route path="/atm/history" element={<History />} />
       </Route>
 
