@@ -1,5 +1,5 @@
- import { Routes, Route, Navigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import { Routes, Route, Navigate } from "react-router-dom";
+import { useAuth } from "./context/AuthContext";
 
 // Placeholder components - replace these with your actual imports later
 // import AdminLayout from "../layouts/AdminLayout";
@@ -8,11 +8,22 @@ import { useAuth } from "../context/AuthContext";
 // import LoginPage from "../pages/LoginPage";
 // import ATMLogin from "../pages/atm/ATMLogin";
 
-const AdminLayout = () => <div className="p-4">Admin Dashboard (Placeholder)</div>;
-const ClientLayout = () => <div className="p-4">Client Dashboard (Placeholder)</div>;
-const ATMLayout = () => <div className="p-4">ATM Interface (Placeholder)</div>;
-const LoginPage = () => <div className="p-4">Login Page (Placeholder)</div>;
-const ATMLogin = () => <div className="p-4">ATM Login (Placeholder)</div>;
+import AdminLayout from "../layouts/AdminLayout";
+import AdminOverview from "../pages/admin/AdminOverview";
+import ClientManager from "../components/admin/ClientManager";
+import CustomerManager from "../components/admin/CustomerManager";
+import AccountManager from "../components/admin/AccountManager";
+
+import LoginPage from "../pages/LoginPage";
+import ATMLogin from "../pages/atm/ATMLogin";
+
+import LoginPage from "../pages/LoginPage";
+import ATMLogin from "../pages/atm/ATMLogin";
+import ATMLayout from "../layouts/ATMLayout";
+import ATMDashboard from "../pages/atm/ATMDashboard";
+import ClientLayout from "../layouts/ClientLayout";
+import ClientDashboard from "../pages/client/ClientDashboard";
+import ClientDeveloper from "../pages/client/ClientDeveloper";
 
 export default function AppRouter() {
   const { role, isAuthenticated, loading } = useAuth();
@@ -46,37 +57,47 @@ export default function AppRouter() {
 
       {/* Admin Routes */}
       <Route
-        path="/admin/*"
+        path="/admin"
         element={
           <ProtectedRoute allowedRoles={['ADMIN']}>
             <AdminLayout />
           </ProtectedRoute>
         }
-      />
+      >
+        <Route index element={<AdminOverview />} />
+        <Route path="clients" element={<ClientManager />} />
+        <Route path="customers" element={<CustomerManager />} />
+        <Route path="accounts" element={<AccountManager />} />
+      </Route>
 
       {/* Client Routes */}
       <Route
-        path="/client/*"
+        path="/client"
         element={
           <ProtectedRoute allowedRoles={['CLIENT']}>
             <ClientLayout />
           </ProtectedRoute>
         }
-      />
+      >
+        <Route index element={<ClientDashboard />} />
+        <Route path="actions" element={<ClientDashboard />} /> {/* Re-using for now or specific page */}
+        <Route path="developers" element={<ClientDeveloper />} />
+      </Route>
 
       {/* ATM Routes */}
       <Route
-        path="/atm/*"
+        path="/atm"
         element={
           <ProtectedRoute allowedRoles={['USER']}>
             <ATMLayout />
           </ProtectedRoute>
         }
-      />
+      >
+        <Route index element={<ATMDashboard />} />
+      </Route>
 
       {/* Default Fallback */}
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   );
 }
-do
