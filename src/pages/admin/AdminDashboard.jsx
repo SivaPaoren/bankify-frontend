@@ -2,34 +2,30 @@ import React, { useEffect, useState } from 'react';
 import { adminService } from '../../services/api';
 import {
     Users,
-    ArrowUpRight,
-    ArrowDownLeft,
     Activity,
     AlertTriangle,
-    Wallet
+    Wallet,
+    ArrowUpRight
 } from 'lucide-react';
 import {
-    LineChart,
-    Line,
+    AreaChart,
+    Area,
     XAxis,
     YAxis,
     CartesianGrid,
     Tooltip,
-    ResponsiveContainer,
-    AreaChart,
-    Area
+    ResponsiveContainer
 } from 'recharts';
 
 export default function AdminDashboard() {
     const [stats, setStats] = useState({
         activeCustomers: 0,
-        totalBalance: 2450000.00, // Mocked for now
+        totalBalance: 2450000.00,
         todayTransactions: 142,
         failedTransactions: 3
     });
 
     useEffect(() => {
-        // Fetch real customer count
         adminService.getCustomers().then(data => {
             const count = Array.isArray(data) ? data.length : (data.content?.length || 0);
             setStats(prev => ({ ...prev, activeCustomers: count }));
@@ -69,7 +65,6 @@ export default function AdminDashboard() {
 
     return (
         <div className="space-y-6">
-            {/* Page Header */}
             <div>
                 <h1 className="text-2xl font-bold text-slate-900">System Overview</h1>
                 <p className="text-slate-500">Real-time monitoring of Bankify infrastructure.</p>
@@ -153,15 +148,6 @@ export default function AdminDashboard() {
                                 </div>
                             </div>
                         ))}
-                        <div className="flex items-start gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100 hover:bg-slate-100 transition-colors cursor-pointer">
-                            <div className="mt-1 p-1.5 rounded-full bg-blue-100 text-blue-600">
-                                <Activity size={14} />
-                            </div>
-                            <div>
-                                <p className="text-sm font-semibold text-slate-800">High Volume Transfer</p>
-                                <p className="text-xs text-slate-500 mt-0.5">Client API · 2 mins ago</p>
-                            </div>
-                        </div>
                     </div>
                     <button className="w-full mt-6 py-3 rounded-xl border border-slate-200 text-slate-600 text-sm font-semibold hover:bg-slate-50 transition-colors">
                         View All Alerts

@@ -1,19 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { adminService } from '../../services/api';
-import { Shield, Plus, MoreHorizontal, Power, CheckCircle, XCircle } from 'lucide-react';
-import Table from '../common/Table'; // We will assume generic table works or needs update in next step if broken styled
+import { Shield, Plus, Power, CheckCircle, XCircle } from 'lucide-react';
 
 export default function ClientManager() {
     const [clients, setClients] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [showCreateModal, setShowCreateModal] = useState(false); // Placeholder for modal logic
+    const [showCreateModal, setShowCreateModal] = useState(false);
     const [newClientName, setNewClientName] = useState('');
 
     const fetchClients = async () => {
         setLoading(true);
         try {
             const data = await adminService.getClients();
-            // Handle array or pageable content
             setClients(Array.isArray(data) ? data : (data.content || []));
         } catch (error) {
             console.error("Failed to fetch clients", error);
@@ -28,10 +26,8 @@ export default function ClientManager() {
 
     const handleToggleStatus = async (clientId, currentStatus) => {
         try {
-            // Optimistic update or refetch
-            // Assumes API has disable/enable toggle or distinct endpoints
             await adminService.disableClient(clientId);
-            fetchClients(); // Refetch to be safe
+            fetchClients();
         } catch (e) {
             alert("Failed to update status");
         }
@@ -49,56 +45,6 @@ export default function ClientManager() {
         }
     };
 
-    // Columns configuration
-    const columns = [
-        {
-            key: 'name',
-            label: 'Client Name',
-            render: (row) => (
-                <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center font-bold">
-                        {row.name.charAt(0)}
-                    </div>
-                    <span className="font-semibold text-slate-700">{row.name}</span>
-                </div>
-            )
-        },
-        {
-            key: 'apiKey',
-            label: 'API Key Prefix',
-            render: (row) => <code className="bg-slate-100 px-2 py-1 rounded text-xs font-mono text-slate-500">{row.apiKey ? row.apiKey.substring(0, 8) + '...' : 'N/A'}</code>
-        },
-        {
-            key: 'status',
-            label: 'Status',
-            render: (row) => (
-                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wide border ${row.status === 'ACTIVE'
-                        ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
-                        : 'bg-red-50 text-red-600 border-red-100'
-                    }`}>
-                    {row.status === 'ACTIVE' ? <CheckCircle size={12} /> : <XCircle size={12} />}
-                    {row.status}
-                </span>
-            )
-        },
-        {
-            key: 'actions',
-            label: 'Actions',
-            render: (row) => (
-                <button
-                    onClick={() => handleToggleStatus(row.id, row.status)}
-                    title={row.status === 'ACTIVE' ? "Disable Client" : "Enable Client"}
-                    className={`p-2 rounded-lg transition-colors ${row.status === 'ACTIVE'
-                            ? 'text-slate-400 hover:text-red-500 hover:bg-red-50'
-                            : 'text-slate-400 hover:text-emerald-500 hover:bg-emerald-50'
-                        }`}
-                >
-                    <Power size={18} />
-                </button>
-            )
-        }
-    ];
-
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -115,7 +61,6 @@ export default function ClientManager() {
                 </button>
             </div>
 
-            {/* Create Modal Area (Embedded for simplicity) */}
             {showCreateModal && (
                 <div className="bg-white p-6 rounded-2xl shadow-lg border border-slate-200 animate-page">
                     <h3 className="font-bold text-slate-800 mb-4">Register New Client</h3>
@@ -136,36 +81,62 @@ export default function ClientManager() {
             )}
 
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                <div className="p-0">
-                    {/* Table Wrapper to ensure correct styling for standard Table component */}
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
-                            <thead>
-                                <tr className="bg-slate-50 border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500 font-semibold">
-                                    {columns.map(col => (
-                                        <th key={col.key} className="px-6 py-4">{col.label}</th>
-                                    ))}
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                        <thead>
+                            <tr className="bg-slate-50 border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500 font-semibold">
+                                <th className="px-6 py-4">Client Name</th>
+                                <th className="px-6 py-4">API Key Prefix</th>
+                                <th className="px-6 py-4">Status</th>
+                                <th className="px-6 py-4">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                            {clients.length > 0 ? clients.map((row) => (
+                                <tr key={row.id} className="hover:bg-slate-50/50 transition-colors">
+                                    <td className="px-6 py-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center font-bold">
+                                                {row.name.charAt(0)}
+                                            </div>
+                                            <span className="font-semibold text-slate-700">{row.name}</span>
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <code className="bg-slate-100 px-2 py-1 rounded text-xs font-mono text-slate-500">
+                                            {row.apiKey ? row.apiKey.substring(0, 8) + '...' : 'N/A'}
+                                        </code>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wide border ${row.status === 'ACTIVE'
+                                                ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                                                : 'bg-red-50 text-red-600 border-red-100'
+                                            }`}>
+                                            {row.status === 'ACTIVE' ? <CheckCircle size={12} /> : <XCircle size={12} />}
+                                            {row.status}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <button
+                                            onClick={() => handleToggleStatus(row.id, row.status)}
+                                            className={`p-2 rounded-lg transition-colors ${row.status === 'ACTIVE'
+                                                    ? 'text-slate-400 hover:text-red-500 hover:bg-red-50'
+                                                    : 'text-slate-400 hover:text-emerald-500 hover:bg-emerald-50'
+                                                }`}
+                                        >
+                                            <Power size={18} />
+                                        </button>
+                                    </td>
                                 </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
-                                {clients.length > 0 ? clients.map((row, i) => (
-                                    <tr key={i} className="hover:bg-slate-50/50 transition-colors">
-                                        {columns.map(col => (
-                                            <td key={col.key} className="px-6 py-4 text-sm text-slate-600">
-                                                {col.render ? col.render(row) : row[col.key]}
-                                            </td>
-                                        ))}
-                                    </tr>
-                                )) : (
-                                    <tr>
-                                        <td colSpan={columns.length} className="px-6 py-8 text-center text-slate-400 italic">
-                                            {loading ? 'Loading clients...' : 'No clients found.'}
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
+                            )) : (
+                                <tr>
+                                    <td colSpan="4" className="px-6 py-8 text-center text-slate-400 italic">
+                                        {loading ? 'Loading clients...' : 'No clients found.'}
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>

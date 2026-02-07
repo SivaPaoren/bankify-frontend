@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import logo from './BankifyLogo.png';
 import {
     LayoutDashboard,
     Users,
-    CreditCard,
     Shield,
     LogOut,
     Menu,
@@ -12,8 +12,7 @@ import {
     Bell,
     Search,
     FileText,
-    Wallet,
-    Building2
+    Wallet
 } from 'lucide-react';
 
 export default function AdminLayout() {
@@ -27,11 +26,10 @@ export default function AdminLayout() {
         navigate('/login');
     };
 
-    // Helper for simple title based on route
     const getPageTitle = () => {
         const path = location.pathname.split("/").pop();
         if (!path || path === 'admin') return "Dashboard";
-        return path.charAt(0).toUpperCase() + path.slice(1).replace("-", " ");
+        return path.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
     };
 
     const navItems = [
@@ -46,21 +44,21 @@ export default function AdminLayout() {
         `relative flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all duration-200 group overflow-hidden
      ${isActive
             ? "bg-emerald-500/10 text-emerald-400 shadow-inner"
-            : "text-slate-400 hover:bg-slate-800/50 hover:text-slate-100"
+            : "text-slate-400 hover:bg-slate-800 hover:text-slate-100"
         }`;
 
     return (
         <div className="flex h-screen bg-slate-50 text-slate-800 font-sans">
-            {/* Sidebar - Dark Mode for Contrast */}
+            {/* Sidebar - Dark Slate as requested */}
             <aside
-                className={`bg-slate-950 text-white flex flex-col border-r border-slate-800 relative z-20 
+                className={`bg-slate-950 text-white flex flex-col border-r border-slate-900 relative z-20 
                 ${collapsed ? "w-20" : "w-64"} transition-all duration-300 ease-in-out shadow-xl`}
             >
                 {/* Brand */}
-                <div className="h-20 flex items-center px-6 border-b border-slate-800/50">
+                <div className="h-20 flex items-center px-6 border-b border-slate-900">
                     <div className={`flex items-center gap-3 overflow-hidden transition-all ${collapsed ? 'justify-center w-full' : ''}`}>
-                        <div className="bg-emerald-500 p-1.5 rounded-lg shrink-0 shadow-lg shadow-emerald-500/20">
-                            <Building2 size={24} className="text-white" />
+                        <div className="w-8 h-8 flex items-center justify-center shrink-0">
+                            <img src={logo} alt="Bankify" className="w-full h-full object-contain invert brightness-0 filter" />
                         </div>
                         {!collapsed && (
                             <div className="opacity-100 transition-opacity duration-300">
@@ -86,18 +84,21 @@ export default function AdminLayout() {
                                 end={item.end}
                                 className={navLinkClass}
                             >
-                                <item.icon size={20} className={({ isActive }) => isActive ? 'text-emerald-400' : 'text-slate-500 group-hover:text-slate-300'} />
-                                {!collapsed && <span>{item.label}</span>}
-                                {collapsed && <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 bg-slate-800/90 text-xs font-bold transition-opacity">{item.label[0]}</div>}
+                                {({ isActive }) => (
+                                    <>
+                                        <item.icon size={20} className={isActive ? 'text-emerald-400' : 'text-slate-500 group-hover:text-slate-300'} />
+                                        {!collapsed && <span>{item.label}</span>}
+                                    </>
+                                )}
                             </NavLink>
                         ))}
                     </nav>
                 </div>
 
                 {/* Footer User Profile */}
-                <div className="p-4 border-t border-slate-800/50 bg-slate-900/50">
-                    <div className={`flex items-center gap-3 p-2 rounded-xl transition-colors ${collapsed ? 'justify-center' : 'bg-slate-800/30'}`}>
-                        <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-600 flex items-center justify-center text-xs font-bold text-white shrink-0 shadow-lg border border-slate-700">
+                <div className="p-4 border-t border-slate-900 bg-slate-950">
+                    <div className={`flex items-center gap-3 p-2 rounded-xl transition-colors ${collapsed ? 'justify-center' : 'bg-slate-900'}`}>
+                        <div className="w-9 h-9 rounded-full bg-emerald-600 flex items-center justify-center text-xs font-bold text-white shrink-0 shadow-lg border border-slate-700">
                             {user?.email?.[0]?.toUpperCase() || 'A'}
                         </div>
                         {!collapsed && (
@@ -107,7 +108,7 @@ export default function AdminLayout() {
                             </div>
                         )}
                         {!collapsed && (
-                            <button onClick={handleLogout} className="text-slate-500 hover:text-red-400 transition-colors p-1.5 hover:bg-red-500/10 rounded-lg">
+                            <button onClick={handleLogout} className="text-slate-500 hover:text-red-400 transition-colors p-1.5 hover:bg-slate-800 rounded-lg">
                                 <LogOut size={16} />
                             </button>
                         )}

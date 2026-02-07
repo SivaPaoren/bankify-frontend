@@ -62,7 +62,6 @@ export default function AppRouter() {
         }
       >
         <Route index element={<AdminDashboard />} />
-        <Route path="dashboard" element={<Navigate to="/admin" replace />} />
         <Route path="clients" element={<ClientManager />} />
         <Route path="customers" element={<CustomerManager />} />
         <Route path="accounts" element={<AccountManager />} />
