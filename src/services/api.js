@@ -147,6 +147,30 @@ export const adminService = {
     }
 };
 
+export const clientService = {
+    // Get current client profile (keys, webhooks)
+    getProfile: async () => {
+        try {
+            const response = await api.get('/clients/me');
+            return response.data;
+        } catch (e) {
+            console.warn("Mocking client profile");
+            return {
+                clientId: 'cl_test_123456789',
+                clientSecret: 'sk_test_987654321_do_not_share',
+                status: 'ACTIVE',
+                webhookUrl: 'https://api.example.com/webhooks',
+                environment: 'TEST'
+            };
+        }
+    },
+    // Update webhook URL
+    updateWebhook: async (url) => {
+        const response = await api.patch('/clients/me/webhook', { url });
+        return response.data;
+    }
+};
+
 export const transactionService = {
     // 2.2 Deposit
     deposit: async (accountId, amount, note, reference) => {
