@@ -1,24 +1,26 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { adminService } from '../../services/api';
-import Table from '../common/Table';
-import StatusBadge from '../common/StatusBadge';
-import { Plus } from 'lucide-react';
+import { Wallet, Snowflake, Ban, Plus, CreditCard } from 'lucide-react';
 
 export default function AccountManager() {
     const [accounts, setAccounts] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [showCreate, setShowCreate] = useState(false);
-    const [formData, setFormData] = useState({ customerId: '', type: 'CURRENT', currency: 'THB' });
-    const [error, setError] = useState('');
-    const [success, setSuccess] = useState('');
+
+    // Form State
+    const [creationMode, setCreationMode] = useState(false);
+    const [formData, setFormData] = useState({
+        customerId: '',
+        type: 'WALLET',
+        currency: 'THB'
+    });
 
     const fetchAccounts = async () => {
         setLoading(true);
         try {
             const data = await adminService.getAccounts();
-            setAccounts(data);
-        } catch (err) {
-            console.error("Failed to fetch accounts", err);
+            setAccounts(Array.isArray(data) ? data : (data.content || []));
+        } catch (e) {
+            console.error(e);
         } finally {
             setLoading(false);
         }
@@ -30,102 +32,120 @@ export default function AccountManager() {
 
     const handleCreate = async (e) => {
         e.preventDefault();
-        setError('');
-        setSuccess('');
-
         try {
             await adminService.createAccount(formData);
-            setSuccess('Account created successfully');
-            setFormData({ customerId: '', type: 'CURRENT', currency: 'THB' });
-            setShowCreate(false);
+            setCreationMode(false);
+            setFormData({ customerId: '', type: 'WALLET', currency: 'THB' });
             fetchAccounts();
-        } catch (err) {
-            setError(err.response?.data?.message || 'Failed to create account');
+        } catch (e) {
+            alert('Failed to create account');
         }
     };
 
-    const columns = [
-        { key: 'accountNumber', label: 'Account No.' },
-        { key: 'customerId', label: 'Customer ID' }, // Ideally map to name, but ID for now
-        { key: 'type', label: 'Type' },
-        { key: 'balance', label: 'Balance', render: (row) => `${row.balance} ${row.currency}` },
-        { key: 'status', label: 'Status', render: (row) => <StatusBadge status={row.status || 'ACTIVE'} /> },
-    ];
-
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <h2 className="text-xl font-bold text-slate-900">Bank Accounts</h2>
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-2xl font-bold text-slate-900">Bank Accounts</h1>
+                    <p className="text-slate-500">Manage customer accounts and statuses.</p>
+                </div>
                 <button
-                    onClick={() => setShowCreate(!showCreate)}
-                    className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition"
+                    onClick={() => setCreationMode(!creationMode)}
+                    className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2.5 rounded-xl font-bold transition shadow-lg shadow-emerald-200"
                 >
-                    <Plus size={16} /> New Account
+                    <Plus size={20} />
+                    New Account
                 </button>
             </div>
 
-            {showCreate && (
-                <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 animate-fade-in relative">
-                    <button
-                        onClick={() => setShowCreate(false)}
-                        className="absolute top-4 right-4 text-slate-400 hover:text-slate-600"
-                    >
-                        ✕
-                    </button>
-
-                    <h3 className="font-semibold text-lg mb-4">Open New Account</h3>
-
-                    {error && <p className="text-red-600 mb-4 text-sm">{error}</p>}
-                    {success && <p className="text-green-600 mb-4 text-sm">{success}</p>}
-
-                    <form onSubmit={handleCreate} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {creationMode && (
+                <div className="bg-white p-8 rounded-2xl shadow-lg border border-slate-200 animate-page">
+                    <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
+                        <Wallet className="text-emerald-500" />
+                        Create New Account
+                    </h3>
+                    <form onSubmit={handleCreate} className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Customer UUID</label>
+                            <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Customer ID</label>
                             <input
                                 type="text"
-                                value={formData.customerId}
-                                onChange={(e) => setFormData({ ...formData, customerId: e.target.value })}
-                                className="w-full px-3 py-2 border border-slate-300 rounded-lg"
-                                placeholder="Paste Customer UUID here"
                                 required
+                                value={formData.customerId}
+                                onChange={e => setFormData({ ...formData, customerId: e.target.value })}
+                                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-emerald-500 focus:bg-white transition"
+                                placeholder="UUID or Customer ID"
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Type</label>
+                            <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Account Type</label>
                             <select
                                 value={formData.type}
-                                onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                                className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                                onChange={e => setFormData({ ...formData, type: e.target.value })}
+                                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-emerald-500 focus:bg-white transition"
                             >
-                                <option value="CURRENT">Current</option>
-                                <option value="SAVINGS">Savings</option>
+                                <option value="WALLET">Wallet (Digital)</option>
+                                <option value="SAVINGS">Savings Account</option>
+                                <option value="CURRENT">Current Account</option>
                             </select>
                         </div>
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1">Currency</label>
-                            <select
-                                value={formData.currency}
-                                onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
-                                className="w-full px-3 py-2 border border-slate-300 rounded-lg"
-                            >
-                                <option value="THB">THB</option>
-                                <option value="USD">USD</option>
-                            </select>
-                        </div>
-
-                        <div className="md:col-span-2 pt-2">
-                            <button
-                                type="submit"
-                                className="w-full bg-primary-600 text-white px-6 py-2 rounded-lg hover:bg-primary-700 font-medium"
-                            >
-                                Create Account
+                        <div className="flex items-end">
+                            <button type="submit" className="w-full bg-emerald-500 text-white font-bold py-3 rounded-xl hover:bg-emerald-600 shadow-md transform active:scale-95 transition">
+                                Confirm Creation
                             </button>
                         </div>
                     </form>
                 </div>
             )}
 
-            <Table columns={columns} data={accounts} />
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                        <thead>
+                            <tr className="bg-slate-50 border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500 font-semibold">
+                                <th className="px-6 py-4">Account No.</th>
+                                <th className="px-6 py-4">Type</th>
+                                <th className="px-6 py-4">Balance</th>
+                                <th className="px-6 py-4">Status</th>
+                                <th className="px-6 py-4">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                            {accounts.map((acc, i) => (
+                                <tr key={i} className="hover:bg-slate-50/50 transition-colors">
+                                    <td className="px-6 py-4 font-mono text-sm text-slate-600">{acc.id}</td>
+                                    <td className="px-6 py-4">
+                                        <div className="flex items-center gap-2">
+                                            <div className="p-1.5 rounded-lg bg-blue-50 text-blue-600">
+                                                <CreditCard size={14} />
+                                            </div>
+                                            <span className="text-sm font-semibold text-slate-700">{acc.type}</span>
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4 font-bold text-slate-800">
+                                        {acc.balance} <span className="text-xs text-slate-400 font-normal">{acc.currency}</span>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wide border ${acc.status === 'ACTIVE'
+                                                ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                                                : 'bg-orange-50 text-orange-600 border-orange-100'
+                                            }`}>
+                                            {acc.status}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4 flex gap-2">
+                                        <button className="p-2 text-slate-400 hover:text-orange-500 hover:bg-orange-50 rounded-lg transition" title="Freeze">
+                                            <Snowflake size={18} />
+                                        </button>
+                                        <button className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition" title="Close Account">
+                                            <Ban size={18} />
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     );
 }

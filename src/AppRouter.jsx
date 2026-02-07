@@ -1,35 +1,32 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
 
-// Placeholder components - replace these with your actual imports later
-// import AdminLayout from "../layouts/AdminLayout";
-// import ClientLayout from "../layouts/ClientLayout";
-// import ATMLayout from "../layouts/ATMLayout";
-// import LoginPage from "../pages/LoginPage";
-// import ATMLogin from "../pages/atm/ATMLogin";
+// Admin Components
+import AdminLayout from "./layouts/AdminLayout";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import ClientManager from "./components/admin/ClientManager";
+import CustomerManager from "./components/admin/CustomerManager";
+import AccountManager from "./components/admin/AccountManager";
+import AuditLogs from "./pages/admin/AuditLogs";
 
-import AdminLayout from "../layouts/AdminLayout";
-import AdminOverview from "../pages/admin/AdminOverview";
-import ClientManager from "../components/admin/ClientManager";
-import CustomerManager from "../components/admin/CustomerManager";
-import AccountManager from "../components/admin/AccountManager";
+// Client Components
+import ClientLayout from "./layouts/ClientLayout";
+import ClientDashboard from "./pages/client/ClientDashboard";
+import ClientDeveloper from "./pages/client/ClientDeveloper";
 
-import LoginPage from "../pages/LoginPage";
-import ATMLogin from "../pages/atm/ATMLogin";
+// ATM Components
+import ATMLayout from "./layouts/ATMLayout";
+import ATMDashboard from "./pages/atm/ATMDashboard";
+import ATMLogin from "./pages/atm/ATMLogin";
 
-import LoginPage from "../pages/LoginPage";
-import ATMLogin from "../pages/atm/ATMLogin";
-import ATMLayout from "../layouts/ATMLayout";
-import ATMDashboard from "../pages/atm/ATMDashboard";
-import ClientLayout from "../layouts/ClientLayout";
-import ClientDashboard from "../pages/client/ClientDashboard";
-import ClientDeveloper from "../pages/client/ClientDeveloper";
+// Auth
+import LoginPage from "./pages/auth/LoginPage";
 
 export default function AppRouter() {
   const { role, isAuthenticated, loading } = useAuth();
 
   if (loading) {
-    return <div className="flex h-screen items-center justify-center">Loading...</div>;
+    return <div className="flex h-screen items-center justify-center bg-slate-50 text-slate-500">Loading Bankify...</div>;
   }
 
   // Helper component to protect routes based on authentication and role
@@ -39,7 +36,7 @@ export default function AppRouter() {
     }
 
     if (allowedRoles && !allowedRoles.includes(role)) {
-      // Redirect to the appropriate dashboard if the user is logged in but has the wrong role
+      // Redirect based on actual role if trying to access unauthorized area
       if (role === 'ADMIN') return <Navigate to="/admin" replace />;
       if (role === 'CLIENT') return <Navigate to="/client" replace />;
       if (role === 'USER') return <Navigate to="/atm" replace />;
@@ -64,10 +61,12 @@ export default function AppRouter() {
           </ProtectedRoute>
         }
       >
-        <Route index element={<AdminOverview />} />
+        <Route index element={<AdminDashboard />} />
+        <Route path="dashboard" element={<Navigate to="/admin" replace />} />
         <Route path="clients" element={<ClientManager />} />
         <Route path="customers" element={<CustomerManager />} />
         <Route path="accounts" element={<AccountManager />} />
+        <Route path="audit-logs" element={<AuditLogs />} />
       </Route>
 
       {/* Client Routes */}
@@ -80,7 +79,8 @@ export default function AppRouter() {
         }
       >
         <Route index element={<ClientDashboard />} />
-        <Route path="actions" element={<ClientDashboard />} /> {/* Re-using for now or specific page */}
+        <Route path="dashboard" element={<Navigate to="/client" replace />} />
+        <Route path="actions" element={<ClientDashboard />} />
         <Route path="developers" element={<ClientDeveloper />} />
       </Route>
 

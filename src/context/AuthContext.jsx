@@ -45,7 +45,8 @@ export const AuthProvider = ({ children }) => {
       setUser(user);
       setRole(user.role);
       setIsAuthenticated(true);
-      return { success: true };
+      // Return user/role so UI can direct immediately
+      return { success: true, role: user.role, user };
     } catch (error) {
       // Handle error safely
       const message = error.response?.data?.message || error.message || "Login failed";
@@ -67,7 +68,7 @@ export const AuthProvider = ({ children }) => {
       // Ensure role is USER for ATM login if not provided
       setRole(user.role || 'USER');
       setIsAuthenticated(true);
-      return { success: true };
+      return { success: true, role: user.role || 'USER' };
     } catch (error) {
       const message = error.response?.data?.message || error.message || "ATM Login failed";
       return { success: false, message };

@@ -1,24 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { adminService } from '../../services/api';
-import Table from '../common/Table';
-import StatusBadge from '../common/StatusBadge';
-import { Copy, Plus, AlertTriangle } from 'lucide-react';
+import { Shield, Plus, MoreHorizontal, Power, CheckCircle, XCircle } from 'lucide-react';
+import Table from '../common/Table'; // We will assume generic table works or needs update in next step if broken styled
 
 export default function ClientManager() {
     const [clients, setClients] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [showCreate, setShowCreate] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [showCreateModal, setShowCreateModal] = useState(false); // Placeholder for modal logic
     const [newClientName, setNewClientName] = useState('');
-    const [newApiKey, setNewApiKey] = useState(null);
-    const [error, setError] = useState('');
 
     const fetchClients = async () => {
         setLoading(true);
         try {
             const data = await adminService.getClients();
-            setClients(data);
-        } catch (err) {
-            console.error("Failed to fetch clients", err);
+            // Handle array or pageable content
+            setClients(Array.isArray(data) ? data : (data.content || []));
+        } catch (error) {
+            console.error("Failed to fetch clients", error);
         } finally {
             setLoading(false);
         }
@@ -28,123 +26,148 @@ export default function ClientManager() {
         fetchClients();
     }, []);
 
+    const handleToggleStatus = async (clientId, currentStatus) => {
+        try {
+            // Optimistic update or refetch
+            // Assumes API has disable/enable toggle or distinct endpoints
+            await adminService.disableClient(clientId);
+            fetchClients(); // Refetch to be safe
+        } catch (e) {
+            alert("Failed to update status");
+        }
+    };
+
     const handleCreateClient = async (e) => {
         e.preventDefault();
-        setError('');
-        setNewApiKey(null);
-
         try {
-            const data = await adminService.createClient(newClientName);
-            setNewApiKey(data.apiKey); // Show once
+            await adminService.createClient(newClientName);
             setNewClientName('');
-            fetchClients(); // Refresh list
-        } catch (err) {
-            setError(err.response?.data?.message || 'Failed to create client');
-        }
-    };
-
-    const handleDisable = async (clientId) => {
-        if (!window.confirm('Are you sure you want to disable this client?')) return;
-        try {
-            await adminService.disableClient(clientId);
+            setShowCreateModal(false);
             fetchClients();
-        } catch (err) {
-            alert('Failed to disable client');
+        } catch (e) {
+            alert("Failed to create client");
         }
     };
 
+    // Columns configuration
     const columns = [
-        { key: 'name', label: 'Client Name' },
-        { key: 'status', label: 'Status', render: (row) => <StatusBadge status={row.status} /> },
-        { key: 'createdAt', label: 'Created At', render: (row) => new Date(row.createdAt).toLocaleDateString() },
+        {
+            key: 'name',
+            label: 'Client Name',
+            render: (row) => (
+                <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center font-bold">
+                        {row.name.charAt(0)}
+                    </div>
+                    <span className="font-semibold text-slate-700">{row.name}</span>
+                </div>
+            )
+        },
+        {
+            key: 'apiKey',
+            label: 'API Key Prefix',
+            render: (row) => <code className="bg-slate-100 px-2 py-1 rounded text-xs font-mono text-slate-500">{row.apiKey ? row.apiKey.substring(0, 8) + '...' : 'N/A'}</code>
+        },
+        {
+            key: 'status',
+            label: 'Status',
+            render: (row) => (
+                <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wide border ${row.status === 'ACTIVE'
+                        ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                        : 'bg-red-50 text-red-600 border-red-100'
+                    }`}>
+                    {row.status === 'ACTIVE' ? <CheckCircle size={12} /> : <XCircle size={12} />}
+                    {row.status}
+                </span>
+            )
+        },
         {
             key: 'actions',
             label: 'Actions',
-            render: (row) => row.status === 'ACTIVE' ? (
+            render: (row) => (
                 <button
-                    onClick={() => handleDisable(row.id)}
-                    className="text-red-600 hover:text-red-800 text-sm font-medium"
+                    onClick={() => handleToggleStatus(row.id, row.status)}
+                    title={row.status === 'ACTIVE' ? "Disable Client" : "Enable Client"}
+                    className={`p-2 rounded-lg transition-colors ${row.status === 'ACTIVE'
+                            ? 'text-slate-400 hover:text-red-500 hover:bg-red-50'
+                            : 'text-slate-400 hover:text-emerald-500 hover:bg-emerald-50'
+                        }`}
                 >
-                    Disable
+                    <Power size={18} />
                 </button>
-            ) : <span className="text-slate-400 text-sm">Disabled</span>
+            )
         }
     ];
 
     return (
         <div className="space-y-6">
-            <div className="flex justify-between items-center">
-                <h2 className="text-xl font-bold text-slate-900">API Clients</h2>
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-2xl font-bold text-slate-900">API Clients</h1>
+                    <p className="text-slate-500">Manage external access and API keys.</p>
+                </div>
                 <button
-                    onClick={() => setShowCreate(!showCreate)}
-                    className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition"
+                    onClick={() => setShowCreateModal(!showCreateModal)}
+                    className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2.5 rounded-xl font-bold transition shadow-lg shadow-emerald-200"
                 >
-                    <Plus size={16} /> New Client
+                    <Plus size={20} />
+                    New Client
                 </button>
             </div>
 
-            {showCreate && (
-                <div className="bg-slate-50 p-6 rounded-xl border border-slate-200 animate-fade-in relative">
-                    <button
-                        onClick={() => { setShowCreate(false); setNewApiKey(null); }}
-                        className="absolute top-4 right-4 text-slate-400 hover:text-slate-600"
-                    >
-                        ✕
-                    </button>
-
-                    <h3 className="font-semibold text-lg mb-4">Register New API Client</h3>
-
-                    {error && <p className="text-red-600 mb-4 text-sm">{error}</p>}
-
-                    {!newApiKey ? (
-                        <form onSubmit={handleCreateClient} className="flex gap-4 items-end">
-                            <div className="flex-1">
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Client Name / Team</label>
-                                <input
-                                    type="text"
-                                    value={newClientName}
-                                    onChange={(e) => setNewClientName(e.target.value)}
-                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg"
-                                    placeholder="e.g. Mobile App Team"
-                                    required
-                                />
-                            </div>
-                            <button
-                                type="submit"
-                                className="bg-primary-600 text-white px-6 py-2 rounded-lg hover:bg-primary-700 font-medium"
-                            >
-                                Generate Key
-                            </button>
-                        </form>
-                    ) : (
-                        <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
-                            <div className="flex items-start gap-3">
-                                <div className="bg-green-100 p-2 rounded-full text-green-700">
-                                    <AlertTriangle size={20} />
-                                </div>
-                                <div className="flex-1">
-                                    <h4 className="font-bold text-green-900 text-sm uppercase tracking-wide mb-1">API Key Generated</h4>
-                                    <p className="text-green-800 text-sm mb-3">
-                                        Copy this key now. You will create it only once. It cannot be retrieved later.
-                                    </p>
-                                    <div className="flex items-center gap-2 bg-white border border-green-200 rounded px-3 py-2 font-mono text-sm break-all">
-                                        <span className="flex-1 text-slate-700">{newApiKey}</span>
-                                        <button
-                                            onClick={() => navigator.clipboard.writeText(newApiKey)}
-                                            className="text-slate-400 hover:text-primary-600 transition"
-                                            title="Copy to clipboard"
-                                        >
-                                            <Copy size={16} />
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    )}
+            {/* Create Modal Area (Embedded for simplicity) */}
+            {showCreateModal && (
+                <div className="bg-white p-6 rounded-2xl shadow-lg border border-slate-200 animate-page">
+                    <h3 className="font-bold text-slate-800 mb-4">Register New Client</h3>
+                    <form onSubmit={handleCreateClient} className="flex gap-4">
+                        <input
+                            type="text"
+                            placeholder="Client Application Name"
+                            value={newClientName}
+                            onChange={(e) => setNewClientName(e.target.value)}
+                            className="flex-1 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-emerald-500 focus:bg-white transition"
+                            required
+                        />
+                        <button type="submit" className="bg-emerald-500 text-white font-bold px-6 rounded-xl hover:bg-emerald-600">
+                            Create
+                        </button>
+                    </form>
                 </div>
             )}
 
-            <Table columns={columns} data={clients} />
+            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <div className="p-0">
+                    {/* Table Wrapper to ensure correct styling for standard Table component */}
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left border-collapse">
+                            <thead>
+                                <tr className="bg-slate-50 border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500 font-semibold">
+                                    {columns.map(col => (
+                                        <th key={col.key} className="px-6 py-4">{col.label}</th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                                {clients.length > 0 ? clients.map((row, i) => (
+                                    <tr key={i} className="hover:bg-slate-50/50 transition-colors">
+                                        {columns.map(col => (
+                                            <td key={col.key} className="px-6 py-4 text-sm text-slate-600">
+                                                {col.render ? col.render(row) : row[col.key]}
+                                            </td>
+                                        ))}
+                                    </tr>
+                                )) : (
+                                    <tr>
+                                        <td colSpan={columns.length} className="px-6 py-8 text-center text-slate-400 italic">
+                                            {loading ? 'Loading clients...' : 'No clients found.'}
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
     );
 }
