@@ -1,67 +1,85 @@
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
+import logo from "../../layouts/BankifyLogo.png";
 
 export default function ATMLogin() {
   const navigate = useNavigate();
-  const [bankId, setBankId] = useState("ATM-0001");
-  const [password, setPassword] = useState("password");
+  const [accountNumber, setAccountNumber] = useState("");
+  const [pin, setPin] = useState("");
   const [error, setError] = useState("");
 
-  const handleSubmit = (event) => {
-    event.preventDefault();
-
-    if (bankId && password) {
-      navigate("/atm");
-    } else {
-      setError("Invalid credentials");
+  const handleConfirm = () => {
+    if (!accountNumber) {
+      setError("Please enter account number to continue");
+      return;
     }
+
+    if (!pin) {
+      setError("Please enter PIN to continue");
+      return;
+    }
+
+    setError("");
+    navigate("/atm");
+  };
+
+  const handleClear = () => {
+    setAccountNumber("");
+    setPin("");
+    setError("");
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-black text-white">
-      <div className="w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-2xl p-8">
-        <h1 className="text-2xl font-bold mb-2">Bankify ATM</h1>
-        <p className="text-sm text-zinc-400 mb-6">
-          Sign in with your Bank ID for quick transactions.
-        </p>
+    <div className="min-h-screen bg-white flex flex-col items-center justify-center space-y-10">
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-zinc-200 mb-1">
-              Bank ID
-            </label>
-            <input
-              type="text"
-              className="w-full px-3 py-2 rounded-lg bg-black border border-zinc-700 focus:outline-none focus:ring-2 focus:ring-lime-400"
-              value={bankId}
-              onChange={(event) => setBankId(event.target.value)}
-              placeholder="ATM-0001"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-zinc-200 mb-1">
-              Password
-            </label>
-            <input
-              type="password"
-              className="w-full px-3 py-2 rounded-lg bg-black border border-zinc-700 focus:outline-none focus:ring-2 focus:ring-lime-400"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              placeholder="••••••••"
-            />
-          </div>
-
-          {error && <p className="text-sm text-red-400">{error}</p>}
-
-          <button
-            type="submit"
-            className="w-full py-2 rounded-lg bg-lime-400 text-black font-semibold hover:bg-lime-300 transition"
-          >
-            Enter ATM
-          </button>
-        </form>
+      {/* Logo */}
+      <div className="flex items-center gap-3">
+        <img src={logo} alt="Bankify ATM" className="h-14 w-14" />
+        <h1 className="text-3xl font-semibold">Bankify ATM</h1>
       </div>
+
+      {/* Inputs */}
+      <div className="w-[420px] space-y-4">
+        <input
+          placeholder="Enter account number"
+          value={accountNumber}
+          onChange={(e) => setAccountNumber(e.target.value)}
+          className="w-full p-4 rounded-xl bg-gray-200 text-lg focus:outline-none"
+        />
+
+        <input
+          type="password"
+          placeholder="Enter PIN"
+          value={pin}
+          onChange={(e) => setPin(e.target.value)}
+          className="w-full p-4 rounded-xl bg-gray-200 text-lg focus:outline-none"
+        />
+      </div>
+
+      {/* Error */}
+      {error && (
+        <p className="text-sm text-red-600 text-center">
+          {error}
+        </p>
+      )}
+
+      {/* Actions */}
+      <div className="flex gap-8">
+        <button
+          onClick={handleConfirm}
+          className="w-40 py-3 rounded-xl bg-emerald-500 text-black text-lg font-medium hover:bg-emerald-400"
+        >
+          Confirm
+        </button>
+
+        <button
+          onClick={handleClear}
+          className="w-40 py-3 rounded-xl bg-orange-400 text-black text-lg font-medium hover:bg-orange-300"
+        >
+          Clear
+        </button>
+      </div>
+
     </div>
   );
 }
