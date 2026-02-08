@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
 
 // Admin Components
@@ -17,6 +17,10 @@ import ClientDeveloper from "./pages/client/ClientDeveloper";
 // ATM Components
 import ATMLayout from "./layouts/ATMLayout";
 import ATMHome from "./pages/atm/ATMHome";
+import ATMDeposit from "./pages/atm/ATMDeposit";
+import ATMWithdraw from "./pages/atm/ATMWithdraw";
+import ATMTransfer from "./pages/atm/ATMTransfer";
+import ATMHistory from "./pages/atm/History";
 import ATMLogin from "./pages/auth/ATMLogin";
 
 // Auth
@@ -30,8 +34,14 @@ export default function AppRouter() {
   }
 
   // Helper component to protect routes based on authentication and role
+  // Helper component to protect routes based on authentication and role
   const ProtectedRoute = ({ children, allowedRoles }) => {
+    const location = useLocation();
+
     if (!isAuthenticated) {
+      if (location.pathname.startsWith('/atm')) {
+        return <Navigate to="/atm-login" replace />;
+      }
       return <Navigate to="/login" replace />;
     }
 
@@ -93,6 +103,10 @@ export default function AppRouter() {
         }
       >
         <Route index element={<ATMHome />} />
+        <Route path="deposit" element={<ATMDeposit />} />
+        <Route path="withdraw" element={<ATMWithdraw />} />
+        <Route path="transfer" element={<ATMTransfer />} />
+        <Route path="history" element={<ATMHistory />} />
       </Route>
 
       {/* Default Fallback */}
