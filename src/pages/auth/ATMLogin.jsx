@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
-import logo from "../../layouts/BankifyLogo.png";
+import logo from "../../assets/BankifyLogo.png";
 
 export default function ATMLogin() {
   const navigate = useNavigate();

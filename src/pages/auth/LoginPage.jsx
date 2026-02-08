@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import logo from "../../layouts/BankifyLogo.png";
+import logo from "../../assets/BankifyLogo.png";
 import { User, Lock, ArrowRight } from "lucide-react";
 
 export default function LoginPage() {

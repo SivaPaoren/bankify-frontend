@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import logo from './BankifyLogo.png';
+import logo from '../assets/BankifyLogo.png';
 import {
     LayoutDashboard,
     CreditCard,

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { adminService } from '../../services/api';
+import { adminService } from '../../api';
 import { Shield, Plus, Power, CheckCircle, XCircle } from 'lucide-react';
 
 export default function ClientManager() {
@@ -109,8 +109,8 @@ export default function ClientManager() {
                                     </td>
                                     <td className="px-6 py-4">
                                         <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wide border ${row.status === 'ACTIVE'
-                                                ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
-                                                : 'bg-red-50 text-red-600 border-red-100'
+                                            ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                                            : 'bg-red-50 text-red-600 border-red-100'
                                             }`}>
                                             {row.status === 'ACTIVE' ? <CheckCircle size={12} /> : <XCircle size={12} />}
                                             {row.status}
@@ -120,8 +120,8 @@ export default function ClientManager() {
                                         <button
                                             onClick={() => handleToggleStatus(row.id, row.status)}
                                             className={`p-2 rounded-lg transition-colors ${row.status === 'ACTIVE'
-                                                    ? 'text-slate-400 hover:text-red-500 hover:bg-red-50'
-                                                    : 'text-slate-400 hover:text-emerald-500 hover:bg-emerald-50'
+                                                ? 'text-slate-400 hover:text-red-500 hover:bg-red-50'
+                                                : 'text-slate-400 hover:text-emerald-500 hover:bg-emerald-50'
                                                 }`}
                                         >
                                             <Power size={18} />

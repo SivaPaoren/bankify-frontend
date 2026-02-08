@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { transactionService } from '../../services/api';
-import FinancialActions from '../../components/shared/FinancialActions';
+import { transactionService } from '../../api';
+import FinancialActions from '../../components/common/FinancialActions';
 import { Wallet, ArrowUpRight, ArrowDownLeft } from 'lucide-react';
 
 export default function ClientDashboard() {

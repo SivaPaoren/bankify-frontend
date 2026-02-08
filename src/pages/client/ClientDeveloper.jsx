@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { clientService } from '../../services/api';
+import { clientService } from '../../api';
 import { Copy, Eye, EyeOff, Globe, CheckCircle, AlertTriangle, RefreshCw } from 'lucide-react';
 
 export default function ClientDeveloper() {

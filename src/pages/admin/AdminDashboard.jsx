@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { adminService } from '../../services/api';
+import { adminService } from '../../api';
 import {
     Users,
     Activity,

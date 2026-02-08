@@ -1,4 +1,4 @@
-import FinancialActions from "../../components/shared/FinancialActions.jsx";
+import FinancialActions from "../../components/common/FinancialActions.jsx";
 
 export default function ATMFinancialActions() {
   return (

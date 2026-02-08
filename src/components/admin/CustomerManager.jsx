@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { adminService } from '../../services/api';
+import { adminService } from '../../api';
 import { Plus, Search, User, Mail, Phone, Building2 } from 'lucide-react';
 
 export default function CustomerManager() {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { transactionService } from '../../services/api';
+import { transactionService } from '../../api';
 import Table from '../common/Table';
 import StatusBadge from '../common/StatusBadge';
 import { ArrowRightLeft, Download, Upload, Landmark, CheckCircle, X } from 'lucide-react';
@@ -90,8 +90,8 @@ export default function FinancialActions({ title, subtitle, accountId }) {
                   key={tab.id}
                   onClick={() => { setActiveTab(tab.id); setMessage({ type: '', text: '' }); }}
                   className={`flex-1 py-4 flex flex-col items-center gap-1.5 text-xs font-semibold uppercase tracking-wide transition-colors ${activeTab === tab.id
-                      ? 'bg-emerald-50 text-emerald-600 border-b-2 border-emerald-500'
-                      : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
+                    ? 'bg-emerald-50 text-emerald-600 border-b-2 border-emerald-500'
+                    : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
                     }`}
                 >
                   <tab.icon size={18} />
