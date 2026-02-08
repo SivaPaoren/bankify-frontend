@@ -16,8 +16,8 @@ import ClientDeveloper from "./pages/client/ClientDeveloper";
 
 // ATM Components
 import ATMLayout from "./layouts/ATMLayout";
-import ATMDashboard from "./pages/atm/ATMDashboard";
-import ATMLogin from "./pages/atm/ATMLogin";
+import ATMHome from "./pages/atm/ATMHome";
+import ATMLogin from "./pages/auth/ATMLogin";
 
 // Auth
 import LoginPage from "./pages/auth/LoginPage";
@@ -92,7 +92,7 @@ export default function AppRouter() {
           </ProtectedRoute>
         }
       >
-        <Route index element={<ATMDashboard />} />
+        <Route index element={<ATMHome />} />
       </Route>
 
       {/* Default Fallback */}
