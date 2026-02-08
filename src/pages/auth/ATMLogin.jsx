@@ -74,11 +74,11 @@ export default function ATMLogin() {
         )}
 
         {/* Actions */}
-        <div className="flex gap-8 pt-4">
+        <div className="flex gap-4 pt-4">
           <button
             type="submit"
             disabled={loading}
-            className="w-40 py-3 rounded-xl bg-emerald-500 text-black text-lg font-medium hover:bg-emerald-400 disabled:opacity-50"
+            className="flex-1 py-3 rounded-xl bg-emerald-500 text-black text-lg font-medium hover:bg-emerald-400 disabled:opacity-50"
           >
             {loading ? "Processing..." : "Confirm"}
           </button>
@@ -86,7 +86,7 @@ export default function ATMLogin() {
           <button
             type="button"
             onClick={handleClear}
-            className="w-40 py-3 rounded-xl bg-orange-400 text-black text-lg font-medium hover:bg-orange-300"
+            className="flex-1 py-3 rounded-xl bg-orange-400 text-black text-lg font-medium hover:bg-orange-300"
           >
             Clear
           </button>
