@@ -1,13 +1,16 @@
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
+import { useAuth } from "../../context/AuthContext";
 
 export default function ATMHome() {
   const navigate = useNavigate();
+  const { user } = useAuth(); // Get user from context
 
   // Mock header data
-  const date = "24 January 2026";
-  const userName = "User Name";
-  const accountNumber = "**** 1234";
+  const date = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  const userName = user?.name || "User Name";
+  const accountNumber = user?.accountNumber || "**** 1234";
+  const currency = user?.currency || "THB";
 
   const [balance, setBalance] = useState(123432.42);
   const [transactions, setTransactions] = useState([]);
@@ -53,11 +56,11 @@ export default function ATMHome() {
           Balance
         </p>
         <p className="text-5xl font-extrabold text-slate-900 mb-10">
-          {balance.toLocaleString()} THB
+          {balance.toLocaleString()} {currency}
         </p>
 
         {/* Actions */}
-        <div className="grid grid-cols-2 gap-4 mb-4">
+        <div className="grid grid-cols-3 gap-4 mb-4">
           <button
             onClick={() => navigate("/atm/deposit")}
             className="py-4 rounded-xl bg-blue-500 text-white font-semibold hover:bg-blue-600 transition shadow-md"
@@ -74,7 +77,7 @@ export default function ATMHome() {
 
           <button
             onClick={() => navigate("/atm/transfer")}
-            className="col-span-2 py-4 rounded-xl bg-slate-200 text-slate-700 font-semibold hover:bg-slate-300 transition"
+            className="py-4 rounded-xl bg-slate-200 text-slate-700 font-semibold hover:bg-slate-300 transition shadow-md"
           >
             Transfer
           </button>
@@ -108,7 +111,7 @@ export default function ATMHome() {
                     }
                   >
                     {tx.amount > 0 ? "+" : ""}
-                    {tx.amount.toLocaleString()} THB
+                    {tx.amount.toLocaleString()} {tx.currency || currency}
                   </span>
                 </li>
               ))}

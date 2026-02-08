@@ -1,15 +1,18 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Check, Loader2 } from "lucide-react";
+import { useAuth } from "../../context/AuthContext";
 
 export default function ATMTransfer() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const currency = user?.currency || "THB";
   const [amount, setAmount] = useState("");
   const [targetAccount, setTargetAccount] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const date = "24 January 2026";
-  const userName = "User Name";
+  const date = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  const userName = user?.name || "User Name";
 
   const handleTransfer = (e) => {
     e.preventDefault();
@@ -19,6 +22,23 @@ export default function ATMTransfer() {
     setIsLoading(true);
 
     setTimeout(() => {
+      // Save transaction (mock)
+      const tx = {
+        type: "Transfer",
+        amount: -Number(amount),
+        currency: currency,
+        status: "PENDING", // Transfers are pending
+        date: new Date().toISOString(),
+      };
+
+      const existing =
+        JSON.parse(localStorage.getItem("atm_transactions")) || [];
+
+      localStorage.setItem(
+        "atm_transactions",
+        JSON.stringify([tx, ...existing])
+      );
+
       setIsLoading(false);
       navigate("/atm");
     }, 1500);
@@ -60,28 +80,34 @@ export default function ATMTransfer() {
           />
 
           {/* Amount — NO spinner */}
-          <input
-            type="text"
-            inputMode="numeric"
-            pattern看来="[0-9]*"
-            placeholder="Amount"
-            value={amount}
-            onChange={(e) => {
-              const val = e.target.value.replace(/\D/g, "");
-              setAmount(val);
-            }}
-            className="w-full p-4 rounded-xl bg-slate-100 outline-none text-slate-800"
-          />
+          <div className="relative">
+            <input
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              placeholder="Amount"
+              value={amount}
+              onChange={(e) => {
+                const val = e.target.value.replace(/\D/g, "");
+                setAmount(val);
+              }}
+              className="w-full p-4 rounded-xl bg-slate-100 outline-none text-slate-800 text-center font-bold text-2xl"
+            />
+            {amount && (
+              <span className="absolute right-6 top-1/2 -translate-y-1/2 text-lg font-bold text-slate-400">
+                {currency}
+              </span>
+            )}
+          </div>
 
           {/* Submit */}
           <button
             type="submit"
             disabled={!targetAccount || !amount || Number(amount) < 1 || isLoading}
             className={`w-full py-4 rounded-2xl font-bold text-white transition
-              ${
-                isLoading
-                  ? "bg-slate-400 cursor-not-allowed"
-                  : "bg-blue-600 hover:bg-blue-700"
+              ${isLoading
+                ? "bg-slate-400 cursor-not-allowed"
+                : "bg-blue-600 hover:bg-blue-700"
               }`}
           >
             {isLoading ? (
