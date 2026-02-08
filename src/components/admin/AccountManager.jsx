@@ -1,43 +1,72 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { adminService } from '../../api';
-import { Wallet, Snowflake, Ban, Plus, Search } from 'lucide-react';
+import { CreditCard, Plus, Snowflake, Ban, User, X, AlertTriangle } from 'lucide-react';
 
 export default function AccountManager() {
+    const [searchParams, setSearchParams] = useSearchParams();
+    const customerIdParam = searchParams.get('customerId');
+
     const [accounts, setAccounts] = useState([]);
+    const [customers, setCustomers] = useState([]); // List of customers for dropdown/lookup
     const [loading, setLoading] = useState(true);
-    const [showCreate, setShowCreate] = useState(false);
+    const [showModal, setShowModal] = useState(false);
 
-    // Form State
-    const [customerId, setCustomerId] = useState('');
-    const [type, setType] = useState('SAVINGS');
-    const [currency, setCurrency] = useState('THB');
+    // New state for confirmation modal
+    const [confirmModal, setConfirmModal] = useState({ show: false, type: '', id: null, message: '' });
 
-    const fetchAccounts = async () => {
+    // Customer ID, Type, Currency for new account form
+    const [formData, setFormData] = useState({
+        customerId: customerIdParam || '',
+        type: 'SAVINGS',
+        currency: 'THB'
+    });
+
+    const fetchData = async () => {
         setLoading(true);
         try {
-            const data = await adminService.getAccounts();
-            setAccounts(Array.isArray(data) ? data : (data.content || []));
+            const [accData, custData] = await Promise.all([
+                adminService.getAccounts({ customerId: customerIdParam }),
+                adminService.getCustomers()
+            ]);
+            setAccounts(Array.isArray(accData) ? accData : (accData.content || []));
+            setCustomers(Array.isArray(custData) ? custData : (custData.content || []));
         } catch (error) {
-            console.error("Failed to fetch accounts", error);
+            console.error("Failed to fetch data", error);
         } finally {
             setLoading(false);
         }
     };
 
     useEffect(() => {
-        fetchAccounts();
-    }, []);
-
-    const handleCreateAccount = async (e) => {
-        e.preventDefault();
-        try {
-            await adminService.createAccount({ customerId, type, currency });
-            setShowCreate(false);
-            fetchAccounts();
-            setCustomerId('');
-        } catch (e) {
-            alert("Failed to create account");
+        fetchData();
+        if (customerIdParam) {
+            setFormData(prev => ({ ...prev, customerId: customerIdParam }));
         }
+    }, [customerIdParam]);
+
+    const handleCreate = async (e) => {
+        e.preventDefault();
+        await adminService.createAccount(formData);
+        setShowModal(false);
+        setFormData({ customerId: '', type: 'SAVINGS', currency: 'THB' });
+        fetchData();
+    };
+
+    const executeAction = async () => {
+        if (confirmModal.type === 'FREEZE') {
+            await adminService.freezeAccount(confirmModal.id);
+        } else if (confirmModal.type === 'CLOSE') {
+            await adminService.closeAccount(confirmModal.id);
+        }
+        setConfirmModal({ show: false, type: '', id: null, message: '' });
+        fetchData();
+    };
+
+    // Helper to get customer name
+    const getCustomerName = (cId) => {
+        const customer = customers.find(c => String(c.id) === String(cId));
+        return customer ? customer.fullName : cId; // Fallback to ID if name not found
     };
 
     return (
@@ -48,74 +77,63 @@ export default function AccountManager() {
                     <p className="text-slate-500">Oversee customer bank accounts and status.</p>
                 </div>
                 <button
-                    onClick={() => setShowCreate(!showCreate)}
-                    className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2.5 rounded-xl font-bold transition shadow-lg shadow-emerald-200"
+                    onClick={() => setShowModal(true)}
+                    className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2.5 rounded-xl font-medium transition shadow-sm hover:shadow-md"
                 >
-                    <Plus size={20} />
+                    <Plus size={18} />
                     Open Account
                 </button>
             </div>
 
-            {showCreate && (
-                <div className="bg-white p-6 rounded-2xl shadow-lg border border-slate-200 animate-page">
-                    <h3 className="font-bold text-slate-800 mb-4">Open New Account</h3>
-                    <form onSubmit={handleCreateAccount} className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <input
-                            type="text"
-                            placeholder="Customer ID"
-                            value={customerId}
-                            onChange={(e) => setCustomerId(e.target.value)}
-                            className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-emerald-500 transition"
-                            required
-                        />
-                        <select
-                            value={type}
-                            onChange={(e) => setType(e.target.value)}
-                            className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-emerald-500 transition"
-                        >
-                            <option value="SAVINGS">Savings</option>
-                            <option value="CURRENT">Current</option>
-                            <option value="WALLET">Wallet</option>
-                        </select>
-                        <select
-                            value={currency}
-                            onChange={(e) => setCurrency(e.target.value)}
-                            className="bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 outline-none focus:border-emerald-500 transition"
-                        >
-                            <option value="THB">THB</option>
-                            <option value="USD">USD</option>
-                            <option value="EUR">EUR</option>
-                        </select>
-                        <button type="submit" className="bg-emerald-500 text-white font-bold px-6 rounded-xl hover:bg-emerald-600 transition">
-                            Create
-                        </button>
-                    </form>
+            {customerIdParam && (
+                <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl flex justify-between items-center text-blue-700">
+                    <span className="font-medium">
+                        Showing accounts for customer: <strong>{getCustomerName(customerIdParam)}</strong>
+                    </span>
+                    <button
+                        onClick={() => setSearchParams({})}
+                        className="flex items-center gap-1 text-sm bg-white hover:bg-blue-100 px-3 py-1.5 rounded-lg border border-blue-200 transition"
+                    >
+                        <X size={14} /> Clear Filter
+                    </button>
                 </div>
             )}
 
+            {/* Account List */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                        <thead>
-                            <tr className="bg-slate-50 border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500 font-semibold">
-                                <th className="px-6 py-4">Account No.</th>
-                                <th className="px-6 py-4">Type</th>
-                                <th className="px-6 py-4">Balance</th>
-                                <th className="px-6 py-4">Status</th>
-                                <th className="px-6 py-4">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                            {accounts.length > 0 ? accounts.map((acc, i) => (
-                                <tr key={i} className="hover:bg-slate-50/50 transition-colors">
-                                    <td className="px-6 py-4 font-mono text-slate-600">{acc.accountNumber || `8822-000${i}`}</td>
+                <table className="w-full text-left border-collapse">
+                    <thead>
+                        <tr className="bg-slate-50 border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500 font-semibold">
+                            <th className="px-6 py-4">Account No.</th>
+                            <th className="px-6 py-4">Customer</th>
+                            <th className="px-6 py-4">Type</th>
+                            <th className="px-6 py-4">Balance</th>
+                            <th className="px-6 py-4">Status</th>
+                            <th className="px-6 py-4">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                        {loading ? (
+                            <tr><td colSpan="6" className="px-6 py-8 text-center text-slate-500">Loading accounts...</td></tr>
+                        ) : accounts.length === 0 ? (
+                            <tr><td colSpan="6" className="px-6 py-8 text-center text-slate-500">No accounts found.</td></tr>
+                        ) : (
+                            accounts.map((acc) => (
+                                <tr key={acc.id} className="hover:bg-slate-50/50 transition-colors">
+                                    <td className="px-6 py-4 font-mono text-slate-600">{acc.accountNumber}</td>
                                     <td className="px-6 py-4">
-                                        <div className="flex items-center gap-2">
-                                            <Wallet size={16} className="text-slate-400" />
-                                            <span className="text-sm font-medium text-slate-700">{acc.type || 'SAVINGS'}</span>
+                                        <div className="flex items-center gap-2 text-slate-900 font-medium">
+                                            <User size={14} className="text-slate-400" />
+                                            {getCustomerName(acc.customerId)}
                                         </div>
                                     </td>
-                                    <td className="px-6 py-4 font-bold text-slate-800">
+                                    <td className="px-6 py-4">
+                                        <div className="flex items-center gap-2 text-slate-600 text-sm font-medium">
+                                            <CreditCard size={14} className="text-slate-400" />
+                                            {acc.type}
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4 font-bold text-slate-900">
                                         {acc.currency} {(acc.balance || 0).toLocaleString()}
                                     </td>
                                     <td className="px-6 py-4">
@@ -128,24 +146,24 @@ export default function AccountManager() {
                                     </td>
                                     <td className="px-6 py-4 flex gap-2">
                                         <button
-                                            onClick={async () => {
-                                                if (window.confirm(`Are you sure you want to ${acc.status === 'FROZEN' ? 'unfreeze' : 'freeze'} this account?`)) {
-                                                    await adminService.freezeAccount(acc.id);
-                                                    fetchAccounts();
-                                                }
-                                            }}
+                                            onClick={() => setConfirmModal({
+                                                show: true,
+                                                type: 'FREEZE',
+                                                id: acc.id,
+                                                message: `Are you sure you want to ${acc.status === 'FROZEN' ? 'unfreeze' : 'freeze'} account ${acc.accountNumber}?`
+                                            })}
                                             className={`p-2 rounded-lg transition ${acc.status === 'FROZEN' ? 'text-blue-600 bg-blue-50' : 'text-slate-400 hover:text-blue-600 hover:bg-blue-50'}`}
                                             title={acc.status === 'FROZEN' ? "Unfreeze" : "Freeze"}
                                         >
                                             <Snowflake size={18} />
                                         </button>
                                         <button
-                                            onClick={async () => {
-                                                if (window.confirm("Are you sure you want to CLOSE this account? This cannot be undone.")) {
-                                                    await adminService.closeAccount(acc.id);
-                                                    fetchAccounts();
-                                                }
-                                            }}
+                                            onClick={() => setConfirmModal({
+                                                show: true,
+                                                type: 'CLOSE',
+                                                id: acc.id,
+                                                message: `Are you sure you want to CLOSE account ${acc.accountNumber}? This cannot be undone.`
+                                            })}
                                             className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
                                             title="Close"
                                         >
@@ -153,17 +171,106 @@ export default function AccountManager() {
                                         </button>
                                     </td>
                                 </tr>
-                            )) : (
-                                <tr>
-                                    <td colSpan="5" className="px-6 py-8 text-center text-slate-400 italic">
-                                        No accounts found.
-                                    </td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
-                </div>
+                            ))
+                        )}
+                    </tbody>
+                </table>
             </div>
+
+            {/* Create Account Modal */}
+            {showModal && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                    <div className="bg-white rounded-2xl w-full max-w-2xl shadow-xl border border-slate-100 p-6">
+                        <h2 className="text-xl font-bold text-slate-900 mb-1">Open New Account</h2>
+                        <form onSubmit={handleCreate} className="mt-6 space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-slate-700 mb-1">Customer</label>
+                                    <select
+                                        className="w-full p-3 bg-slate-50 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500/20 border border-transparent focus:border-emerald-500 transition"
+                                        value={formData.customerId}
+                                        onChange={e => setFormData({ ...formData, customerId: e.target.value })}
+                                        required
+                                    >
+                                        <option value="">Select Customer</option>
+                                        {customers.map(c => (
+                                            <option key={c.id} value={c.id}>{c.fullName} ({c.email})</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 mb-1">Type</label>
+                                        <select
+                                            className="w-full p-3 bg-slate-50 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500/20 border border-transparent focus:border-emerald-500 transition"
+                                            value={formData.type}
+                                            onChange={e => setFormData({ ...formData, type: e.target.value })}
+                                        >
+                                            <option value="SAVINGS">Savings</option>
+                                            <option value="CURRENT">Current</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-slate-700 mb-1">Currency</label>
+                                        <select
+                                            className="w-full p-3 bg-slate-50 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500/20 border border-transparent focus:border-emerald-500 transition"
+                                            value={formData.currency}
+                                            onChange={e => setFormData({ ...formData, currency: e.target.value })}
+                                        >
+                                            <option value="THB">THB</option>
+                                            <option value="USD">USD</option>
+                                            <option value="EUR">EUR</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="flex gap-3 justify-end mt-8">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowModal(false)}
+                                    className="px-6 py-2.5 rounded-xl font-medium text-slate-600 hover:bg-slate-50 transition"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2.5 rounded-xl font-medium transition shadow-sm hover:shadow-md"
+                                >
+                                    Create Account
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Confirmation Modal */}
+            {confirmModal.show && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                    <div className="bg-white rounded-2xl w-full max-w-md shadow-xl border border-slate-100 p-6">
+                        <div className="flex items-center gap-3 mb-4 text-amber-500">
+                            <AlertTriangle size={24} />
+                            <h2 className="text-xl font-bold text-slate-900">Confirm Action</h2>
+                        </div>
+                        <p className="text-slate-600 mb-8">{confirmModal.message}</p>
+                        <div className="flex gap-3 justify-end">
+                            <button
+                                onClick={() => setConfirmModal({ ...confirmModal, show: false })}
+                                className="px-4 py-2 rounded-xl font-medium text-slate-600 hover:bg-slate-50 transition"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={executeAction}
+                                className={`px-4 py-2 rounded-xl font-medium text-white transition shadow-sm hover:shadow-md ${confirmModal.type === 'CLOSE' ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-500 hover:bg-blue-600'
+                                    }`}
+                            >
+                                Confirm
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

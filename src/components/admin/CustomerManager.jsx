@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { adminService } from '../../api';
 import { Plus, Search, User, Mail, Phone, Building2 } from 'lucide-react';
 
 export default function CustomerManager() {
+    const navigate = useNavigate();
     const [customers, setCustomers] = useState([]);
     const [loading, setLoading] = useState(false);
     const [showCreate, setShowCreate] = useState(false);
@@ -167,7 +169,10 @@ export default function CustomerManager() {
                                         </span>
                                     </td>
                                     <td className="px-6 py-4">
-                                        <button className="text-emerald-600 hover:text-emerald-700 text-sm font-bold">
+                                        <button
+                                            onClick={() => navigate(`/admin/accounts?customerId=${row.id}`)}
+                                            className="text-emerald-600 hover:text-emerald-700 text-sm font-bold"
+                                        >
                                             View Accounts
                                         </button>
                                     </td>

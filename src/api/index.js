@@ -219,13 +219,20 @@ export const adminService = {
     },
 
     // Accounts
-    getAccounts: async () => {
+    getAccounts: async (params = {}) => {
         try {
-            const response = await api.get('/accounts');
+            const response = await api.get('/accounts', { params });
             return response.data;
         } catch (e) {
             console.warn("Backend unavailable, loading accounts from LocalStorage");
-            return getStorageData('bankify_accounts', initialAccounts);
+            let accounts = getStorageData('bankify_accounts', initialAccounts);
+
+            // Filter by customerId if provided
+            if (params.customerId) {
+                accounts = accounts.filter(acc => String(acc.customerId) === String(params.customerId));
+            }
+
+            return accounts;
         }
     },
     createAccount: async (accountData) => {
