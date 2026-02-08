@@ -119,15 +119,36 @@ export default function AccountManager() {
                                         {acc.currency} {(acc.balance || 0).toLocaleString()}
                                     </td>
                                     <td className="px-6 py-4">
-                                        <span className="inline-flex px-2 py-1 rounded text-xs font-bold bg-emerald-50 text-emerald-600 border border-emerald-100">
-                                            ACTIVE
+                                        <span className={`inline-flex px-2 py-1 rounded text-xs font-bold border ${acc.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
+                                                acc.status === 'FROZEN' ? 'bg-blue-50 text-blue-600 border-blue-100' :
+                                                    'bg-red-50 text-red-600 border-red-100'
+                                            }`}>
+                                            {acc.status}
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 flex gap-2">
-                                        <button className="p-2 text-slate-400 hover:text-orange-500 hover:bg-orange-50 rounded-lg transition" title="Freeze">
+                                        <button
+                                            onClick={async () => {
+                                                if (window.confirm(`Are you sure you want to ${acc.status === 'FROZEN' ? 'unfreeze' : 'freeze'} this account?`)) {
+                                                    await adminService.freezeAccount(acc.id);
+                                                    fetchAccounts();
+                                                }
+                                            }}
+                                            className={`p-2 rounded-lg transition ${acc.status === 'FROZEN' ? 'text-blue-600 bg-blue-50' : 'text-slate-400 hover:text-blue-600 hover:bg-blue-50'}`}
+                                            title={acc.status === 'FROZEN' ? "Unfreeze" : "Freeze"}
+                                        >
                                             <Snowflake size={18} />
                                         </button>
-                                        <button className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition" title="Close">
+                                        <button
+                                            onClick={async () => {
+                                                if (window.confirm("Are you sure you want to CLOSE this account? This cannot be undone.")) {
+                                                    await adminService.closeAccount(acc.id);
+                                                    fetchAccounts();
+                                                }
+                                            }}
+                                            className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
+                                            title="Close"
+                                        >
                                             <Ban size={18} />
                                         </button>
                                     </td>

@@ -102,6 +102,37 @@ export const authService = {
     }
 };
 
+import { initialClients, initialCustomers, initialAccounts, initialAuditLogs } from './mockData';
+
+// Helper to get data from LocalStorage or initialize it
+const getStorageData = (key, initialData) => {
+    const stored = localStorage.getItem(key);
+    if (!stored) {
+        localStorage.setItem(key, JSON.stringify(initialData));
+        return initialData;
+    }
+    return JSON.parse(stored);
+};
+
+// Helper to save data to LocalStorage
+const setStorageData = (key, data) => {
+    localStorage.setItem(key, JSON.stringify(data));
+};
+
+// Helper to log audit actions
+const logAudit = (action, details, user = 'admin@bankify.local') => {
+    const logs = getStorageData('bankify_audit_logs', initialAuditLogs);
+    const newLog = {
+        id: Date.now(),
+        action,
+        user,
+        details,
+        timestamp: new Date().toISOString()
+    };
+    logs.unshift(newLog); // Add to beginning
+    setStorageData('bankify_audit_logs', logs);
+};
+
 export const adminService = {
     // 1.2 View all API clients
     getClients: async () => {
@@ -109,18 +140,45 @@ export const adminService = {
             const response = await api.get('/admin/clients');
             return response.data;
         } catch (e) {
-            return [{ id: 1, name: 'Mock Client A', apiKey: 'test_key_123', status: 'ACTIVE' }, { id: 2, name: 'Mock Client B', apiKey: 'live_key_999', status: 'SUSPENDED' }];
+            console.warn("Backend unavailable, loading clients from LocalStorage");
+            return getStorageData('bankify_clients', initialClients);
         }
     },
     // 1.3 Create a new API client
     createClient: async (name) => {
-        const response = await api.post('/admin/clients', { name });
-        return response.data;
+        try {
+            const response = await api.post('/admin/clients', { name });
+            return response.data;
+        } catch (e) {
+            console.warn("Backend unavailable, saving client to LocalStorage");
+            const clients = getStorageData('bankify_clients', initialClients);
+            const newClient = {
+                id: Date.now(),
+                name,
+                apiKey: `test_key_${Math.random().toString(36).substr(2, 9)}`,
+                status: 'ACTIVE'
+            };
+            clients.push(newClient);
+            setStorageData('bankify_clients', clients);
+            logAudit('CREATE_CLIENT', `Created API Client: ${name}`);
+            return newClient;
+        }
     },
     // 1.4 Disable a client
     disableClient: async (clientId) => {
-        const response = await api.patch(`/admin/clients/${clientId}/disable`);
-        return response.data;
+        try {
+            const response = await api.patch(`/admin/clients/${clientId}/disable`);
+            return response.data;
+        } catch (e) {
+            console.warn("Backend unavailable, updating client in LocalStorage");
+            const clients = getStorageData('bankify_clients', initialClients);
+            const updatedClients = clients.map(c =>
+                c.id === clientId ? { ...c, status: c.status === 'ACTIVE' ? 'SUSPENDED' : 'ACTIVE' } : c
+            );
+            setStorageData('bankify_clients', updatedClients);
+            logAudit('TOGGLE_CLIENT_STATUS', `Toggled status for client ID: ${clientId}`);
+            return { success: true };
+        }
     },
 
     // Customers (Admin manages these)
@@ -129,7 +187,8 @@ export const adminService = {
             const response = await api.get('/customers');
             return response.data;
         } catch (e) {
-            return { content: [] };
+            console.warn("Backend unavailable, loading customers from LocalStorage");
+            return getStorageData('bankify_customers', initialCustomers);
         }
     },
     getCustomer: async (customerId) => {
@@ -137,9 +196,22 @@ export const adminService = {
         return response.data;
     },
     createCustomer: async (customerData) => {
-        // { fullName, email, phone, type: "INDIVIDUAL" }
-        const response = await api.post('/customers', customerData);
-        return response.data;
+        try {
+            const response = await api.post('/customers', customerData);
+            return response.data;
+        } catch (e) {
+            console.warn("Backend unavailable, saving customer to LocalStorage");
+            const customers = getStorageData('bankify_customers', initialCustomers);
+            const newCustomer = {
+                id: Date.now(),
+                ...customerData,
+                status: 'ACTIVE'
+            };
+            customers.push(newCustomer);
+            setStorageData('bankify_customers', customers);
+            logAudit('CREATE_CUSTOMER', `Created Customer: ${customerData.fullName}`);
+            return newCustomer;
+        }
     },
     updateCustomer: async (customerId, updateData) => {
         const response = await api.patch(`/customers/${customerId}`, updateData);
@@ -147,18 +219,36 @@ export const adminService = {
     },
 
     // Accounts
-    getAccounts: async () => { // List all accounts (maybe filtered by customer in backend)
+    getAccounts: async () => {
         try {
             const response = await api.get('/accounts');
             return response.data;
         } catch (e) {
-            return { content: [] };
+            console.warn("Backend unavailable, loading accounts from LocalStorage");
+            return getStorageData('bankify_accounts', initialAccounts);
         }
     },
     createAccount: async (accountData) => {
-        // { customerId, type: "CURRENT"|"SAVINGS", currency: "THB" }
-        const response = await api.post('/accounts', accountData);
-        return response.data;
+        try {
+            const response = await api.post('/accounts', accountData);
+            return response.data;
+        } catch (e) {
+            console.warn("Backend unavailable, saving account to LocalStorage");
+            const accounts = getStorageData('bankify_accounts', initialAccounts);
+            const newAccount = {
+                id: Date.now(),
+                accountNumber: `8822-${Math.floor(1000 + Math.random() * 9000)}`,
+                customerId: accountData.customerId,
+                type: accountData.type,
+                currency: accountData.currency,
+                balance: 0,
+                status: 'ACTIVE'
+            };
+            accounts.push(newAccount);
+            setStorageData('bankify_accounts', accounts);
+            logAudit('CREATE_ACCOUNT', `Created Account for Customer ID: ${accountData.customerId}`);
+            return newAccount;
+        }
     },
     getAccount: async (accountId) => {
         const response = await api.get(`/accounts/${accountId}`);
@@ -167,6 +257,54 @@ export const adminService = {
     getAccountLedger: async (accountId) => {
         const response = await api.get(`/accounts/${accountId}/ledger`);
         return response.data;
+    },
+    // Freeze Account
+    freezeAccount: async (accountId) => {
+        try {
+            await api.patch(`/accounts/${accountId}/freeze`);
+        } catch (e) {
+            console.warn("Mocking freeze account");
+            const accounts = getStorageData('bankify_accounts', initialAccounts);
+            const updated = accounts.map(acc => {
+                if (String(acc.id) === String(accountId) || acc.accountNumber === accountId) {
+                    // Check if already frozen to toggle? Or just set to FROZEN? 
+                    // Usually freeze is a specific state. Let's toggle or set. 
+                    // Req says "freeze". Let's assume SET TO FROZEN/ACTIVE toggle.
+                    const newStatus = acc.status === 'FROZEN' ? 'ACTIVE' : 'FROZEN';
+                    return { ...acc, status: newStatus };
+                }
+                return acc;
+            });
+            setStorageData('bankify_accounts', updated);
+            logAudit('FREEZE_ACCOUNT', `Toggled freeze status for Account: ${accountId}`);
+        }
+    },
+    // Close Account
+    closeAccount: async (accountId) => {
+        try {
+            await api.delete(`/accounts/${accountId}`);
+        } catch (e) {
+            console.warn("Mocking close account");
+            const accounts = getStorageData('bankify_accounts', initialAccounts);
+            const updated = accounts.map(acc => {
+                if (String(acc.id) === String(accountId) || acc.accountNumber === accountId) {
+                    return { ...acc, status: 'CLOSED' };
+                }
+                return acc;
+            });
+            setStorageData('bankify_accounts', updated);
+            logAudit('CLOSE_ACCOUNT', `Closed Account: ${accountId}`);
+        }
+    },
+
+    // Audit Logs
+    getAuditLogs: async () => {
+        try {
+            const response = await api.get('/admin/audit-logs');
+            return response.data;
+        } catch (e) {
+            return getStorageData('bankify_audit_logs', initialAuditLogs);
+        }
     }
 };
 
