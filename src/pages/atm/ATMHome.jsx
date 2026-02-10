@@ -2,10 +2,15 @@ import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import bankifyLogo from "../../assets/BankifyLogo.png";
 
-/* ---------- UI PARTS (UNCHANGED VISUALLY) ---------- */
+/* ---------- HARDWARE UI ---------- */
 
-const BezelButton = () => (
-  <div className="w-10 h-12 bg-gray-300 rounded border border-gray-500 shadow-inner" />
+const BezelButton = ({ onClick, disabled }) => (
+  <button
+    onClick={disabled ? undefined : onClick}
+    disabled={disabled}
+    className={`w-10 h-12 rounded border border-gray-500 shadow-inner
+      ${disabled ? "bg-gray-200" : "bg-gray-300 active:translate-y-0.5"}`}
+  />
 );
 
 const KeyButton = ({ label, color }) => {
@@ -26,15 +31,41 @@ const KeyButton = ({ label, color }) => {
 export default function ATMHome() {
   const navigate = useNavigate();
 
+  /* ---------- DISPLAY DATA ---------- */
   const [balance] = useState(135798.422);
-  const [transactions] = useState([
-    { type: "Deposit", amount: 2345 },
-    { type: "Deposit", amount: 123453 },
-    { type: "Withdraw", amount: -110975307660901 },
-  ]);
+
+  /* ---------- ATM BUTTON MAPPING ---------- */
+  /*
+    LEFT (top → bottom)
+    1. Balance
+    2. Transfer
+    3. —
+    4. Exit
+
+    RIGHT (top → bottom)
+    1. Deposit
+    2. Withdraw
+    3. —
+    4. —
+  */
+
+  const leftButtons = [
+    () => {},                        // Balance (current screen)
+    () => navigate("/atm/transfer"), // Transfer
+    null,
+    () => navigate("/atm-login"),    // Exit
+  ];
+
+  const rightButtons = [
+    () => navigate("/atm/deposit"),  // Deposit
+    () => navigate("/atm/withdraw"), // Withdraw
+    null,
+    null,
+  ];
 
   return (
     <div className="min-h-screen bg-white flex flex-col items-center justify-center p-6 font-sans">
+
       {/* HEADER */}
       <div className="flex items-center gap-3 mb-8">
         <img src={bankifyLogo} alt="Bankify" className="w-12 h-12" />
@@ -44,127 +75,113 @@ export default function ATMHome() {
       </div>
 
       {/* MACHINE BODY */}
-      <div className="flex gap-8 items-start max-w-6xl w-full">
-        {/* LEFT – MAIN SCREEN */}
-        <div className="bg-gray-300 p-6 rounded-2xl border border-gray-400 shadow-xl flex-grow">
+      <div className="flex gap-8 items-start">
+
+        {/* LEFT – MAIN MACHINE */}
+        <div className="bg-gray-300 p-6 rounded-2xl border border-gray-400 shadow-xl">
           <div className="flex gap-4">
-            {/* LEFT BUTTONS */}
-            <div className="flex flex-col gap-6 py-12">
-              <BezelButton />
-              <BezelButton />
-              <BezelButton />
-              <BezelButton />
+
+            {/* LEFT BEZEL BUTTONS */}
+            <div
+              className="flex flex-col justify-between"
+              style={{ height: 420 }}
+            >
+              {leftButtons.map((fn, i) => (
+                <BezelButton
+                  key={i}
+                  onClick={fn}
+                  disabled={!fn}
+                />
+              ))}
             </div>
 
-            {/* SCREEN */}
-            <div className="flex-grow bg-white rounded-lg shadow-inner p-8 flex flex-col">
-              {/* BALANCE */}
-              <div className="text-center mb-8">
-                <p className="text-xs uppercase tracking-widest text-gray-400 font-bold">
-                  Total Balance
-                </p>
-                <p className="text-4xl font-bold text-gray-900 mt-2">
-                  {balance.toLocaleString()}
-                </p>
-                <p className="text-sm font-semibold text-gray-500">THB</p>
-              </div>
+            {/* FIXED SCREEN */}
+            <div
+              className="bg-white rounded-lg shadow-inner p-8 flex flex-col"
+              style={{ width: 520, height: 420 }}
+            >
+              <div className="flex justify-between h-full">
 
-              {/* ACTION BUTTONS */}
-              <div className="grid grid-cols-2 gap-4 mb-4">
-                <button
-                  onClick={() => navigate("/atm/deposit")}
-                  className="bg-blue-600 text-white py-4 rounded-xl font-semibold shadow"
-                >
-                  Deposit
-                </button>
-                <button
-                  onClick={() => navigate("/atm/withdraw")}
-                  className="bg-blue-600 text-white py-4 rounded-xl font-semibold shadow"
-                >
-                  Withdraw
-                </button>
-              </div>
+                {/* LEFT LABELS */}
+                <div className="flex flex-col justify-between text-left text-lg font-medium">
+                  <div>Balance</div>
+                  <div>Transfer</div>
+                  <div>&nbsp;</div>
+                  <div>Exit</div>
+                </div>
 
-              <button
-                onClick={() => navigate("/atm/transfer")}
-                className="border-2 border-gray-300 py-4 rounded-xl font-semibold mb-8"
-              >
-                Transfer
-              </button>
-
-              {/* RECENT ACTIVITY */}
-              <div className="bg-gray-50 rounded-xl p-4 mt-auto">
-                <div className="flex justify-between mb-3">
-                  <p className="text-xs font-bold text-gray-400 uppercase">
-                    Recent Activity
+                {/* CENTER CONTENT */}
+                <div className="flex flex-col items-center justify-center text-center flex-grow">
+                  <p className="text-xs uppercase tracking-widest text-gray-400 font-bold mb-2">
+                    Total Balance
                   </p>
-                  <button
-                    onClick={() => navigate("/atm/history")}
-                    className="text-xs text-blue-600 font-bold"
-                  >
-                    View All
-                  </button>
+                  <p className="text-4xl font-bold text-gray-900">
+                    {balance.toLocaleString()}
+                  </p>
+                  <p className="text-sm font-semibold text-gray-500 mt-1">
+                    THB
+                  </p>
                 </div>
 
-                <div className="space-y-2 text-sm">
-                  {transactions.map((t, i) => (
-                    <div key={i} className="flex justify-between">
-                      <span className="text-gray-600">{t.type}</span>
-                      <span
-                        className={
-                          t.amount > 0
-                            ? "text-green-600 font-bold"
-                            : "text-gray-900 font-bold"
-                        }
-                      >
-                        {t.amount > 0 ? "+" : ""}
-                        {Math.abs(t.amount).toLocaleString()} THB
-                      </span>
-                    </div>
-                  ))}
+                {/* RIGHT LABELS */}
+                <div className="flex flex-col justify-between text-right text-lg font-medium">
+                  <div>Deposit</div>
+                  <div>Withdraw</div>
+                  <div>&nbsp;</div>
+                  <div>&nbsp;</div>
                 </div>
               </div>
             </div>
 
-            {/* RIGHT BUTTONS */}
-            <div className="flex flex-col gap-6 py-12">
-              <BezelButton />
-              <BezelButton />
-              <BezelButton />
-              <BezelButton />
+            {/* RIGHT BEZEL BUTTONS */}
+            <div
+              className="flex flex-col justify-between"
+              style={{ height: 420 }}
+            >
+              {rightButtons.map((fn, i) => (
+                <BezelButton
+                  key={i}
+                  onClick={fn}
+                  disabled={!fn}
+                />
+              ))}
             </div>
+
           </div>
         </div>
 
         {/* RIGHT – HARDWARE */}
         <div className="flex flex-col gap-6 w-80">
-          {/* TOP SCREEN */}
+
           <div className="bg-gray-300 p-6 rounded-2xl border border-gray-400 shadow-xl">
             <div className="bg-black h-24 rounded mb-4" />
             <div className="bg-black h-32 rounded" />
           </div>
 
-          {/* KEYPAD */}
           <div className="bg-gray-300 p-6 rounded-2xl border border-gray-400 shadow-xl">
             <div className="grid grid-cols-4 gap-3">
               <KeyButton label="1" />
               <KeyButton label="2" />
               <KeyButton label="3" />
               <KeyButton label="CANCEL" color="red" />
+
               <KeyButton label="4" />
               <KeyButton label="5" />
               <KeyButton label="6" />
               <KeyButton label="CLEAR" color="yellow" />
+
               <KeyButton label="7" />
               <KeyButton label="8" />
               <KeyButton label="9" />
               <KeyButton label="ENTER" color="green" />
+
               <div />
               <KeyButton label="0" />
               <div />
               <div />
             </div>
           </div>
+
         </div>
       </div>
     </div>
