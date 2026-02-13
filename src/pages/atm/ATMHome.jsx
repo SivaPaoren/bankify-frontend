@@ -69,32 +69,6 @@ const KeyButton = ({ label, color, span = 1 }) => {
     </div>
   );
 };
-import { useEffect, useState } from "react";
-import { useAuth } from "../../context/AuthContext";
-
-export default function ATMHome() {
-  const navigate = useNavigate();
-  const { user } = useAuth(); // Get user from context
-
-  // Mock header data
-  const date = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
-  const userName = user?.name || "User Name";
-  const accountNumber = user?.accountNumber || "**** 1234";
-  const currency = user?.currency || "THB";
-
-  const [balance, setBalance] = useState(123432.42);
-  const [transactions, setTransactions] = useState([]);
-
-  // Load balance + transactions from localStorage
-  useEffect(() => {
-    const storedBalance = localStorage.getItem("atm_balance");
-    const storedTx = localStorage.getItem("atm_transactions");
-
-    if (storedBalance) {
-      setBalance(Number(storedBalance));
-    } else {
-      localStorage.setItem("atm_balance", balance);
-    }
 
 /* ---------- HOME PAGE COMPONENT ---------- */
 
@@ -104,7 +78,7 @@ export default function ATMHome() {
   const leftLabels = ["", "Balance", "Transfer", "Exit"];
   const leftActions = [
     null, 
-    () => navigate("/atm/balance"),
+    () => navigate("/atm/balance"), // CHANGED: Now navigates to balance
     () => navigate("/atm/transfer"),
     () => navigate("/atm-login")
   ];
@@ -130,12 +104,6 @@ export default function ATMHome() {
         </h2>
         <p className="text-cyan-400 text-xs font-mono mb-8">
           WELCOME BACK, JOHN
-        {/* Balance */}
-        <p className="text-slate-500 uppercase tracking-widest text-sm mb-2">
-          Balance
-        </p>
-        <p className="text-5xl font-extrabold text-slate-900 mb-10">
-          {balance.toLocaleString()} {currency}
         </p>
       </div>
     );
@@ -149,64 +117,6 @@ export default function ATMHome() {
         <div className="flex items-center gap-3">
           <img src={bankifyLogo} alt="Bankify" className="w-8 h-8" />
           <h1 className="text-2xl text-white font-bold">Bankify</h1>
-        {/* Actions */}
-        <div className="grid grid-cols-3 gap-4 mb-4">
-          <button
-            onClick={() => navigate("/atm/deposit")}
-            className="py-4 rounded-xl bg-blue-500 text-white font-semibold hover:bg-blue-600 transition shadow-md"
-          >
-            Deposit
-          </button>
-
-          <button
-            onClick={() => navigate("/atm/withdraw")}
-            className="py-4 rounded-xl bg-blue-500 text-white font-semibold hover:bg-blue-600 transition shadow-md"
-          >
-            Withdraw
-          </button>
-
-          <button
-            onClick={() => navigate("/atm/transfer")}
-            className="py-4 rounded-xl bg-slate-200 text-slate-700 font-semibold hover:bg-slate-300 transition shadow-md"
-          >
-            Transfer
-          </button>
-        </div>
-
-        {/* Last 3 Transactions */}
-        <div className="mt-8 text-left">
-          <h3 className="text-sm font-semibold text-slate-600 mb-3">
-            Last 3 Transactions
-          </h3>
-
-          {lastThree.length === 0 ? (
-            <p className="text-sm text-slate-400">
-              No recent transactions
-            </p>
-          ) : (
-            <ul className="space-y-2 text-sm">
-              {lastThree.map((tx, index) => (
-                <li
-                  key={index}
-                  className="flex justify-between text-slate-700"
-                >
-                  <span>
-                    {tx.type}
-                  </span>
-                  <span
-                    className={
-                      tx.amount > 0
-                        ? "text-emerald-600 font-semibold"
-                        : "text-red-500 font-semibold"
-                    }
-                  >
-                    {tx.amount > 0 ? "+" : ""}
-                    {tx.amount.toLocaleString()} {tx.currency || currency}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
         </div>
       </div>
 
@@ -219,12 +129,14 @@ export default function ATMHome() {
           <div className="flex flex-col gap-6">
             <div className="bg-gray-800 p-4 rounded-xl shadow-inner border-4 border-gray-700">
               <div className="flex">
+                {/* LEFT BUTTONS */}
                 <div className="grid grid-rows-4 py-1 h-[340px] pr-2">
                   {leftLabels.map((lbl, i) => (
                     <BezelButton key={i} side="left" onClick={leftActions[i]} disabled={!leftActions[i]} />
                   ))}
                 </div>
 
+                {/* SCREEN DISPLAY */}
                 <div className="w-[480px] h-[340px] bg-slate-900 rounded border-4 border-black relative overflow-hidden">
                   <div className="absolute left-0 top-0 h-full flex flex-col justify-between py-6 px-2 w-1/3 pointer-events-none z-20">
                     {leftLabels.map((label, i) => (
@@ -261,6 +173,7 @@ export default function ATMHome() {
                   </div>
                 </div>
 
+                {/* RIGHT BUTTONS */}
                 <div className="grid grid-rows-4 py-1 h-[340px] pl-2">
                   {rightLabels.map((lbl, i) => (
                     <BezelButton key={i} side="right" onClick={rightActions[i]} disabled={!rightActions[i]} />
@@ -269,8 +182,10 @@ export default function ATMHome() {
               </div>
             </div>
 
+            {/* NEW: CASH DISPENSER (Now Under the Screen) */}
             <div className="bg-gray-200 p-6 rounded-xl border border-gray-400 shadow-inner flex flex-col items-center">
               <div className="w-full max-w-[400px] h-14 bg-gradient-to-b from-gray-900 to-gray-800 rounded-md border-b-2 border-gray-600 flex items-center justify-center relative overflow-hidden shadow-2xl">
+                {/* Long horizontal slot for cash */}
                 <div className="w-[85%] h-3 bg-black rounded-full shadow-[inset_0_4px_8px_rgba(0,0,0,0.8)]" />
                 <div className="absolute top-0 left-0 w-full h-px bg-white/10" />
               </div>
@@ -296,10 +211,9 @@ export default function ATMHome() {
               </div>
             </div>
 
-             {/* UPDATED RECEIPT SLOT SIZE - TEXT REMOVED */}
-             <div className="bg-gray-200 p-3 rounded-lg border border-gray-400 shadow-inner flex flex-col items-center justify-center h-32">
-                <div className="w-3/4 h-1.5 bg-gray-900 rounded-full mb-2 border-b border-white/10 shadow-inner" />
-                <span className="text-[11px] text-gray-500 font-black uppercase tracking-widest">Receipt</span>
+             <div className="bg-gray-200 p-3 rounded-lg border border-gray-400 shadow-inner flex flex-col items-center">
+                <div className="w-3/4 h-1 bg-gray-800 rounded-full mb-1 border-b border-white/20" />
+                <span className="text-[10px] text-gray-400 font-bold uppercase">Receipt</span>
             </div>
           </div>
 

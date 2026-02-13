@@ -1,8 +1,8 @@
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
 import bankifyLogo from "../../assets/BankifyLogo.png";
 
-/* ---------- HARDWARE UI COMPONENTS (Shared) ---------- */
+/* ---------- SHARED HARDWARE UI COMPONENTS ---------- */
 
 const BezelButton = ({ onClick, disabled, side }) => (
   <button
@@ -11,116 +11,45 @@ const BezelButton = ({ onClick, disabled, side }) => (
     className={`
       relative w-12 h-10 transition-all duration-100 ease-out z-20
       flex items-center justify-center
-      ${disabled 
-        ? "opacity-50 cursor-not-allowed" 
-        : "active:scale-95 active:brightness-90 cursor-pointer"}
+      ${disabled ? "opacity-50 cursor-not-allowed" : "active:scale-95 active:brightness-90 cursor-pointer"}
     `}
   >
-    <div className={`
-      h-full w-full rounded shadow-md border-b-4 border-r-2 border-gray-600
-      bg-gradient-to-br from-gray-200 via-gray-300 to-gray-400
-      ${disabled ? "bg-gray-400" : ""}
-    `}></div>
-
-    <div className={`
-      absolute top-1/2 -translate-y-1/2 h-1.5 w-4 bg-gray-500 z-[-1]
-      ${side === "left" ? "-right-3" : "-left-3"}
-      shadow-sm
-    `} />
+    <div className={`h-full w-full rounded shadow-md border-b-4 border-r-2 border-gray-600 bg-gradient-to-br from-gray-200 via-gray-300 to-gray-400 ${disabled ? "bg-gray-400" : ""}`}></div>
+    <div className={`absolute top-1/2 -translate-y-1/2 h-1.5 w-4 bg-gray-500 z-[-1] ${side === "left" ? "-right-3" : "-left-3"} shadow-sm`} />
   </button>
 );
 
-const KeyButton = ({ label, color, span = 1, onClick }) => {
+const KeyButton = ({ label, color, onClick }) => {
   let bgGradient = "from-gray-100 to-gray-300";
   let borderColor = "border-gray-400";
   let textColor = "text-gray-800";
-  let hoverColor = "hover:brightness-110";
-
-  if (color === "red") {
-    bgGradient = "from-red-600 to-red-800";
-    borderColor = "border-red-900";
-    textColor = "text-white";
-  } else if (color === "yellow") {
-    bgGradient = "from-yellow-400 to-yellow-600";
-    borderColor = "border-yellow-800";
-    textColor = "text-black";
-  } else if (color === "green") {
-    bgGradient = "from-green-600 to-green-800";
-    borderColor = "border-green-900";
-    textColor = "text-white";
-  }
-
-  const fontSize = label.length > 1 ? "text-[10px] font-bold tracking-wider" : "text-xl font-bold";
+  if (color === "red") { bgGradient = "from-red-600 to-red-800"; borderColor = "border-red-900"; textColor = "text-white"; } 
+  else if (color === "yellow") { bgGradient = "from-yellow-400 to-yellow-600"; borderColor = "border-yellow-800"; textColor = "text-black"; } 
+  else if (color === "green") { bgGradient = "from-green-600 to-green-800"; borderColor = "border-green-900"; textColor = "text-white"; }
 
   return (
-    <div className={`col-span-${span} relative active:top-[2px] transition-all`} onClick={onClick}>
-      <div className={`h-12 rounded-md border-b-4 border-r-2 ${borderColor} bg-gradient-to-br ${bgGradient} ${hoverColor} shadow-sm flex items-center justify-center ${fontSize} ${textColor} cursor-pointer select-none`}>
+    <div className="relative active:translate-y-[2px] transition-all" onClick={onClick}>
+      <div className={`h-12 w-full rounded-md border-b-4 border-r-2 ${borderColor} bg-gradient-to-br ${bgGradient} shadow-md flex items-center justify-center font-extrabold cursor-pointer select-none ${textColor} ${label.length > 1 ? "text-[10px] tracking-tighter" : "text-xl"}`}>
         {label}
       </div>
     </div>
   );
 };
 
-/* ---------- HISTORY PAGE COMPONENT ---------- */
-
 export default function ATMHistory() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const [transactions, setTransactions] = useState([]);
 
-  // Handle Exit (Consistent with Home logic)
-  const handleExit = () => {
-    const loginMethod = localStorage.getItem("login_method");
-    if (loginMethod === "CARD") {
-      alert("PLEASE TAKE YOUR CARD");
-    }
-    localStorage.removeItem("login_method");
-    navigate("/atm-login");
-  };
-
-  // Get only the last 3 transactions
-  const transactions = (user?.transactions || [
-    { id: 1, type: "WITHDRAW", amount: 200, date: "2024-05-10" },
-    { id: 2, type: "DEPOSIT", amount: 500, date: "2024-05-08" },
-    { id: 3, type: "TRANSFER", amount: 150, date: "2024-05-05" },
-    { id: 4, type: "WITHDRAW", amount: 40, date: "2024-05-01" },
-  ]).slice(0, 3); // Ensures only 3 items show
-
-  const leftLabels = ["", "", "", "Back"];
-  const leftActions = [null, null, null, () => navigate("/atm")];
-
-  const rightLabels = ["", "", "", "Exit"];
-  const rightActions = [null, null, null, handleExit];
-
-  const renderCenterScreen = () => {
-    return (
-      <div className="flex flex-col h-full w-full p-6">
-        <div className="border-b border-cyan-900/50 pb-2 mb-4 flex justify-between items-center text-cyan-600 font-mono text-[10px]">
-          <span>LAST 3 TRANSACTIONS</span>
-          <span>TERM: #8842</span>
-        </div>
-
-        <div className="flex-1 space-y-3">
-          {transactions.map((tx) => (
-            <div key={tx.id} className="flex justify-between items-center bg-slate-800/40 p-3 rounded border-l-4 border-cyan-500 shadow-sm">
-              <div>
-                <p className="text-white text-xs font-bold uppercase tracking-widest">{tx.type}</p>
-                <p className="text-slate-500 text-[9px] font-mono">{tx.date}</p>
-              </div>
-              <p className={`font-mono text-sm font-bold ${tx.type === 'DEPOSIT' ? 'text-green-400' : 'text-red-400'}`}>
-                {tx.type === 'DEPOSIT' ? '+' : '-'}${tx.amount.toFixed(2)}
-              </p>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
+  useEffect(() => {
+    const stored = JSON.parse(localStorage.getItem("atm_transactions")) || [];
+    // Only display the 3 most recent transactions
+    setTransactions(stored.slice(0, 3));
+  }, []);
 
   return (
     <div className="min-h-screen w-full bg-slate-200 flex flex-col items-center justify-center p-4">
-      
       {/* ATM HEADER */}
-      <div className="bg-slate-800 w-full max-w-5xl rounded-t-2xl p-4 shadow-2xl border-b-8 border-slate-900 flex justify-between items-center">
+      <div className="bg-slate-800 w-full max-w-5xl rounded-t-2xl p-4 border-b-8 border-slate-900 flex justify-between items-center shadow-2xl">
         <div className="flex items-center gap-3">
           <img src={bankifyLogo} alt="Bankify" className="w-8 h-8" />
           <h1 className="text-2xl text-white font-bold">Bankify</h1>
@@ -131,266 +60,92 @@ export default function ATMHistory() {
       <div className="bg-gradient-to-b from-gray-300 to-gray-400 w-full max-w-5xl p-6 rounded-b-2xl shadow-2xl border-x-8 border-b-8 border-gray-500">
         <div className="flex flex-col lg:flex-row gap-8 items-start justify-center">
 
-          {/* LEFT UNIT: SCREEN + DISPENSER */}
+          {/* LEFT UNIT */}
           <div className="flex flex-col gap-6">
             <div className="bg-gray-800 p-4 rounded-xl shadow-inner border-4 border-gray-700">
               <div className="flex">
                 <div className="grid grid-rows-4 py-1 h-[340px] pr-2">
-                  {leftLabels.map((lbl, i) => <BezelButton key={i} side="left" onClick={leftActions[i]} disabled={!leftActions[i]} />)}
+                  <BezelButton side="left" disabled /><BezelButton side="left" disabled /><BezelButton side="left" disabled />
+                  <BezelButton side="left" onClick={() => navigate("/atm")} />
                 </div>
 
+                {/* SCREEN DISPLAY */}
                 <div className="w-[480px] h-[340px] bg-slate-900 rounded border-4 border-black relative overflow-hidden shadow-[inset_0_0_40px_rgba(0,0,0,0.9)]">
-                  {/* Overlay Labels */}
-                  <div className="absolute left-0 top-0 h-full flex flex-col justify-between py-6 px-2 w-1/3 pointer-events-none z-20">
-                    {leftLabels.map((label, i) => (
-                      <div key={i} className="h-10 flex items-center justify-start">
-                        {label && (
-                          <div className="flex items-center gap-1">
-                            <span className="text-cyan-400 font-bold">&lt;</span>
-                            <span className="bg-slate-800/90 text-white text-[10px] px-2 py-1.5 rounded border-l-2 border-cyan-500 shadow-lg min-w-[70px] text-center uppercase">
-                              {label}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    ))}
+                  <div className="absolute left-0 bottom-6 px-2 z-20">
+                    <div className="h-10 flex items-center gap-1">
+                        <span className="text-cyan-400 font-bold">&lt;</span>
+                        <span className="bg-slate-800/90 text-white text-[10px] px-2 py-1.5 rounded border-l-2 border-cyan-500 min-w-[60px] text-center uppercase">Back</span>
+                    </div>
                   </div>
 
-                  <div className="absolute right-0 top-0 h-full flex flex-col justify-between py-6 px-2 w-1/3 pointer-events-none items-end z-20">
-                    {rightLabels.map((label, i) => (
-                      <div key={i} className="h-10 flex items-center justify-end">
-                        {label && (
-                           <div className="flex items-center gap-1">
-                            <span className={`bg-slate-800/90 text-white text-[10px] px-2 py-1.5 rounded border-r-2 shadow-lg text-center min-w-[70px] uppercase ${label === 'Exit' ? 'border-red-500' : 'border-cyan-500'}`}>
-                              {label}
-                            </span>
-                            <span className="text-cyan-400 font-bold">&gt;</span>
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="w-full h-full flex items-center justify-center relative z-10">
-                     {renderCenterScreen()}
+                  <div className="w-full h-full p-6 font-mono text-white flex flex-col">
+                    <h2 className="text-cyan-500 text-xs font-bold uppercase mb-4 tracking-widest text-center border-b border-cyan-900/50 pb-2">Last 3 Transactions</h2>
+                    
+                    <div className="flex-1 overflow-hidden pr-2">
+                      <table className="w-full text-[10px] uppercase">
+                        <tbody className="divide-y divide-slate-800">
+                          {transactions.length === 0 ? (
+                            <tr><td className="py-12 text-center text-slate-600 tracking-widest">No Records Found</td></tr>
+                          ) : (
+                            transactions.map((t, i) => (
+                              <tr key={i} className="hover:bg-slate-800/50 transition-colors">
+                                <td className={`py-5 ${t.amount > 0 ? 'text-emerald-500' : 'text-red-400'}`}>
+                                  {t.type} <br/>
+                                  <span className="text-[8px] text-slate-500">{new Date(t.date).toLocaleDateString()}</span>
+                                </td>
+                                <td className="py-5 text-right font-bold text-lg tracking-tighter">
+                                  {t.amount > 0 ? '+' : ''}{t.amount.toLocaleString()} ฿
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 </div>
 
                 <div className="grid grid-rows-4 py-1 h-[340px] pl-2">
-                  {rightLabels.map((lbl, i) => <BezelButton key={i} side="right" onClick={rightActions[i]} disabled={!rightActions[i]} />)}
+                  <BezelButton side="right" disabled /><BezelButton side="right" disabled /><BezelButton side="right" disabled /><BezelButton side="right" disabled />
                 </div>
               </div>
             </div>
 
             <div className="bg-gray-200 p-6 rounded-xl border border-gray-400 shadow-inner flex flex-col items-center">
-              <div className="w-full max-w-[400px] h-14 bg-gradient-to-b from-gray-900 to-gray-800 rounded-md border-b-2 border-gray-600 flex items-center justify-center relative overflow-hidden shadow-2xl">
+              <div className="w-full max-w-[400px] h-16 bg-gradient-to-b from-gray-900 to-gray-800 rounded-md border-b-2 border-gray-600 flex items-center justify-center relative shadow-2xl">
                 <div className="w-[85%] h-3 bg-black rounded-full shadow-[inset_0_4px_8px_rgba(0,0,0,0.8)]" />
               </div>
-              <div className="text-[12px] text-gray-500 font-extrabold uppercase mt-3 tracking-widest">Cash Dispenser</div>
+              <div className="text-[12px] text-gray-500 font-extrabold uppercase mt-3 tracking-widest">Cash Slot</div>
             </div>
           </div>
 
-          {/* RIGHT UNIT: KEYPAD + RECEIPT */}
+          {/* RIGHT UNIT */}
           <div className="flex flex-col gap-6 w-72">
             <div className="bg-gray-200 p-4 rounded-xl border border-gray-400 shadow-inner">
-              <div className="h-10 bg-gray-900 rounded flex items-center justify-center border-b border-gray-700">
+              <div className="h-10 bg-gray-900 rounded relative flex items-center justify-center">
                 <div className="w-16 h-1 bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.8)] animate-pulse" />
               </div>
-              <div className="text-[10px] text-gray-500 font-bold uppercase mt-2 text-center">Card Inserted</div>
-import { ArrowLeft, ArrowDownLeft, ArrowUpRight, Repeat, Search, Filter } from "lucide-react";
-import { useEffect, useState } from "react";
-import { transactionService } from "../../api";
-import { useAuth } from "../../context/AuthContext";
-import StatusBadge from "../../components/common/StatusBadge";
-
-export default function ATMHistory() {
-    const navigate = useNavigate();
-    const { user } = useAuth();
-    const currency = user?.currency || "THB";
-    const [transactions, setTransactions] = useState([]);
-    const [filter, setFilter] = useState("ALL"); // ALL, SUCCESS, PENDING, FAILED
-
-    useEffect(() => {
-        if (user?.id) {
-            transactionService.getTransactionsByAccount(user.id)
-                .then(data => {
-                    const list = Array.isArray(data) ? data : (data.content || []);
-                    setTransactions(list);
-                })
-                .catch(err => console.error(err));
-        }
-    }, [user]);
-
-    // Helper to get styles based on type
-    const getTypeStyles = (type) => {
-        switch (type?.toLowerCase()) {
-            case "deposit":
-                return {
-                    icon: <ArrowDownLeft size={16} />,
-                    color: "text-emerald-600 bg-emerald-100",
-                    label: "Incoming"
-                };
-            case "withdraw":
-            case "withdrawal":
-                return {
-                    icon: <ArrowUpRight size={16} />,
-                    color: "text-red-600 bg-red-100",
-                    label: "Outgoing"
-                };
-            case "transfer":
-                return {
-                    icon: <Repeat size={16} />,
-                    color: "text-blue-600 bg-blue-100",
-                    label: "Transfer"
-                };
-            default:
-                return { icon: null, color: "text-slate-600 bg-slate-100" };
-        }
-    };
-
-    const filteredTransactions = transactions.filter(t => {
-        if (filter === "ALL") return true;
-        return t.status?.toUpperCase() === filter;
-    });
-
-    return (
-        <div className="min-h-screen bg-slate-100 flex flex-col items-center relative font-sans text-slate-800">
-
-            {/* Background Decorator */}
-            <div className="absolute top-0 left-0 w-full h-96 bg-gradient-to-b from-blue-100/50 to-transparent -z-10"></div>
-
-            {/* Header Container */}
-            <div className="w-full max-w-3xl px-6 py-8">
-
-                {/* Nav Bar */}
-                <div className="flex items-center justify-between mb-8">
-                    <button
-                        onClick={() => navigate(-1)}
-                        className="group flex items-center gap-2 text-slate-500 hover:text-slate-900 transition-colors"
-                    >
-                        <div className="p-2 bg-white rounded-full shadow-sm group-hover:shadow-md transition-all">
-                            <ArrowLeft size={20} />
-                        </div>
-                        <span className="font-medium">Back to ATM</span>
-                    </button>
-
-                    {/* User Profile Tiny Pill */}
-                    <div className="hidden md:flex items-center gap-2 bg-white/60 px-3 py-1.5 rounded-full border border-white/50 shadow-sm backdrop-blur-sm">
-                        <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold">U</div>
-                        <span className="text-xs font-semibold text-slate-600">{user?.name}</span>
-                    </div>
-                </div>
-
-                {/* Main Card */}
-                <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-xl border border-white/50 overflow-hidden">
-
-                    {/* Card Header */}
-                    <div className="p-6 md:p-8 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                        <div>
-                            <h1 className="text-2xl font-bold text-slate-900">Transaction History</h1>
-                            <p className="text-slate-500 text-sm mt-1">Review your recent ATM activity.</p>
-                        </div>
-
-                        {/* Search/Filter Actions */}
-                        <div className="flex gap-2">
-                            <div className="relative">
-                                <select
-                                    value={filter}
-                                    onChange={(e) => setFilter(e.target.value)}
-                                    className="appearance-none pl-4 pr-10 py-2.5 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-600 hover:border-slate-300 focus:ring-2 focus:ring-blue-500 outline-none cursor-pointer"
-                                >
-                                    <option value="ALL">All Status</option>
-                                    <option value="SUCCESS">Success</option>
-                                    <option value="PENDING">Pending</option>
-                                    <option value="FAILED">Failed</option>
-                                </select>
-                                <Filter size={16} className="absolute right-3 top-3 text-slate-400 pointer-events-none" />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Table Area */}
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
-                            <thead>
-                                <tr className="bg-slate-50/50 text-slate-400 text-xs uppercase tracking-wider font-semibold border-b border-slate-100">
-                                    <th className="px-6 py-4">Transaction</th>
-                                    <th className="px-6 py-4">Type</th>
-                                    <th className="px-6 py-4">Date</th>
-                                    <th className="px-6 py-4">Status</th>
-                                    <th className="px-6 py-4 text-right">Amount</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
-                                {filteredTransactions.length > 0 ? filteredTransactions.map((t) => {
-                                    const style = getTypeStyles(t.type);
-                                    const isPositive = t.amount > 0 || t.type === 'DEPOSIT'; // Simple check
-
-                                    return (
-                                        <tr key={t.id} className="hover:bg-blue-50/50 transition-colors group cursor-default">
-                                            <td className="px-6 py-4">
-                                                <div className="flex items-center gap-3">
-                                                    {/* Icon Badge */}
-                                                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${style.color}`}>
-                                                        {style.icon}
-                                                    </div>
-                                                    <div>
-                                                        <div className="font-semibold text-slate-900 capitalize">{t.type.toLowerCase()}</div>
-                                                        <div className="text-xs text-slate-400">ID: {t.id}</div>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium border ${style.color.replace('text-', 'border-').replace('bg-', 'bg-opacity-10 ')}`}>
-                                                    {t.type.toUpperCase()}
-                                                </span>
-                                            </td>
-                                            <td className="px-6 py-4 text-sm text-slate-500 font-medium">
-                                                {new Date(t.createdAt || t.date).toLocaleDateString()}
-                                            </td>
-                                            <td className="px-6 py-4">
-                                                <StatusBadge status={t.status} />
-                                            </td>
-                                            <td className={`px-6 py-4 text-right font-bold text-base ${isPositive ? 'text-emerald-600' : 'text-slate-900'}`}>
-                                                {isPositive ? '+' : ''}{t.amount.toLocaleString()} {t.currency || currency}
-                                            </td>
-                                        </tr>
-                                    );
-                                }) : (
-                                    <tr>
-                                        <td colspan="5" className="px-6 py-12 text-center text-slate-400 italic">
-                                            No transactions found matching your filter.
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    {/* Pagination / Footer */}
-                    <div className="p-6 border-t border-slate-100 text-center">
-                        <button className="text-sm text-slate-500 hover:text-blue-600 font-medium transition-colors">
-                            Load More Transactions
-                        </button>
-                    </div>
-                </div>
+              <div className="text-[10px] text-gray-500 font-bold uppercase mt-2 text-center tracking-tighter">Card Inserted</div>
             </div>
 
-            <div className="bg-gray-300 p-4 rounded-xl border shadow-xl">
+            <div className="bg-gray-300 p-4 rounded-xl border-2 border-gray-400 shadow-xl">
               <div className="grid grid-cols-4 gap-2">
-                <KeyButton label="1" /><KeyButton label="2" /><KeyButton label="3" /><KeyButton label="CANCEL" color="red" onClick={handleExit} />
+                <KeyButton label="1" /><KeyButton label="2" /><KeyButton label="3" />
+                <KeyButton label="CANCEL" color="red" onClick={() => navigate("/atm")} />
                 <KeyButton label="4" /><KeyButton label="5" /><KeyButton label="6" /><KeyButton label="CLEAR" color="yellow" />
                 <KeyButton label="7" /><KeyButton label="8" /><KeyButton label="9" /><KeyButton label="ENTER" color="green" />
-                <div /><KeyButton label="0" /><div /><div />
+                <div className="invisible" /><KeyButton label="0" /><div className="invisible" /><div className="invisible" />
               </div>
             </div>
 
-             <div className="bg-gray-200 p-3 rounded-lg border border-gray-400 shadow-inner flex flex-col items-center justify-center h-32">
-                <div className="w-3/4 h-1.5 bg-gray-900 rounded-full mb-2 border-b border-white/10 shadow-inner" />
-                <span className="text-[11px] text-gray-500 font-black uppercase tracking-widest">Receipt</span>
+            <div className="bg-gray-200 p-4 rounded-lg border border-gray-400 shadow-inner flex flex-col items-center">
+              <div className="w-3/4 h-1 bg-gray-800 rounded-full mb-1" />
+              <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Receipt Slot</span>
             </div>
           </div>
 
         </div>
-    );
+      </div>
+    </div>
+  );
 }
