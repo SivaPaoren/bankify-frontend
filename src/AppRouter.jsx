@@ -21,6 +21,7 @@ import ATMDeposit from "./pages/atm/ATMDeposit";
 import ATMWithdraw from "./pages/atm/ATMWithdraw";
 import ATMTransfer from "./pages/atm/ATMTransfer";
 import ATMHistory from "./pages/atm/History";
+import ATMBalance from "./pages/atm/Balance"; // Added this import
 import ATMLogin from "./pages/auth/ATMLogin";
 
 // Auth
@@ -33,8 +34,6 @@ export default function AppRouter() {
     return <div className="flex h-screen items-center justify-center bg-slate-50 text-slate-500">Loading Bankify...</div>;
   }
 
-  // Helper component to protect routes based on authentication and role
-  // Helper component to protect routes based on authentication and role
   const ProtectedRoute = ({ children, allowedRoles }) => {
     const location = useLocation();
 
@@ -46,7 +45,6 @@ export default function AppRouter() {
     }
 
     if (allowedRoles && !allowedRoles.includes(role)) {
-      // Redirect based on actual role if trying to access unauthorized area
       if (role === 'ADMIN') return <Navigate to="/admin" replace />;
       if (role === 'CLIENT') return <Navigate to="/client" replace />;
       if (role === 'USER') return <Navigate to="/atm" replace />;
@@ -107,6 +105,7 @@ export default function AppRouter() {
         <Route path="withdraw" element={<ATMWithdraw />} />
         <Route path="transfer" element={<ATMTransfer />} />
         <Route path="history" element={<ATMHistory />} />
+        <Route path="balance" element={<ATMBalance />} /> {/* Added this route */}
       </Route>
 
       {/* Default Fallback */}
