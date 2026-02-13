@@ -58,7 +58,7 @@ export const authService = {
             if (email.includes('admin') || email === 'admin@bankify.local') {
                 return {
                     token: 'mock-admin-token',
-                    user: { id: 1, email: email, role: 'ADMIN', name: 'Admin User' }
+                    user: { id: 1, email: email, role: 'ADMIN', name: 'Admin User', currency: 'THB' }
                 };
             }
 
@@ -66,14 +66,14 @@ export const authService = {
             if (email.includes('client') || email === 'client@bankify.local') {
                 return {
                     token: 'mock-client-token',
-                    user: { id: 2, email: email, role: 'CLIENT', name: 'Client User' }
+                    user: { id: 2, email: email, role: 'CLIENT', name: 'Client User', currency: 'THB' }
                 };
             }
 
             // Fallback for unknown users
             return {
                 token: 'mock-user-token',
-                user: { id: 3, email: email, role: 'USER', name: 'Demo User' }
+                user: { id: 3, email: email, role: 'USER', name: 'Demo User', currency: 'THB' }
             };
         }
     },
@@ -94,7 +94,8 @@ export const authService = {
                     email: 'atm-user@bankify.local',
                     bankId: bankId,
                     role: 'USER',
-                    name: 'ATM User'
+                    name: 'ATM User',
+                    currency: 'THB' // Default currency
                 }
             };
         }
@@ -208,7 +209,7 @@ export const transactionService = {
             return response.data;
         } catch (e) {
             console.warn("Mocking deposit");
-            return { id: 'tx_mock_dep', status: 'COMPLETED', amount, type: 'DEPOSIT' };
+            return { id: 'tx_mock_dep', status: 'SUCCESS', amount, type: 'DEPOSIT', currency: 'THB' };
         }
     },
 
@@ -226,7 +227,7 @@ export const transactionService = {
             return response.data;
         } catch (e) {
             console.warn("Mocking withdraw");
-            return { id: 'tx_mock_wdr', status: 'COMPLETED', amount, type: 'WITHDRAWAL' };
+            return { id: 'tx_mock_wdr', status: 'SUCCESS', amount, type: 'WITHDRAWAL', currency: 'THB' };
         }
     },
 
@@ -245,7 +246,7 @@ export const transactionService = {
             return response.data;
         } catch (e) {
             console.warn("Mocking transfer");
-            return { id: 'tx_mock_trf', status: 'COMPLETED', amount, type: 'TRANSFER' };
+            return { id: 'tx_mock_trf', status: 'PENDING', amount, type: 'TRANSFER', currency: 'THB' };
         }
     },
 
@@ -258,8 +259,10 @@ export const transactionService = {
         } catch (e) {
             return {
                 content: [
-                    { id: 'tx_1', type: 'DEPOSIT', amount: 1000, status: 'COMPLETED', createdAt: new Date().toISOString() },
-                    { id: 'tx_2', type: 'WITHDRAWAL', amount: 500, status: 'COMPLETED', createdAt: new Date().toISOString() }
+                    { id: 'tx_1', type: 'DEPOSIT', amount: 1000, status: 'SUCCESS', currency: 'THB', createdAt: new Date().toISOString() },
+                    { id: 'tx_2', type: 'WITHDRAWAL', amount: 500, status: 'SUCCESS', currency: 'THB', createdAt: new Date().toISOString() },
+                    { id: 'tx_3', type: 'TRANSFER', amount: 250, status: 'PENDING', currency: 'THB', createdAt: new Date(Date.now() - 86400000).toISOString() },
+                    { id: 'tx_4', type: 'TRANSFER', amount: 100, status: 'FAILED', currency: 'THB', createdAt: new Date(Date.now() - 172800000).toISOString() }
                 ]
             };
         }
@@ -271,7 +274,7 @@ export const transactionService = {
             const response = await api.get(`/transactions/${transactionId}`);
             return response.data;
         } catch (e) {
-            return { id: transactionId, type: 'DEPOSIT', amount: 1000, status: 'COMPLETED' };
+            return { id: transactionId, type: 'DEPOSIT', amount: 1000, status: 'SUCCESS', currency: 'THB' };
         }
 
     }

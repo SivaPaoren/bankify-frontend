@@ -38,7 +38,7 @@ export default function ClientDashboard() {
                         <span className="text-xs font-bold bg-black/10 px-2 py-1 rounded text-white/90">Main Account</span>
                     </div>
                     <p className="text-sm text-emerald-50 mb-1">Total Balance</p>
-                    <h3 className="text-3xl font-bold tracking-tight">฿ --.--</h3>
+                    <h3 className="text-3xl font-bold tracking-tight">{user?.currency || 'THB'} --.--</h3>
                 </div>
 
                 <div className="md:col-span-2 bg-white rounded-2xl p-6 shadow-sm border border-slate-200">

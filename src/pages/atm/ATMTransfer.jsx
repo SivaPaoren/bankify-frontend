@@ -67,6 +67,14 @@ const KeyButton = ({ label, color, onClick }) => {
 export default function ATMTransfer() {
   const navigate = useNavigate();
   const [step, setStep] = useState("ACCOUNT"); 
+import { ArrowLeft, Check, Loader2 } from "lucide-react";
+import { useAuth } from "../../context/AuthContext";
+
+export default function ATMTransfer() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const currency = user?.currency || "THB";
+  const [amount, setAmount] = useState("");
   const [targetAccount, setTargetAccount] = useState("");
   const [amount, setAmount] = useState("");
   const [error, setError] = useState("");
@@ -76,6 +84,8 @@ export default function ATMTransfer() {
     if (step === "ACCOUNT" && targetAccount.length < 12) setTargetAccount(prev => prev + num);
     if (step === "AMOUNT" && amount.length < 7) setAmount(prev => prev + num);
   };
+  const date = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  const userName = user?.name || "User Name";
 
   const handleClear = () => {
     if (step === "ACCOUNT") setTargetAccount("");
@@ -106,6 +116,24 @@ export default function ATMTransfer() {
       const tx = { type: "Transfer", amount: -Number(amount), targetAccount, date: new Date().toISOString() };
       const existing = JSON.parse(localStorage.getItem("atm_transactions")) || [];
       localStorage.setItem("atm_transactions", JSON.stringify([tx, ...existing]));
+      // Save transaction (mock)
+      const tx = {
+        type: "Transfer",
+        amount: -Number(amount),
+        currency: currency,
+        status: "PENDING", // Transfers are pending
+        date: new Date().toISOString(),
+      };
+
+      const existing =
+        JSON.parse(localStorage.getItem("atm_transactions")) || [];
+
+      localStorage.setItem(
+        "atm_transactions",
+        JSON.stringify([tx, ...existing])
+      );
+
+      setIsLoading(false);
       navigate("/atm");
     }, 2000);
   };
@@ -237,6 +265,61 @@ export default function ATMTransfer() {
           </div>
 
         </div>
+        <form onSubmit={handleTransfer} className="space-y-6">
+
+          {/* Target Account */}
+          <input
+            type="text"
+            placeholder="Target Account Number"
+            value={targetAccount}
+            onChange={(e) => setTargetAccount(e.target.value)}
+            className="w-full p-4 rounded-xl bg-slate-100 outline-none text-slate-800"
+          />
+
+          {/* Amount — NO spinner */}
+          <div className="relative">
+            <input
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              placeholder="Amount"
+              value={amount}
+              onChange={(e) => {
+                const val = e.target.value.replace(/\D/g, "");
+                setAmount(val);
+              }}
+              className="w-full p-4 rounded-xl bg-slate-100 outline-none text-slate-800 text-center font-bold text-2xl"
+            />
+            {amount && (
+              <span className="absolute right-6 top-1/2 -translate-y-1/2 text-lg font-bold text-slate-400">
+                {currency}
+              </span>
+            )}
+          </div>
+
+          {/* Submit */}
+          <button
+            type="submit"
+            disabled={!targetAccount || !amount || Number(amount) < 1 || isLoading}
+            className={`w-full py-4 rounded-2xl font-bold text-white transition
+              ${isLoading
+                ? "bg-slate-400 cursor-not-allowed"
+                : "bg-blue-600 hover:bg-blue-700"
+              }`}
+          >
+            {isLoading ? (
+              <span className="flex justify-center gap-2 items-center">
+                <Loader2 className="animate-spin" size={20} />
+                Processing
+              </span>
+            ) : (
+              <span className="flex justify-center gap-2 items-center">
+                <Check size={20} />
+                Confirm Transfer
+              </span>
+            )}
+          </button>
+        </form>
       </div>
     </div>
   );

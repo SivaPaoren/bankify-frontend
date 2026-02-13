@@ -39,6 +39,13 @@ const KeyButton = ({ label, color, onClick }) => {
 export default function ATMDeposit() {
   const navigate = useNavigate();
   const [step, setStep] = useState("AMOUNT"); 
+import { ArrowLeft, Check, Loader2 } from "lucide-react";
+import { useAuth } from "../../context/AuthContext";
+
+export default function ATMDeposit() {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const currency = user?.currency || "THB";
   const [amount, setAmount] = useState("");
   const [error, setError] = useState("");
 
@@ -46,6 +53,8 @@ export default function ATMDeposit() {
     setError("");
     if (amount.length < 7) setAmount(prev => prev + num);
   };
+  const date = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+  const userName = user?.name || "User Name";
 
   const handleClear = () => { setAmount(""); setError(""); };
 
@@ -71,6 +80,30 @@ export default function ATMDeposit() {
       const existing = JSON.parse(localStorage.getItem("atm_transactions")) || [];
       localStorage.setItem("atm_transactions", JSON.stringify([tx, ...existing]));
       
+      // Update balance
+      const currentBalance =
+        Number(localStorage.getItem("atm_balance")) || 0;
+      const newBalance = currentBalance + Number(amount);
+      localStorage.setItem("atm_balance", newBalance);
+
+      // Save transaction
+      const tx = {
+        type: "Deposit",
+        amount: Number(amount),
+        currency: currency,
+        status: "SUCCESS",
+        date: new Date().toISOString(),
+      };
+
+      const existing =
+        JSON.parse(localStorage.getItem("atm_transactions")) || [];
+
+      localStorage.setItem(
+        "atm_transactions",
+        JSON.stringify([tx, ...existing])
+      );
+
+      setIsLoading(false);
       navigate("/atm");
     }, 2800);
   };
@@ -236,6 +269,58 @@ export default function ATMDeposit() {
             </div>
           </div>
         </div>
+        <form onSubmit={handleDeposit} className="space-y-6">
+
+          {/* Amount Input */}
+          <div className="relative">
+            <input
+              type="text"
+              inputMode="numeric"
+              placeholder="Amount"
+              value={amount}
+              onChange={(e) => {
+                setAmount(e.target.value.replace(/\D/g, ""));
+                setError("");
+              }}
+              className="w-full p-4 rounded-xl bg-slate-100 outline-none text-center text-4xl font-bold text-slate-800 placeholder:text-slate-300"
+            />
+            {amount && (
+              <span className="absolute right-6 top-1/2 -translate-y-1/2 text-xl font-bold text-slate-400">
+                {currency}
+              </span>
+            )}
+          </div>
+
+          {/* Error Message */}
+          {error && (
+            <p className="text-sm text-red-500">
+              {error}
+            </p>
+          )}
+
+          {/* Submit */}
+          <button
+            type="submit"
+            disabled={isLoading}
+            className={`w-full py-4 rounded-2xl font-bold text-white transition
+              ${isLoading
+                ? "bg-slate-400 cursor-not-allowed"
+                : "bg-blue-600 hover:bg-blue-700"
+              }`}
+          >
+            {isLoading ? (
+              <span className="flex justify-center gap-2 items-center">
+                <Loader2 className="animate-spin" size={20} />
+                Processing...
+              </span>
+            ) : (
+              <span className="flex justify-center gap-2 items-center">
+                <Check size={20} />
+                Confirm Deposit
+              </span>
+            )}
+          </button>
+        </form>
       </div>
     </div>
   );

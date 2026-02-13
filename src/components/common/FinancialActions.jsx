@@ -4,7 +4,12 @@ import Table from '../common/Table';
 import StatusBadge from '../common/StatusBadge';
 import { ArrowRightLeft, Download, Upload, Landmark, CheckCircle, X } from 'lucide-react';
 
+import { useAuth } from '../../context/AuthContext';
+
 export default function FinancialActions({ title, subtitle, accountId }) {
+  const { user } = useAuth();
+  const currency = user?.currency || 'THB';
+
   const [activeTab, setActiveTab] = useState('deposit');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
@@ -63,7 +68,7 @@ export default function FinancialActions({ title, subtitle, accountId }) {
   const columns = [
     { key: 'createdAt', label: 'Date', render: (row) => new Date(row.createdAt).toLocaleDateString() },
     { key: 'type', label: 'Type', render: (row) => <span className="font-semibold text-xs uppercase text-slate-500">{row.type}</span> },
-    { key: 'amount', label: 'Amount', render: (row) => <span className={row.type === 'DEPOSIT' || row.toAccountId === accountId ? 'text-emerald-600 font-bold' : 'text-slate-800'}>{row.amount} {row.currency || 'THB'}</span> },
+    { key: 'amount', label: 'Amount', render: (row) => <span className={row.type === 'DEPOSIT' || row.toAccountId === accountId ? 'text-emerald-600 font-bold' : 'text-slate-800'}>{row.amount} {row.currency || currency}</span> },
     { key: 'status', label: 'Status', render: (row) => <StatusBadge status={row.status} /> },
   ];
 
@@ -110,17 +115,18 @@ export default function FinancialActions({ title, subtitle, accountId }) {
                 )}
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Amount (THB)</label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase mb-1.5">Amount ({currency})</label>
                   <div className="relative">
-                    <span className="absolute left-3 top-3 text-slate-400 font-semibold">฿</span>
+                    <span className="absolute left-3 top-3 text-slate-400 font-semibold">{currency}</span>
                     <input
+
                       type="number"
                       min="0.01"
                       step="0.01"
                       required
                       value={amount}
                       onChange={(e) => setAmount(e.target.value)}
-                      className="w-full pl-8 pr-3 py-3 border border-slate-200 bg-slate-50 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 font-mono text-lg font-bold text-slate-800 outline-none transition"
+                      className="w-full pl-12 pr-3 py-3 border border-slate-200 bg-slate-50 rounded-xl focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 font-mono text-lg font-bold text-slate-800 outline-none transition"
                       placeholder="0.00"
                     />
                   </div>
