@@ -22,9 +22,14 @@ export default function CustomerManager() {
         setLoading(true);
         try {
             const data = await adminService.getCustomers();
-            setCustomers(data);
+            console.log("Fetched customers:", data);
+            // Filter to show only active customers
+            const activeCustomers = Array.isArray(data) ? data.filter(c => c.status === 'ACTIVE') : [];
+            console.log("Active customers:", activeCustomers);
+            setCustomers(activeCustomers);
         } catch (error) {
             console.error("Failed to fetch customers", error);
+            setCustomers([]);
         } finally {
             setLoading(false);
         }
@@ -44,12 +49,33 @@ export default function CustomerManager() {
 
     const handleDelete = async () => {
         if (!selectedCustomer) return;
+        console.log("Disabling customer:", selectedCustomer.id);
         try {
-            await adminService.deleteCustomer(selectedCustomer.id);
+            const result = await adminService.deleteCustomer(selectedCustomer.id);
+            console.log("Disable result:", result);
             setShowDeleteModal(false);
-            fetchCustomers();
+            setSelectedCustomer(null);
+
+            // Force refresh the customer list
+            console.log("Refreshing customer list...");
+            await fetchCustomers();
+
+            alert(`Customer "${selectedCustomer.firstName} ${selectedCustomer.lastName}" has been disabled.`);
         } catch (error) {
             console.error("Delete failed", error);
+            alert("Failed to disable customer. Please try again.");
+        }
+    };
+
+    const handleViewAccounts = async (customer) => {
+        setSelectedCustomer(customer);
+        setShowAccountsDrawer(true);
+        try {
+            const accounts = await adminService.getAccounts({ customerId: customer.id });
+            setCustomerAccounts(Array.isArray(accounts) ? accounts : []);
+        } catch (error) {
+            console.error("Failed to fetch customer accounts", error);
+            setCustomerAccounts([]);
         }
     };
 
@@ -141,9 +167,13 @@ export default function CustomerManager() {
                                         </td>
                                         <td className="px-6 py-4 text-center">
                                             <button
-                                                onClick={() => { setSelectedCustomer(c); setShowDeleteModal(true); }}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setSelectedCustomer(c);
+                                                    setShowDeleteModal(true);
+                                                }}
                                                 className="p-2 text-primary-400 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all"
-                                                title="Delete Customer"
+                                                title="Disable Customer"
                                             >
                                                 <Trash2 size={16} />
                                             </button>
@@ -246,10 +276,10 @@ export default function CustomerManager() {
                         <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-500/20">
                             <Trash2 size={32} className="text-red-500" />
                         </div>
-                        <h3 className="text-xl font-bold text-white mb-2">Delete Customer?</h3>
+                        <h3 className="text-xl font-bold text-white mb-2">Disable Customer?</h3>
                         <p className="text-primary-300 mb-6">
-                            Are you sure you want to delete <span className="text-white font-bold">{selectedCustomer?.firstName} {selectedCustomer?.lastName}</span>?
-                            This action cannot be undone and will remove all associated accounts.
+                            Are you sure you want to disable <span className="text-white font-bold">{selectedCustomer?.firstName} {selectedCustomer?.lastName}</span>?
+                            This will prevent them from accessing their accounts until re-enabled.
                         </p>
                         <div className="flex gap-3">
                             <button
@@ -262,7 +292,7 @@ export default function CustomerManager() {
                                 onClick={handleDelete}
                                 className="flex-1 px-4 py-3 bg-red-600 hover:bg-red-500 text-white rounded-xl font-bold transition-colors shadow-lg shadow-red-600/20"
                             >
-                                Delete
+                                Disable
                             </button>
                         </div>
                     </div>
@@ -297,7 +327,20 @@ export default function CustomerManager() {
                         </div>
 
                         <div className="flex-1 overflow-y-auto p-6 space-y-4">
-                            <h3 className="text-lg font-bold text-white mb-4">Bank Accounts ({customerAccounts.length})</h3>
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-lg font-bold text-white">Bank Accounts ({customerAccounts.length})</h3>
+                                <button
+                                    onClick={() => {
+                                        // Copy customer ID to clipboard for easy account creation
+                                        navigator.clipboard.writeText(selectedCustomer.id);
+                                        alert(`Customer ID copied! Go to Accounts tab to create a new account.\nCustomer ID: ${selectedCustomer.id}`);
+                                    }}
+                                    className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-bold rounded-xl transition-all flex items-center gap-2"
+                                >
+                                    <UserPlus size={16} />
+                                    Create Account
+                                </button>
+                            </div>
 
                             {customerAccounts.length > 0 ? (
                                 customerAccounts.map((account) => (

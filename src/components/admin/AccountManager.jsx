@@ -15,7 +15,8 @@ export default function AccountManager() {
         customerId: '',
         accountType: 'SAVINGS',
         initialDeposit: '',
-        currency: 'USD'
+        currency: 'USD',
+        pin: '123456'
     });
 
     useEffect(() => {
@@ -40,12 +41,10 @@ export default function AccountManager() {
             // 1. Create the account
             const accountData = {
                 customerId: newAccount.customerId,
-                type: newAccount.accountType, // Spec says "type", likely mapped from "accountType" select
-                currency: newAccount.currency
+                type: newAccount.accountType,
+                currency: newAccount.currency,
+                pin: newAccount.pin
             };
-
-            // Map SAVINGS/CHECKING to spec if needed, or pass as is. 
-            // The select values are SAVINGS/CHECKING/BUSINESS. The API usually expects these enums.
 
             const createdAccount = await adminService.createAccount(accountData);
 
@@ -61,11 +60,11 @@ export default function AccountManager() {
             }
 
             setShowCreateModal(false);
-            setNewAccount({ customerId: '', accountType: 'SAVINGS', initialDeposit: '', currency: 'USD' });
+            setNewAccount({ customerId: '', accountType: 'SAVINGS', initialDeposit: '', currency: 'USD', pin: '123456' });
             fetchAccounts();
         } catch (error) {
             console.error("Create account error", error);
-            alert("Failed to create account. ensure Customer ID is valid.");
+            alert("Failed to create account. Ensure Customer ID is valid.");
         }
     };
 
@@ -152,7 +151,12 @@ export default function AccountManager() {
                                             {account.customerName || `Customer #${account.customerId}`}
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className="px-2.5 py-1 rounded-lg bg-white/5 border border-white/5 text-xs font-bold text-primary-200 uppercase tracking-wider">
+                                            <span className={`px-2.5 py-1 rounded-lg border text-xs font-bold uppercase tracking-wider ${account.accountType === 'WALLET'
+                                                    ? 'bg-purple-500/10 text-purple-400 border-purple-500/20'
+                                                    : account.accountType === 'SAVINGS'
+                                                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                                                        : 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20'
+                                                }`}>
                                                 {account.accountType}
                                             </span>
                                         </td>
@@ -164,7 +168,9 @@ export default function AccountManager() {
                                         <td className="px-6 py-4 text-center">
                                             <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide border ${account.status === 'ACTIVE'
                                                 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                                                : 'bg-red-500/10 text-red-400 border-red-500/20'
+                                                : account.status === 'FROZEN'
+                                                    ? 'bg-blue-500/10 text-blue-400 border-blue-500/20'
+                                                    : 'bg-red-500/10 text-red-400 border-red-500/20'
                                                 }`}>
                                                 {account.status}
                                             </span>
@@ -215,10 +221,11 @@ export default function AccountManager() {
                                         className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-emerald-500 transition-all appearance-none"
                                         value={newAccount.accountType}
                                         onChange={e => setNewAccount({ ...newAccount, accountType: e.target.value })}
+                                        required
                                     >
                                         <option value="SAVINGS">Savings</option>
-                                        <option value="CHECKING">Checking</option>
-                                        <option value="BUSINESS">Business</option>
+                                        <option value="CURRENT">Current</option>
+                                        <option value="WALLET">Wallet</option>
                                     </select>
                                 </div>
                                 <div className="space-y-1.5">
@@ -250,6 +257,18 @@ export default function AccountManager() {
                                         required
                                     />
                                 </div>
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-bold uppercase text-primary-300 tracking-wider">ATM PIN (6 digits)</label>
+                                <input
+                                    type="text"
+                                    className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-emerald-500 transition-all placeholder:text-primary-600 font-mono text-center text-lg tracking-widest"
+                                    placeholder="123456"
+                                    value={newAccount.pin}
+                                    onChange={e => setNewAccount({ ...newAccount, pin: e.target.value.replace(/\D/g, '').slice(0, 6) })}
+                                    maxLength="6"
+                                    required
+                                />
                             </div>
 
                             <div className="pt-2">

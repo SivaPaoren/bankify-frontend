@@ -334,13 +334,11 @@ export const adminService = {
         return response.data;
     },
 
-    // Delete Customer
+    // Delete Customer (actually disables)
     deleteCustomer: async (customerId) => {
-        try {
-            await adminApi.patch(`/admin/customers/${customerId}/disable`);
-        } catch (e) {
-            console.warn("Mocking delete customer");
-        }
+        const response = await adminApi.patch(`/admin/customers/${customerId}/disable`);
+        logAudit('DISABLE_CUSTOMER', `Disabled Customer ID: ${customerId}`);
+        return response.data;
     },
 
     // Audit Logs
