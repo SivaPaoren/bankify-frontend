@@ -296,7 +296,7 @@ export const adminService = {
         }
     },
     updateAccountStatus: async (accountId, status) => {
-        const response = await adminApi.patch(`/admin/accounts/${accountId}/status`, { status });
+        const response = await adminApi.patch(`/admin/accounts/${accountId}`, { status });
         return response.data;
     },
     getAccountTransactions: async (accountId) => {
