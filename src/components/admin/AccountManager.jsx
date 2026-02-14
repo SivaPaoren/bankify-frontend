@@ -37,12 +37,12 @@ export default function AccountManager() {
     const handleCreateAccount = async (e) => {
         e.preventDefault();
         try {
-            await adminService.createAccount(
-                newAccount.customerId,
-                newAccount.accountType,
-                parseFloat(newAccount.initialDeposit),
-                newAccount.currency
-            );
+            await adminService.createAccount({
+                customerId: newAccount.customerId,
+                accountType: newAccount.accountType,
+                initialDeposit: parseFloat(newAccount.initialDeposit),
+                currency: newAccount.currency
+            });
             setShowCreateModal(false);
             setNewAccount({ customerId: '', accountType: 'SAVINGS', initialDeposit: '', currency: 'USD' });
             fetchAccounts();
@@ -145,8 +145,8 @@ export default function AccountManager() {
                                         </td>
                                         <td className="px-6 py-4 text-center">
                                             <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide border ${account.status === 'ACTIVE'
-                                                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                                                    : 'bg-red-500/10 text-red-400 border-red-500/20'
+                                                ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                                                : 'bg-red-500/10 text-red-400 border-red-500/20'
                                                 }`}>
                                                 {account.status}
                                             </span>
@@ -298,8 +298,8 @@ export default function AccountManager() {
                                     <div key={tx.id} className="bg-white/5 border border-white/5 rounded-2xl p-5 flex items-center justify-between hover:bg-white/10 transition-colors group">
                                         <div className="flex items-center gap-4">
                                             <div className={`w-12 h-12 rounded-xl flex items-center justify-center border ${tx.type === 'DEPOSIT' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' :
-                                                    tx.type === 'WITHDRAWAL' ? 'bg-red-500/10 border-red-500/20 text-red-400' :
-                                                        'bg-blue-500/10 border-blue-500/20 text-blue-400'
+                                                tx.type === 'WITHDRAWAL' ? 'bg-red-500/10 border-red-500/20 text-red-400' :
+                                                    'bg-blue-500/10 border-blue-500/20 text-blue-400'
                                                 }`}>
                                                 {tx.type === 'DEPOSIT' && <ArrowDownLeft size={24} />}
                                                 {tx.type === 'WITHDRAWAL' && <ArrowUpRight size={24} />}

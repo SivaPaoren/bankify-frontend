@@ -14,8 +14,8 @@ export default function TransactionManager() {
     const fetchTransactions = async () => {
         setLoading(true);
         try {
-            const data = await adminService.getAllTransactions();
-            setTransactions(data);
+            const data = await adminService.getTransactions();
+            setTransactions(Array.isArray(data) ? data : (data.content || []));
         } catch (error) {
             console.error("Failed to fetch transactions", error);
         } finally {
@@ -123,8 +123,8 @@ export default function TransactionManager() {
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-2">
                                                 <div className={`p-1.5 rounded-lg ${tx.type === 'DEPOSIT' ? 'bg-emerald-500/10 text-emerald-400' :
-                                                        tx.type === 'WITHDRAWAL' ? 'bg-red-500/10 text-red-400' :
-                                                            'bg-blue-500/10 text-blue-400'
+                                                    tx.type === 'WITHDRAWAL' ? 'bg-red-500/10 text-red-400' :
+                                                        'bg-blue-500/10 text-blue-400'
                                                     }`}>
                                                     {tx.type === 'DEPOSIT' && <ArrowDownLeft size={14} />}
                                                     {tx.type === 'WITHDRAWAL' && <ArrowUpRight size={14} />}
@@ -152,8 +152,8 @@ export default function TransactionManager() {
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide border w-fit ml-auto ${tx.status === 'SUCCESS' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
-                                                    tx.status === 'PENDING' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
-                                                        'bg-red-500/10 text-red-400 border-red-500/20'
+                                                tx.status === 'PENDING' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
+                                                    'bg-red-500/10 text-red-400 border-red-500/20'
                                                 }`}>
                                                 {tx.status === 'SUCCESS' && <CheckCircle size={10} />}
                                                 {tx.status === 'PENDING' && <Clock size={10} />}

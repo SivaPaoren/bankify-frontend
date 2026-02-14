@@ -51,6 +51,15 @@ export default function CustomerManager() {
         }
     };
 
+    const [searchTerm, setSearchTerm] = useState('');
+
+    const filteredCustomers = customers.filter(c =>
+        c.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        c.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        c.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        c.id.toString().includes(searchTerm)
+    );
+
     return (
         <div className="space-y-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
@@ -76,6 +85,8 @@ export default function CustomerManager() {
                         <input
                             type="text"
                             placeholder="Search customers..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
                             className="bg-transparent outline-none text-white w-full placeholder:text-primary-500"
                         />
                     </div>
@@ -94,8 +105,8 @@ export default function CustomerManager() {
                         <tbody className="divide-y divide-white/5">
                             {loading ? (
                                 <tr><td colSpan="4" className="px-6 py-12 text-center text-primary-300 italic">Loading customer data...</td></tr>
-                            ) : customers.length > 0 ? (
-                                customers.map((c) => (
+                            ) : filteredCustomers.length > 0 ? (
+                                filteredCustomers.map((c) => (
                                     <tr key={c.id} className="hover:bg-white/5 transition-colors group">
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
