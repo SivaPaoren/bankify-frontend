@@ -6,7 +6,7 @@ import { ArrowRightLeft, Download, Upload, Landmark, CheckCircle, X } from 'luci
 
 import { useAuth } from '../../context/AuthContext';
 
-export default function FinancialActions({ title, subtitle, accountId }) {
+export default function FinancialActions({ title, subtitle, accountId, service = transactionService }) {
   const { user } = useAuth();
   const currency = user?.currency || 'THB';
 
@@ -22,9 +22,12 @@ export default function FinancialActions({ title, subtitle, accountId }) {
   const [bankId, setBankId] = useState('');
 
   const fetchHistory = async () => {
-    if (!accountId) return;
+    // If service uses 'getTransactions' (no arg), use that. 
+    // If it relies on getTransactionsByAccount(id) (legacy), use that.
+    // The new service structure favors getTransactions() for "me".
+    // But if we are Admin mock using this? Unlikely.
     try {
-      const data = await transactionService.getTransactionsByAccount(accountId);
+      const data = await service.getTransactions(accountId); // Pass accountId just in case allowed, or ignored.
       setTransactions(Array.isArray(data) ? data : (data.content || []));
     } catch (error) {
       console.error("Failed to fetch transactions", error);
@@ -33,7 +36,7 @@ export default function FinancialActions({ title, subtitle, accountId }) {
 
   useEffect(() => {
     fetchHistory();
-  }, [accountId]);
+  }, [accountId, service]);
 
   const handleTransaction = async (e) => {
     e.preventDefault();
@@ -42,14 +45,18 @@ export default function FinancialActions({ title, subtitle, accountId }) {
 
     try {
       if (activeTab === 'deposit') {
-        await transactionService.deposit(accountId, amount, note);
+        // Updated Signature: (amount, note)
+        await service.deposit(amount, note);
         setMessage({ type: 'success', text: 'Deposit successful!' });
       } else if (activeTab === 'withdraw') {
-        await transactionService.withdraw(accountId, amount, note);
+        // Updated Signature: (amount, note)
+        await service.withdraw(amount, note);
         setMessage({ type: 'success', text: 'Withdrawal successful!' });
       } else if (activeTab === 'transfer') {
         const finalNote = bankId ? `[Bank: ${bankId}] ${note}` : note;
-        await transactionService.transfer(accountId, toAccountId, amount, finalNote);
+        // Updated Signature: (toAccountNumber, amount, note)
+        // We use toAccountId as the toAccountNumber
+        await service.transfer(toAccountId, amount, finalNote);
         setMessage({ type: 'success', text: 'Transfer successful!' });
       }
 

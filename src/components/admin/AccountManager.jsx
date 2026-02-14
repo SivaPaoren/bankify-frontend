@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { adminService } from '../../api';
 import { CreditCard, Plus, Snowflake, Ban, User, X, AlertTriangle, History, ArrowDownLeft, ArrowUpRight, CheckCircle, Clock } from 'lucide-react';
-import { transactionService } from '../../api';
+
 
 export default function AccountManager() {
     const [searchParams, setSearchParams] = useSearchParams();
@@ -73,7 +73,7 @@ export default function AccountManager() {
         setSelectedAccountForTx(account);
         setLoadingTx(true);
         try {
-            const data = await transactionService.getTransactionsByAccount(account.id);
+            const data = await adminService.getAccountTransactions(account.id);
             setAccountTransactions(data.content || data);
         } catch (error) {
             console.error(error);

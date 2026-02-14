@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Check, Loader2 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
+import { transactionService } from "../../api";
 
 export default function ATMDeposit() {
   const navigate = useNavigate();
@@ -25,32 +26,16 @@ export default function ATMDeposit() {
     setError("");
     setIsLoading(true);
 
-    setTimeout(() => {
-      // Update balance
-      const currentBalance =
-        Number(localStorage.getItem("atm_balance")) || 0;
-      const newBalance = currentBalance + Number(amount);
-      localStorage.setItem("atm_balance", newBalance);
-
-      // Save transaction
-      const tx = {
-        type: "Deposit",
-        amount: Number(amount),
-        currency: currency,
-        status: "SUCCESS",
-        date: new Date().toISOString(),
-      };
-
-      const existing =
-        JSON.parse(localStorage.getItem("atm_transactions")) || [];
-
-      localStorage.setItem(
-        "atm_transactions",
-        JSON.stringify([tx, ...existing])
-      );
-
-      setIsLoading(false);
-      navigate("/atm");
+    setTimeout(async () => {
+      try {
+        await transactionService.deposit(amount, "ATM Deposit");
+        setIsLoading(false);
+        navigate("/atm");
+      } catch (err) {
+        console.error(err);
+        setError("Deposit failed. Please try again.");
+        setIsLoading(false);
+      }
     }, 1500);
   };
 

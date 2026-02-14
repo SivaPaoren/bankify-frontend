@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { transactionService } from '../../api';
+import { transactionService, partnerService } from '../../api';
 import FinancialActions from '../../components/common/FinancialActions';
 import { Wallet, ArrowUpRight, ArrowDownLeft } from 'lucide-react';
 
@@ -69,6 +69,7 @@ export default function ClientDashboard() {
                 title="Quick Actions"
                 subtitle="Perform secure transfers and account management."
                 accountId={accountId}
+                service={partnerService}
             />
         </div>
     );

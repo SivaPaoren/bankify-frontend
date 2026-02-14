@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, Check, Loader2 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
+import { transactionService } from "../../api";
 
 export default function ATMWithdraw() {
   const navigate = useNavigate();
@@ -24,41 +25,22 @@ export default function ATMWithdraw() {
       return;
     }
 
-    const currentBalance =
-      Number(localStorage.getItem("atm_balance")) || 0;
-
-    if (Number(amount) > currentBalance) {
-      setError("Insufficient balance");
-      return;
-    }
+    // Check balance if possible, or let backend handle it.
+    // Since we are moving to API, we rely on API error for insufficient funds.
 
     setError("");
     setIsLoading(true);
 
-    setTimeout(() => {
-      // Update balance
-      const newBalance = currentBalance - Number(amount);
-      localStorage.setItem("atm_balance", newBalance);
-
-      // Save transaction
-      const tx = {
-        type: "Withdraw",
-        amount: -Number(amount),
-        currency: currency,
-        status: "SUCCESS",
-        date: new Date().toISOString(),
-      };
-
-      const existing =
-        JSON.parse(localStorage.getItem("atm_transactions")) || [];
-
-      localStorage.setItem(
-        "atm_transactions",
-        JSON.stringify([tx, ...existing])
-      );
-
-      setIsLoading(false);
-      navigate("/atm");
+    setTimeout(async () => {
+      try {
+        await transactionService.withdraw(amount, "ATM Withdrawal");
+        setIsLoading(false);
+        navigate("/atm");
+      } catch (err) {
+        console.error(err);
+        setError("Withdrawal failed. Insufficient funds or system error.");
+        setIsLoading(false);
+      }
     }, 1500);
   };
 

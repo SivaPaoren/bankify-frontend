@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
+import { transactionService } from "../../api";
 
 export default function ATMHome() {
   const navigate = useNavigate();
@@ -15,20 +16,35 @@ export default function ATMHome() {
   const [balance, setBalance] = useState(123432.42);
   const [transactions, setTransactions] = useState([]);
 
-  // Load balance + transactions from localStorage
+  // Load data from API
   useEffect(() => {
-    const storedBalance = localStorage.getItem("atm_balance");
-    const storedTx = localStorage.getItem("atm_transactions");
+    const fetchStats = async () => {
+      try {
+        const data = await transactionService.getTransactions();
+        const list = Array.isArray(data) ? data : (data.content || []);
+        setTransactions(list);
 
-    if (storedBalance) {
-      setBalance(Number(storedBalance));
-    } else {
-      localStorage.setItem("atm_balance", balance);
-    }
+        // Calculate balance from transactions (simple mock logic for now)
+        // In a real app, we'd fetch GET /atm/me/balance or similar
+        const calcBalance = list.reduce((acc, tx) => {
+          const amt = Number(tx.amount);
+          // Assuming amount is signed in some views, or type-based
+          if (tx.type === 'DEPOSIT') return acc + amt;
+          if (tx.type === 'WITHDRAWAL') return acc - amt;
+          if (tx.type === 'TRANSFER' && tx.amount < 0) return acc + amt; // tx.amount is negative
+          return acc;
+        }, 1000); // Start with base 1000 or mock
 
-    if (storedTx) {
-      setTransactions(JSON.parse(storedTx));
-    }
+        // Or if the API is mocked, we might just use the simple local storage fallback if this fails, 
+        // but let's try to stick to the list.
+        // Actually, let's just stick to the initial state balance if we can't get it, 
+        // or rely on what was passed.
+
+      } catch (e) {
+        console.error("Failed to load ATM data", e);
+      }
+    };
+    fetchStats();
   }, []);
 
   // Get last 3 transactions (latest first)

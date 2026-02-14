@@ -13,15 +13,13 @@ export default function ATMHistory() {
     const [filter, setFilter] = useState("ALL"); // ALL, SUCCESS, PENDING, FAILED
 
     useEffect(() => {
-        if (user?.id) {
-            transactionService.getTransactionsByAccount(user.id)
-                .then(data => {
-                    const list = Array.isArray(data) ? data : (data.content || []);
-                    setTransactions(list);
-                })
-                .catch(err => console.error(err));
-        }
-    }, [user]);
+        transactionService.getTransactions()
+            .then(data => {
+                const list = Array.isArray(data) ? data : (data.content || []);
+                setTransactions(list);
+            })
+            .catch(err => console.error(err));
+    }, []);
 
     // Helper to get styles based on type
     const getTypeStyles = (type) => {
