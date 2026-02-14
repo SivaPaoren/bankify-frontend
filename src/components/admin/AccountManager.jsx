@@ -138,8 +138,8 @@ export default function AccountManager() {
                                     </td>
                                     <td className="px-6 py-4">
                                         <span className={`inline-flex px-2 py-1 rounded text-xs font-bold border ${acc.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
-                                                acc.status === 'FROZEN' ? 'bg-blue-50 text-blue-600 border-blue-100' :
-                                                    'bg-red-50 text-red-600 border-red-100'
+                                            acc.status === 'FROZEN' ? 'bg-blue-50 text-blue-600 border-blue-100' :
+                                                'bg-red-50 text-red-600 border-red-100'
                                             }`}>
                                             {acc.status}
                                         </span>

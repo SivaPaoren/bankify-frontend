@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { adminService } from '../../api';
-import { Plus, Search, User, Mail, Phone, Building2 } from 'lucide-react';
+import { Plus, Search, User, Mail, Phone, Building2, Trash2, AlertTriangle } from 'lucide-react';
 
 export default function CustomerManager() {
     const navigate = useNavigate();
@@ -11,6 +11,9 @@ export default function CustomerManager() {
     const [formData, setFormData] = useState({ fullName: '', email: '', phone: '', type: 'INDIVIDUAL' });
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
+
+    // Delete Confirmation Logic
+    const [deleteModal, setDeleteModal] = useState({ show: false, id: null, name: '' });
 
     const fetchCustomers = async () => {
         setLoading(true);
@@ -41,6 +44,17 @@ export default function CustomerManager() {
             fetchCustomers();
         } catch (err) {
             setError(err.response?.data?.message || 'Failed to create customer');
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!deleteModal.id) return;
+        try {
+            await adminService.deleteCustomer(deleteModal.id);
+            setDeleteModal({ show: false, id: null, name: '' });
+            fetchCustomers();
+        } catch (err) {
+            alert("Failed to delete customer");
         }
     };
 
@@ -145,7 +159,7 @@ export default function CustomerManager() {
                                 <th className="px-6 py-4">Contact</th>
                                 <th className="px-6 py-4">Type</th>
                                 <th className="px-6 py-4">Status</th>
-                                <th className="px-6 py-4">Actions</th>
+                                <th className="px-6 py-4 text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
@@ -168,13 +182,22 @@ export default function CustomerManager() {
                                             ACTIVE
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4">
-                                        <button
-                                            onClick={() => navigate(`/admin/accounts?customerId=${row.id}`)}
-                                            className="text-emerald-600 hover:text-emerald-700 text-sm font-bold"
-                                        >
-                                            View Accounts
-                                        </button>
+                                    <td className="px-6 py-4 text-right">
+                                        <div className="flex items-center justify-end gap-3">
+                                            <button
+                                                onClick={() => navigate(`/admin/accounts?customerId=${row.id}`)}
+                                                className="text-emerald-600 hover:text-emerald-700 text-sm font-bold"
+                                            >
+                                                View Accounts
+                                            </button>
+                                            <button
+                                                onClick={() => setDeleteModal({ show: true, id: row.id, name: row.fullName })}
+                                                className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
+                                                title="Permanently Delete"
+                                            >
+                                                <Trash2 size={18} />
+                                            </button>
+                                        </div>
                                     </td>
                                 </tr>
                             )) : (
@@ -188,6 +211,38 @@ export default function CustomerManager() {
                     </table>
                 </div>
             </div>
+
+            {/* Delete Confirmation Modal */}
+            {deleteModal.show && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                    <div className="bg-white rounded-2xl w-full max-w-md shadow-xl border border-slate-100 p-6">
+                        <div className="flex items-center gap-3 mb-4 text-red-500">
+                            <AlertTriangle size={24} />
+                            <h2 className="text-xl font-bold text-slate-900">Delete Customer?</h2>
+                        </div>
+                        <p className="text-slate-600 mb-2">
+                            Are you sure you want to permanently delete <strong>{deleteModal.name}</strong>?
+                        </p>
+                        <p className="text-sm text-amber-600 bg-amber-50 p-3 rounded-lg border border-amber-100 mb-8">
+                            <strong>Warning:</strong> This action will also permanently delete <u>ALL accounts</u> associated with this customer. This cannot be undone.
+                        </p>
+                        <div className="flex gap-3 justify-end">
+                            <button
+                                onClick={() => setDeleteModal({ show: false, id: null, name: '' })}
+                                className="px-4 py-2 rounded-xl font-medium text-slate-600 hover:bg-slate-50 transition"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleDelete}
+                                className="px-4 py-2 rounded-xl font-medium text-white bg-red-500 hover:bg-red-600 transition shadow-sm hover:shadow-md"
+                            >
+                                Permanently Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

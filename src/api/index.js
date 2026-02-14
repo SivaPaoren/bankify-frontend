@@ -286,21 +286,43 @@ export const adminService = {
             logAudit('FREEZE_ACCOUNT', `Toggled freeze status for Account: ${accountId}`);
         }
     },
-    // Close Account
+    // Close Account (Permanently Delete)
     closeAccount: async (accountId) => {
         try {
             await api.delete(`/accounts/${accountId}`);
         } catch (e) {
-            console.warn("Mocking close account");
-            const accounts = getStorageData('bankify_accounts', initialAccounts);
-            const updated = accounts.map(acc => {
-                if (String(acc.id) === String(accountId) || acc.accountNumber === accountId) {
-                    return { ...acc, status: 'CLOSED' };
-                }
-                return acc;
-            });
-            setStorageData('bankify_accounts', updated);
-            logAudit('CLOSE_ACCOUNT', `Closed Account: ${accountId}`);
+            console.warn("Mocking close (delete) account");
+            let accounts = getStorageData('bankify_accounts', initialAccounts);
+            // Hard delete: remove from array
+            const initialLength = accounts.length;
+            accounts = accounts.filter(acc => String(acc.id) !== String(accountId) && acc.accountNumber !== accountId);
+
+            if (accounts.length < initialLength) {
+                setStorageData('bankify_accounts', accounts);
+                logAudit('DELETE_ACCOUNT', `Permanently deleted Account: ${accountId}`);
+            }
+        }
+    },
+
+    // Delete Customer (Cascading Delete)
+    deleteCustomer: async (customerId) => {
+        try {
+            await api.delete(`/customers/${customerId}`);
+        } catch (e) {
+            console.warn("Mocking delete customer with cascading account deletion");
+            // 1. Delete Customer
+            let customers = getStorageData('bankify_customers', initialCustomers);
+            customers = customers.filter(c => String(c.id) !== String(customerId));
+            setStorageData('bankify_customers', customers);
+
+            // 2. Cascade Delete Accounts
+            let accounts = getStorageData('bankify_accounts', initialAccounts);
+            const accountsBefore = accounts.length;
+            accounts = accounts.filter(acc => String(acc.customerId) !== String(customerId));
+            setStorageData('bankify_accounts', accounts);
+
+            const deletedAccountsCount = accountsBefore - accounts.length;
+            logAudit('DELETE_CUSTOMER', `Deleted Customer: ${customerId} and ${deletedAccountsCount} associated accounts.`);
         }
     },
 
