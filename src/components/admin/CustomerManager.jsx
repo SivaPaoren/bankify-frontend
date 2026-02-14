@@ -81,12 +81,16 @@ export default function CustomerManager() {
 
     const [searchTerm, setSearchTerm] = useState('');
 
-    const filteredCustomers = customers.filter(c =>
-        c.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        c.id.toString().includes(searchTerm)
-    );
+    const filteredCustomers = customers.filter(c => {
+        if (!c) return false;
+        const searchLower = searchTerm.toLowerCase();
+        return (
+            (c.firstName?.toLowerCase() || '').includes(searchLower) ||
+            (c.lastName?.toLowerCase() || '').includes(searchLower) ||
+            (c.email?.toLowerCase() || '').includes(searchLower) ||
+            (c.id?.toString() || '').includes(searchTerm)
+        );
+    });
 
     return (
         <div className="space-y-6">

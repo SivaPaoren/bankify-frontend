@@ -295,6 +295,10 @@ export const adminService = {
             console.warn("Mocking close account");
         }
     },
+    updateAccountStatus: async (accountId, status) => {
+        const response = await adminApi.patch(`/admin/accounts/${accountId}/status`, { status });
+        return response.data;
+    },
     getAccountTransactions: async (accountId) => {
         try {
             const response = await adminApi.get('/admin/transactions', { params: { accountId } });

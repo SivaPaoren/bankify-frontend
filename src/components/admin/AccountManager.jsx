@@ -14,7 +14,6 @@ export default function AccountManager() {
     const [newAccount, setNewAccount] = useState({
         customerId: '',
         accountType: 'SAVINGS',
-        initialDeposit: '',
         currency: 'USD',
         pin: '123456'
     });
@@ -38,7 +37,6 @@ export default function AccountManager() {
     const handleCreateAccount = async (e) => {
         e.preventDefault();
         try {
-            // 1. Create the account
             const accountData = {
                 customerId: newAccount.customerId,
                 type: newAccount.accountType,
@@ -46,21 +44,10 @@ export default function AccountManager() {
                 pin: newAccount.pin
             };
 
-            const createdAccount = await adminService.createAccount(accountData);
-
-            // 2. Handle Initial Deposit if > 0
-            const initialDeposit = parseFloat(newAccount.initialDeposit);
-            if (initialDeposit > 0 && createdAccount && createdAccount.id) {
-                try {
-                    await adminService.deposit(createdAccount.id, initialDeposit, "Initial Deposit");
-                } catch (depError) {
-                    console.error("Account created but initial deposit failed", depError);
-                    alert("Account created, but initial deposit failed. Please deposit manually.");
-                }
-            }
+            await adminService.createAccount(accountData);
 
             setShowCreateModal(false);
-            setNewAccount({ customerId: '', accountType: 'SAVINGS', initialDeposit: '', currency: 'USD', pin: '123456' });
+            setNewAccount({ customerId: '', accountType: 'SAVINGS', currency: 'USD', pin: '123456' });
             fetchAccounts();
         } catch (error) {
             console.error("Create account error", error);
@@ -77,6 +64,7 @@ export default function AccountManager() {
             }
         } catch (error) {
             console.error("Status update failed", error);
+            alert("Failed to update account status.");
         }
     };
 
@@ -151,13 +139,13 @@ export default function AccountManager() {
                                             {account.customerName || `Customer #${account.customerId}`}
                                         </td>
                                         <td className="px-6 py-4">
-                                            <span className={`px-2.5 py-1 rounded-lg border text-xs font-bold uppercase tracking-wider ${account.accountType === 'WALLET'
-                                                    ? 'bg-purple-500/10 text-purple-400 border-purple-500/20'
-                                                    : account.accountType === 'SAVINGS'
-                                                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                                                        : 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20'
+                                            <span className={`px-2.5 py-1 rounded-lg border text-xs font-bold uppercase tracking-wider ${account.type === 'WALLET'
+                                                ? 'bg-purple-500/10 text-purple-400 border-purple-500/20'
+                                                : account.type === 'SAVINGS'
+                                                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                                                    : 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20'
                                                 }`}>
-                                                {account.accountType}
+                                                {account.type}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-right">
@@ -176,9 +164,35 @@ export default function AccountManager() {
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-center">
-                                            <button className="p-2 rounded-xl text-primary-400 hover:text-white hover:bg-white/10 transition-all">
-                                                <ArrowRight size={18} />
-                                            </button>
+                                            <div className="flex items-center justify-center gap-2">
+                                                {account.status === 'ACTIVE' && (
+                                                    <button
+                                                        onClick={() => handleUpdateStatus(account.id, 'FROZEN')}
+                                                        className="p-2 rounded-xl text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 transition-all"
+                                                        title="Freeze Account"
+                                                    >
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12h20M12 2v20M6 6l12 12M6 18L18 6" /></svg>
+                                                    </button>
+                                                )}
+                                                {account.status === 'FROZEN' && (
+                                                    <button
+                                                        onClick={() => handleUpdateStatus(account.id, 'ACTIVE')}
+                                                        className="p-2 rounded-xl text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 transition-all"
+                                                        title="Unfreeze Account"
+                                                    >
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
+                                                    </button>
+                                                )}
+                                                {account.status !== 'CLOSED' && (
+                                                    <button
+                                                        onClick={() => handleUpdateStatus(account.id, 'CLOSED')}
+                                                        className="p-2 rounded-xl text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all"
+                                                        title="Close Account"
+                                                    >
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                                                    </button>
+                                                )}
+                                            </div>
                                         </td>
                                     </tr>
                                 ))
@@ -240,22 +254,6 @@ export default function AccountManager() {
                                         <option value="GBP">GBP (£)</option>
                                         <option value="THB">THB (฿)</option>
                                     </select>
-                                </div>
-                            </div>
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-bold uppercase text-primary-300 tracking-wider">Initial Deposit</label>
-                                <div className="relative">
-                                    <DollarSign size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-primary-400" />
-                                    <input
-                                        type="number"
-                                        className="w-full bg-black/20 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white outline-none focus:border-emerald-500 transition-all placeholder:text-primary-600"
-                                        placeholder="0.00"
-                                        value={newAccount.initialDeposit}
-                                        onChange={e => setNewAccount({ ...newAccount, initialDeposit: e.target.value })}
-                                        min="0"
-                                        step="0.01"
-                                        required
-                                    />
                                 </div>
                             </div>
                             <div className="space-y-1.5">
