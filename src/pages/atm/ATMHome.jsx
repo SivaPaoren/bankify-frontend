@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import bankifyLogo from "../../assets/BankifyLogo.png";
+import bankifyLogo from "../../assets/BankifyWhiteLogo.png";
 
 /* ---------- HARDWARE UI COMPONENTS (Shared) ---------- */
 
@@ -78,7 +78,7 @@ export default function ATMHome() {
   const leftLabels = ["", "Balance", "Transfer", "Exit"];
   const leftActions = [
     null, 
-    () => navigate("/atm/balance"), // CHANGED: Now navigates to balance
+    () => navigate("/atm/balance"),
     () => navigate("/atm/transfer"),
     () => navigate("/atm-login")
   ];
@@ -182,10 +182,9 @@ export default function ATMHome() {
               </div>
             </div>
 
-            {/* NEW: CASH DISPENSER (Now Under the Screen) */}
+            {/* CASH DISPENSER */}
             <div className="bg-gray-200 p-6 rounded-xl border border-gray-400 shadow-inner flex flex-col items-center">
               <div className="w-full max-w-[400px] h-14 bg-gradient-to-b from-gray-900 to-gray-800 rounded-md border-b-2 border-gray-600 flex items-center justify-center relative overflow-hidden shadow-2xl">
-                {/* Long horizontal slot for cash */}
                 <div className="w-[85%] h-3 bg-black rounded-full shadow-[inset_0_4px_8px_rgba(0,0,0,0.8)]" />
                 <div className="absolute top-0 left-0 w-full h-px bg-white/10" />
               </div>
@@ -211,9 +210,10 @@ export default function ATMHome() {
               </div>
             </div>
 
-             <div className="bg-gray-200 p-3 rounded-lg border border-gray-400 shadow-inner flex flex-col items-center">
-                <div className="w-3/4 h-1 bg-gray-800 rounded-full mb-1 border-b border-white/20" />
-                <span className="text-[10px] text-gray-400 font-bold uppercase">Receipt</span>
+             {/* RECEIPT SLOT */}
+             <div className="bg-gray-200 p-3 rounded-lg border border-gray-400 shadow-inner flex flex-col items-center justify-center h-32">
+                <div className="w-3/4 h-1.5 bg-gray-900 rounded-full mb-2 border-b border-white/10 shadow-inner" />
+                <span className="text-[11px] text-gray-500 font-black uppercase tracking-widest">Receipt</span>
             </div>
           </div>
 

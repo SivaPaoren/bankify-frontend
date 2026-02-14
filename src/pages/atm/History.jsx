@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import bankifyLogo from "../../assets/BankifyLogo.png";
+import bankifyLogo from "../../assets/BankifyWhiteLogo.png";
 
 /* ---------- SHARED HARDWARE UI COMPONENTS ---------- */
 
@@ -42,7 +42,6 @@ export default function ATMHistory() {
 
   useEffect(() => {
     const stored = JSON.parse(localStorage.getItem("atm_transactions")) || [];
-    // Only display the 3 most recent transactions
     setTransactions(stored.slice(0, 3));
   }, []);
 
@@ -138,9 +137,10 @@ export default function ATMHistory() {
               </div>
             </div>
 
-            <div className="bg-gray-200 p-4 rounded-lg border border-gray-400 shadow-inner flex flex-col items-center">
-              <div className="w-3/4 h-1 bg-gray-800 rounded-full mb-1" />
-              <span className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Receipt Slot</span>
+            {/* CORRECTED RECEIPT SLOT (Matches h-32 size from Home/Transfer) */}
+            <div className="bg-gray-200 p-3 rounded-lg border border-gray-400 shadow-inner flex flex-col items-center justify-center h-32">
+                <div className="w-3/4 h-1.5 bg-gray-900 rounded-full mb-2 border-b border-white/10 shadow-inner" />
+                <span className="text-[11px] text-gray-500 font-black uppercase tracking-widest">Receipt</span>
             </div>
           </div>
 

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import bankifyLogo from "../../assets/BankifyLogo.png";
+import bankifyLogo from "../../assets/BankifyWhiteLogo.png";
 
 /* ---------- SHARED HARDWARE UI COMPONENTS ---------- */
 

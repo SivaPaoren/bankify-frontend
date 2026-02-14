@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useAuth } from "../../context/AuthContext";
-import bankifyLogo from "../../assets/BankifyLogo.png";
+import bankifyLogo from "../../assets/BankifyWhiteLogo.png";
 
 /* ---------- HARDWARE UI COMPONENTS ---------- */
 
@@ -343,7 +343,6 @@ export default function ATMLogin() {
               </div>
             </div>
 
-            {/* UPDATED RECEIPT MODULE (h-32) - NO CLUTTER TEXT */}
              <div className="bg-gray-200 p-3 rounded-lg border border-gray-400 shadow-inner flex flex-col items-center justify-center h-32">
                 <div className="w-3/4 h-1.5 bg-gray-900 rounded-full mb-2 border-b border-white/10 shadow-inner" />
                 <span className="text-[11px] text-gray-500 font-black uppercase tracking-widest">Receipt</span>
