@@ -250,22 +250,9 @@ export const adminService = {
         return response.data;
     },
     createCustomer: async (customerData) => {
-        try {
-            const response = await adminApi.post('/admin/customers', customerData);
-            return response.data;
-        } catch (e) {
-            console.warn("Backend unavailable, saving customer to LocalStorage");
-            const customers = getStorageData('bankify_customers', initialCustomers);
-            const newCustomer = {
-                id: Date.now(),
-                ...customerData,
-                status: 'ACTIVE'
-            };
-            customers.push(newCustomer);
-            setStorageData('bankify_customers', customers);
-            logAudit('CREATE_CUSTOMER', `Created Customer: ${customerData.fullName}`);
-            return newCustomer;
-        }
+        const response = await adminApi.post('/admin/customers', customerData);
+        logAudit('CREATE_CUSTOMER', `Created Customer: ${customerData.firstName} ${customerData.lastName}`);
+        return response.data;
     },
     updateCustomer: async (customerId, updateData) => {
         const response = await adminApi.patch(`/admin/customers/${customerId}`, updateData);

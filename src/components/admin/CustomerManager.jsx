@@ -8,7 +8,7 @@ export default function CustomerManager() {
     const [customers, setCustomers] = useState([]);
     const [loading, setLoading] = useState(false);
     const [showCreate, setShowCreate] = useState(false);
-    const [formData, setFormData] = useState({ fullName: '', email: '', phone: '', type: 'INDIVIDUAL' });
+    const [formData, setFormData] = useState({ firstName: '', lastName: '', email: '', phone: '', type: 'INDIVIDUAL' });
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
 
@@ -39,7 +39,7 @@ export default function CustomerManager() {
         try {
             await adminService.createCustomer(formData);
             setSuccess('Customer created successfully');
-            setFormData({ fullName: '', email: '', phone: '', type: 'INDIVIDUAL' });
+            setFormData({ firstName: '', lastName: '', email: '', phone: '', type: 'INDIVIDUAL' });
             setShowCreate(false);
             fetchCustomers();
         } catch (err) {
@@ -86,13 +86,26 @@ export default function CustomerManager() {
 
                     <form onSubmit={handleCreate} className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-1">
-                            <label className="text-xs font-bold uppercase text-slate-500">Full Name</label>
+                            <label className="text-xs font-bold uppercase text-slate-500">First Name</label>
                             <div className="relative">
                                 <User size={16} className="absolute left-3 top-3 text-slate-400" />
                                 <input
                                     type="text"
-                                    value={formData.fullName}
-                                    onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+                                    value={formData.firstName}
+                                    onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
+                                    className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 outline-none focus:border-emerald-500 focus:bg-white transition"
+                                    required
+                                />
+                            </div>
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-xs font-bold uppercase text-slate-500">Last Name</label>
+                            <div className="relative">
+                                <User size={16} className="absolute left-3 top-3 text-slate-400" />
+                                <input
+                                    type="text"
+                                    value={formData.lastName}
+                                    onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
                                     className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 outline-none focus:border-emerald-500 focus:bg-white transition"
                                     required
                                 />
@@ -166,7 +179,7 @@ export default function CustomerManager() {
                             {customers.length > 0 ? customers.map((row, i) => (
                                 <tr key={i} className="hover:bg-slate-50/50 transition-colors">
                                     <td className="px-6 py-4">
-                                        <div className="font-semibold text-slate-700">{row.fullName}</div>
+                                        <div className="font-semibold text-slate-700">{row.firstName} {row.lastName}</div>
                                     </td>
                                     <td className="px-6 py-4">
                                         <div className="text-sm text-slate-600">{row.email}</div>

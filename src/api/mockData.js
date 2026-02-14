@@ -4,8 +4,8 @@ export const initialClients = [
 ];
 
 export const initialCustomers = [
-    { id: 101, fullName: 'John Doe', email: 'john@example.com', phone: '0812345678', type: 'INDIVIDUAL', status: 'ACTIVE' },
-    { id: 102, fullName: 'Jane Smith', email: 'jane@example.com', phone: '0898765432', type: 'BUSINESS', status: 'ACTIVE' }
+    { id: 101, firstName: 'John', lastName: 'Doe', email: 'john@example.com', phone: '0812345678', type: 'INDIVIDUAL', status: 'ACTIVE' },
+    { id: 102, firstName: 'Jane', lastName: 'Smith', email: 'jane@example.com', phone: '0898765432', type: 'BUSINESS', status: 'ACTIVE' }
 ];
 
 export const initialAccounts = [
