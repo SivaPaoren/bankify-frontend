@@ -9,7 +9,7 @@ export default function LoginPage() {
   const { login, isAuthenticated, role } = useAuth(); // Destructure properly
 
   const [email, setEmail] = useState("admin@bankify.local");
-  const [password, setPassword] = useState("password");
+  const [password, setPassword] = useState("admin123");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 

@@ -5,7 +5,8 @@ import axios from 'axios';
 // ----------------------------------------------------------------------
 
 // Base URL for the entire application
-export const API = "http://localhost:8080";
+// Base URL for the entire application
+export const API = "";
 const API_PREFIX = "/api/v1";
 
 const BASE_URL = `${API}${API_PREFIX}`;
@@ -95,32 +96,15 @@ export const generateIdempotencyKey = (prefix = 'TX') => {
 export const authService = {
     // 1.1 Admin Auth
     login: async (email, password) => {
-        try {
-            const response = await adminApi.post('/admin/auth/login', { email, password });
-            const { token, role, ...userData } = response.data;
+        // baseURL includes /api/v1, so we just need /admin/auth/login
+        const response = await adminApi.post('/admin/auth/login', { email, password });
+        const { token, role, ...userData } = response.data;
 
-            // Store Admin Token
-            localStorage.setItem('bankify_admin_token', token);
-            localStorage.setItem('bankify_user', JSON.stringify({ ...userData, role }));
+        // Store Admin Token
+        localStorage.setItem('bankify_admin_token', token);
+        localStorage.setItem('bankify_user', JSON.stringify({ ...userData, role }));
 
-            return response.data;
-        } catch (error) {
-            console.warn("Backend unavailable, using MOCK login for testing.", error);
-
-            // Allow admin login (Mock)
-            if (email.includes('admin') || email === 'admin@bankify.local') {
-                const mockToken = 'mock-admin-token';
-                const mockUser = { id: 1, email: email, role: 'ADMIN', name: 'Admin User', currency: 'THB' };
-
-                localStorage.setItem('bankify_admin_token', mockToken);
-                localStorage.setItem('bankify_user', JSON.stringify(mockUser));
-
-                return { token: mockToken, ...mockUser };
-            }
-
-            // Fallback for unknown users
-            throw new Error("Invalid credentials");
-        }
+        return response.data;
     },
 
     // 2. ATM Auth

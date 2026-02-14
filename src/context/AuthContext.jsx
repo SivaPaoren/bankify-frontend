@@ -35,9 +35,18 @@ export const AuthProvider = ({ children }) => {
     try {
       const data = await authService.login(email, password);
 
-      // Assume API returns { token, user: { ... } }
-      // Adjust if your API structure is different
-      const { token, user } = data;
+      // API Standard: { token, email, role, ... } (Flat)
+      // Or { token, user: { ... } } (Nested)
+
+      let token = data.token;
+      let user = data.user || data; // Fallback to data if user is not nested
+
+      // If flat, valid user object should NOT contain the token ideally, but it's fine for now.
+      // Ensure we have a valid user object with role
+      if (!user.role && data.role) {
+        user = { ...data }; // Treat the whole response as user data if flat
+        // Remove token from user object if desired, but not strictly necessary for logic
+      }
 
       localStorage.setItem('bankify_token', token);
       localStorage.setItem('bankify_user', JSON.stringify(user));
@@ -59,16 +68,24 @@ export const AuthProvider = ({ children }) => {
     try {
       const data = await authService.atmLogin(bankId, password);
 
-      const { token, user } = data;
+      // Standardize response
+      let token = data.token;
+      let user = data.user || data;
+
+      if (!user.role && data.role) {
+        user = { ...data };
+      }
+      // Ensure specific fields for ATM user if missing
+      if (!user.name) user.name = "ATM User";
+      if (!user.role) user.role = "USER";
 
       localStorage.setItem('bankify_token', token);
       localStorage.setItem('bankify_user', JSON.stringify(user));
 
       setUser(user);
-      // Ensure role is USER for ATM login if not provided
-      setRole(user.role || 'USER');
+      setRole(user.role);
       setIsAuthenticated(true);
-      return { success: true, role: user.role || 'USER' };
+      return { success: true, role: user.role };
     } catch (error) {
       const message = error.response?.data?.message || error.message || "ATM Login failed";
       return { success: false, message };
