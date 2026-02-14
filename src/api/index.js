@@ -259,12 +259,14 @@ export const adminService = {
         return response.data;
     },
 
-    // Accounts
+    // 1.3 Accounts
     getAccounts: async (params = {}) => {
         const response = await adminApi.get('/admin/accounts', { params });
         return response.data;
     },
     createAccount: async (accountData) => {
+        // Spec: { customerId, type, currency }
+        // Note: Initial deposit is NOT part of this endpoint.
         const response = await adminApi.post('/admin/accounts', accountData);
         logAudit('CREATE_ACCOUNT', `Created Account for Customer ID: ${accountData.customerId}`);
         return response.data;
@@ -277,16 +279,15 @@ export const adminService = {
         const response = await adminApi.get(`/admin/accounts/${accountId}/ledger`);
         return response.data;
     },
-    // Freeze Account (Disable)
     freezeAccount: async (accountId) => {
         try {
-            // Guide says: PATCH /api/v1/admin/accounts/{id}/disable
             await adminApi.patch(`/admin/accounts/${accountId}/disable`);
         } catch (e) {
             console.warn("Mocking freeze account");
         }
     },
-    // Close Account
+    // Close Account (Delete?) Spec doesn't explicitly list DELETE /admin/accounts/{id}, only disable.
+    // But usually needed. We will keep logic but warn.
     closeAccount: async (accountId) => {
         try {
             await adminApi.delete(`/admin/accounts/${accountId}`);
@@ -294,14 +295,12 @@ export const adminService = {
             console.warn("Mocking close account");
         }
     },
-    // Helper to get transactions as Admin (since transactionService might be ATM specific)
     getAccountTransactions: async (accountId) => {
         try {
-            // Guide: GET /api/v1/admin/transactions?accountId={uuid}
             const response = await adminApi.get('/admin/transactions', { params: { accountId } });
             return response.data;
         } catch (e) {
-            // Fallback to mock data
+            console.warn("Falling back to local transactions");
             let transactions = getStorageData('bankify_transactions', initialTransactions);
             const filtered = transactions.filter(t =>
                 String(t.source) === String(accountId) ||
@@ -311,19 +310,43 @@ export const adminService = {
         }
     },
 
+    // 1.4 Admin Operations
+    resetAtmPin: async (accountId, newPin) => {
+        await adminApi.patch(`/admin/accounts/${accountId}/pin`, { newPin });
+    },
+
+    // 4. Admin Transactions (Internal/Optional but recommended)
+    deposit: async (accountId, amount, note = "Admin Deposit") => {
+        // POST /api/v1/admin/transactions/deposit
+        // Body: { accountId, amount, note } (Presumed based on controller standard)
+        // Or maybe just { amount, ... } if endpoint is /accounts/{id}/deposit? 
+        // Spec says: POST /api/v1/admin/transactions/deposit
+        // So body likely needs accountId.
+        const response = await adminApi.post('/admin/transactions/deposit', { accountId, amount, note });
+        return response.data;
+    },
+    withdraw: async (accountId, amount, note = "Admin Withdraw") => {
+        const response = await adminApi.post('/admin/transactions/withdraw', { accountId, amount, note });
+        return response.data;
+    },
+    transfer: async (fromAccountId, toAccountId, amount, note = "Admin Transfer") => {
+        const response = await adminApi.post('/admin/transactions/transfer', { fromAccountId, toAccountId, amount, note });
+        return response.data;
+    },
+
     // Delete Customer
     deleteCustomer: async (customerId) => {
         try {
-            await adminApi.patch(`/admin/customers/${customerId}/disable`); // Using disable as per guide preferance, or delete? Guide says PATCH .../disable.
+            await adminApi.patch(`/admin/customers/${customerId}/disable`);
         } catch (e) {
             console.warn("Mocking delete customer");
         }
     },
 
     // Audit Logs
-    getAuditLogs: async () => {
+    getAuditLogs: async (params = {}) => {
         try {
-            const response = await adminApi.get('/admin/audit-logs');
+            const response = await adminApi.get('/admin/audit-logs', { params });
             return response.data;
         } catch (e) {
             return getStorageData('bankify_audit_logs', initialAuditLogs);
@@ -337,8 +360,7 @@ export const adminService = {
         } catch (e) {
             console.warn("Backend unavailable, loading transactions from LocalStorage");
             let transactions = getStorageData('bankify_transactions', initialTransactions);
-
-            // Mock Filtering
+            // ... (mock filter logic matches perfectly) ...
             if (params.type && params.type !== 'ALL') {
                 transactions = transactions.filter(t => t.type === params.type);
             }
@@ -456,6 +478,15 @@ export const atmService = {
         // If called with ID, warn but try to use "me" logic if it matches? 
         // Or just redirect to getTransactions()
         return atmService.getTransactions();
+    },
+
+    // 2.6 Change PIN
+    changePin: async (oldPin, newPin) => {
+        try {
+            await atmApi.post('/atm/me/change-pin', { oldPin, newPin });
+        } catch (e) {
+            console.warn("Mocking change PIN");
+        }
     }
 };
 

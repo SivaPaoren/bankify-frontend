@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { adminService } from '../../api';
-import { Search, UserPlus, Trash2, Mail, Phone, MapPin, X, User } from 'lucide-react';
+import { Search, UserPlus, Trash2, Mail, Phone, X, User } from 'lucide-react';
 
 export default function CustomerManager() {
     const [customers, setCustomers] = useState([]);
@@ -9,8 +9,10 @@ export default function CustomerManager() {
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [selectedCustomer, setSelectedCustomer] = useState(null);
     const [newCustomer, setNewCustomer] = useState({
-        firstName: '', lastName: '', email: '', phoneNumber: '', address: ''
+        firstName: '', lastName: '', email: '', phoneNumber: '', type: 'INDIVIDUAL'
     });
+    const [showAccountsDrawer, setShowAccountsDrawer] = useState(false);
+    const [customerAccounts, setCustomerAccounts] = useState([]);
 
     useEffect(() => {
         fetchCustomers();
@@ -33,7 +35,7 @@ export default function CustomerManager() {
         try {
             await adminService.createCustomer(newCustomer);
             setShowModal(false);
-            setNewCustomer({ firstName: '', lastName: '', email: '', phoneNumber: '', address: '' });
+            setNewCustomer({ firstName: '', lastName: '', email: '', phoneNumber: '', type: 'INDIVIDUAL' });
             fetchCustomers();
         } catch (error) {
             console.error("Create failed", error);
@@ -98,7 +100,7 @@ export default function CustomerManager() {
                             <tr className="bg-white/5 border-b border-white/5 text-xs uppercase tracking-widest text-primary-200 font-bold">
                                 <th className="px-6 py-4">Customer</th>
                                 <th className="px-6 py-4">Contact</th>
-                                <th className="px-6 py-4">Address</th>
+                                <th className="px-6 py-4">Type</th>
                                 <th className="px-6 py-4 text-center">Actions</th>
                             </tr>
                         </thead>
@@ -107,7 +109,7 @@ export default function CustomerManager() {
                                 <tr><td colSpan="4" className="px-6 py-12 text-center text-primary-300 italic">Loading customer data...</td></tr>
                             ) : filteredCustomers.length > 0 ? (
                                 filteredCustomers.map((c) => (
-                                    <tr key={c.id} className="hover:bg-white/5 transition-colors group">
+                                    <tr key={c.id} onClick={() => handleViewAccounts(c)} className="hover:bg-white/5 transition-colors group cursor-pointer">
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-600 to-primary-800 flex items-center justify-center text-white border border-white/10 shadow-inner">
@@ -126,14 +128,16 @@ export default function CustomerManager() {
                                             </div>
                                             <div className="flex items-center gap-2 text-sm text-primary-100">
                                                 <Phone size={14} className="text-primary-400" />
-                                                {c.phoneNumber}
+                                                {c.phone || 'N/A'}
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <div className="flex items-start gap-2 text-sm text-primary-200 max-w-xs">
-                                                <MapPin size={14} className="text-primary-400 mt-0.5 shrink-0" />
-                                                <span className="truncate">{c.address}</span>
-                                            </div>
+                                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide ${c.type === 'BUSINESS'
+                                                ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20'
+                                                : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
+                                                }`}>
+                                                {c.type}
+                                            </span>
                                         </td>
                                         <td className="px-6 py-4 text-center">
                                             <button
@@ -212,14 +216,16 @@ export default function CustomerManager() {
                                 />
                             </div>
                             <div className="space-y-1.5">
-                                <label className="text-xs font-bold uppercase text-primary-300 tracking-wider">Address</label>
-                                <input
-                                    className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-cyan-500 transition-all placeholder:text-primary-600"
-                                    placeholder="123 Main St, City, Country"
-                                    value={newCustomer.address}
-                                    onChange={e => setNewCustomer({ ...newCustomer, address: e.target.value })}
+                                <label className="text-xs font-bold uppercase text-primary-300 tracking-wider">Customer Type</label>
+                                <select
+                                    className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-cyan-500 transition-all appearance-none"
+                                    value={newCustomer.type}
+                                    onChange={e => setNewCustomer({ ...newCustomer, type: e.target.value })}
                                     required
-                                />
+                                >
+                                    <option value="INDIVIDUAL">Individual</option>
+                                    <option value="BUSINESS">Business</option>
+                                </select>
                             </div>
                             <div className="pt-2">
                                 <button type="submit" className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-blue-500/20 transition-all active:scale-[0.98]">
@@ -262,6 +268,69 @@ export default function CustomerManager() {
                     </div>
                 </div>
             )}
+
+            {/* Customer Accounts Drawer */}
+            <div className={`fixed inset-y-0 right-0 w-full md:w-[600px] bg-primary-950/95 backdrop-blur-xl border-l border-white/10 shadow-2xl transform transition-transform duration-500 z-50 flex flex-col ${showAccountsDrawer ? 'translate-x-0' : 'translate-x-full'}`}>
+                {selectedCustomer && (
+                    <>
+                        <div className="p-6 border-b border-white/5 bg-gradient-to-r from-primary-900 to-primary-950 relative overflow-hidden shrink-0">
+                            <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
+
+                            <div className="flex justify-between items-start mb-4 relative z-10">
+                                <button onClick={() => setShowAccountsDrawer(false)} className="p-2 text-primary-400 hover:text-white hover:bg-white/5 rounded-xl transition-all">
+                                    <X size={24} />
+                                </button>
+                            </div>
+
+                            <div className="relative z-10">
+                                <h2 className="text-2xl font-bold text-white mb-1">{selectedCustomer.firstName} {selectedCustomer.lastName}</h2>
+                                <p className="text-primary-300 text-sm mb-3">{selectedCustomer.email}</p>
+                                <div className="flex items-center gap-3">
+                                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase ${selectedCustomer.type === 'BUSINESS' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'}`}>
+                                        {selectedCustomer.type}
+                                    </span>
+                                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase ${selectedCustomer.status === 'ACTIVE' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
+                                        {selectedCustomer.status}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+                            <h3 className="text-lg font-bold text-white mb-4">Bank Accounts ({customerAccounts.length})</h3>
+
+                            {customerAccounts.length > 0 ? (
+                                customerAccounts.map((account) => (
+                                    <div key={account.id} className="bg-white/5 border border-white/5 rounded-2xl p-5 hover:bg-white/10 transition-colors">
+                                        <div className="flex justify-between items-start mb-3">
+                                            <div>
+                                                <div className="text-xs text-primary-300 mb-1">{account.type} Account</div>
+                                                <div className="font-mono text-white text-lg">{account.accountNumber}</div>
+                                            </div>
+                                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold uppercase ${account.status === 'ACTIVE' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
+                                                {account.status}
+                                            </span>
+                                        </div>
+                                        <div className="flex justify-between items-end">
+                                            <div className="text-2xl font-bold text-white">
+                                                {new Intl.NumberFormat('en-US', { style: 'currency', currency: account.currency }).format(account.balance)}
+                                            </div>
+                                            <div className="text-xs text-primary-400">{account.currency}</div>
+                                        </div>
+                                    </div>
+                                ))
+                            ) : (
+                                <div className="flex flex-col items-center justify-center py-20 text-primary-400/60">
+                                    <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mb-4">
+                                        <User size={32} />
+                                    </div>
+                                    <p className="italic">No accounts found for this customer.</p>
+                                </div>
+                            )}
+                        </div>
+                    </>
+                )}
+            </div>
         </div>
     );
 }

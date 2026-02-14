@@ -37,17 +37,35 @@ export default function AccountManager() {
     const handleCreateAccount = async (e) => {
         e.preventDefault();
         try {
-            await adminService.createAccount({
+            // 1. Create the account
+            const accountData = {
                 customerId: newAccount.customerId,
-                accountType: newAccount.accountType,
-                initialDeposit: parseFloat(newAccount.initialDeposit),
+                type: newAccount.accountType, // Spec says "type", likely mapped from "accountType" select
                 currency: newAccount.currency
-            });
+            };
+
+            // Map SAVINGS/CHECKING to spec if needed, or pass as is. 
+            // The select values are SAVINGS/CHECKING/BUSINESS. The API usually expects these enums.
+
+            const createdAccount = await adminService.createAccount(accountData);
+
+            // 2. Handle Initial Deposit if > 0
+            const initialDeposit = parseFloat(newAccount.initialDeposit);
+            if (initialDeposit > 0 && createdAccount && createdAccount.id) {
+                try {
+                    await adminService.deposit(createdAccount.id, initialDeposit, "Initial Deposit");
+                } catch (depError) {
+                    console.error("Account created but initial deposit failed", depError);
+                    alert("Account created, but initial deposit failed. Please deposit manually.");
+                }
+            }
+
             setShowCreateModal(false);
             setNewAccount({ customerId: '', accountType: 'SAVINGS', initialDeposit: '', currency: 'USD' });
             fetchAccounts();
         } catch (error) {
-            alert("Failed to create account. Ensure Customer ID is valid.");
+            console.error("Create account error", error);
+            alert("Failed to create account. ensure Customer ID is valid.");
         }
     };
 
