@@ -261,39 +261,13 @@ export const adminService = {
 
     // Accounts
     getAccounts: async (params = {}) => {
-        try {
-            const response = await adminApi.get('/admin/accounts', { params });
-            return response.data;
-        } catch (e) {
-            console.warn("Backend unavailable, loading accounts from LocalStorage");
-            let accounts = getStorageData('bankify_accounts', initialAccounts);
-            if (params.customerId) {
-                accounts = accounts.filter(acc => String(acc.customerId) === String(params.customerId));
-            }
-            return accounts;
-        }
+        const response = await adminApi.get('/admin/accounts', { params });
+        return response.data;
     },
     createAccount: async (accountData) => {
-        try {
-            const response = await adminApi.post('/admin/accounts', accountData);
-            return response.data;
-        } catch (e) {
-            console.warn("Backend unavailable, saving account to LocalStorage");
-            const accounts = getStorageData('bankify_accounts', initialAccounts);
-            const newAccount = {
-                id: Date.now(),
-                accountNumber: `8822-${Math.floor(1000 + Math.random() * 9000)}`,
-                customerId: accountData.customerId,
-                type: accountData.type,
-                currency: accountData.currency,
-                balance: 0,
-                status: 'ACTIVE'
-            };
-            accounts.push(newAccount);
-            setStorageData('bankify_accounts', accounts);
-            logAudit('CREATE_ACCOUNT', `Created Account for Customer ID: ${accountData.customerId}`);
-            return newAccount;
-        }
+        const response = await adminApi.post('/admin/accounts', accountData);
+        logAudit('CREATE_ACCOUNT', `Created Account for Customer ID: ${accountData.customerId}`);
+        return response.data;
     },
     getAccount: async (accountId) => {
         const response = await adminApi.get(`/admin/accounts/${accountId}`);
