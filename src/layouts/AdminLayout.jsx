@@ -36,11 +36,11 @@ export default function AdminLayout() {
 
     const navItems = [
         { to: '/admin', end: true, label: 'Dashboard', icon: LayoutDashboard },
+        { to: '/admin/clients', label: 'API Clients', icon: Shield },
+        { to: '/admin/audit-logs', label: 'Audit Logs', icon: FileText },
         { to: '/admin/transactions', label: 'Transactions', icon: History },
         { to: '/admin/accounts', label: 'Accounts', icon: Wallet },
         { to: '/admin/customers', label: 'Customers', icon: Users },
-        { to: '/admin/audit-logs', label: 'Audit Logs', icon: FileText },
-        { to: '/admin/clients', label: 'API Clients', icon: Shield },
         { to: '/admin/settings', label: 'System Settings', icon: Settings },
     ];
 
