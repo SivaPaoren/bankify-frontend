@@ -8,17 +8,18 @@ export default {
     extend: {
       colors: {
         primary: {
-          50: "#eef5ff",
-          100: "#d9e8ff",
-          200: "#b9d1ff",
-          300: "#8db2ff",
-          400: "#5c8dff",
-          500: "#3570ff",
-          600: "#1f5bff",
-          700: "#1a49d8",
-          800: "#1a3aa8",
-          900: "#152f7a",
-          950: "#0b1b3b",
+          50: "#f0f9ff",
+          100: "#e0f2fe",
+          200: "#bae6fd",
+          300: "#7dd3fc",
+          400: "#06b6d4", // Cyber Cyan
+          500: "#0ea5e9",
+          600: "#0273c7", // Electric Blue
+          700: "#0369a1",
+          800: "#075985",
+          900: "#0c4a6e",
+          950: "#082949", // Deep Navy
+
         },
         success: {
           50: "#ecfdf3",

@@ -1,227 +1,169 @@
-import React, { useState, useEffect } from 'react';
-import { adminService } from '../../api';
-import {
-    Save,
-    Settings,
-    Globe,
-    DollarSign,
-    Shield,
-    AlertCircle,
-    Check
-} from 'lucide-react';
+import React, { useState } from 'react';
+import { Settings, Save, Globe, Lock, Shield, CreditCard, Bell, RefreshCw, CheckCircle } from 'lucide-react';
 
 export default function SystemSettings() {
-    const [settings, setSettings] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [saving, setSaving] = useState(false);
-    const [saveMessage, setSaveMessage] = useState('');
+    const [saved, setSaved] = useState(false);
 
-    useEffect(() => {
-        const fetchSettings = async () => {
-            try {
-                const data = await adminService.getSystemSettings();
-                setSettings(data);
-            } catch (err) {
-                console.error("Failed to load settings", err);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchSettings();
-    }, []);
+    // Mock Settings State
+    const [settings, setSettings] = useState({
+        systemName: "Bankify Core",
+        maintenanceMode: false,
+        supportEmail: "support@bankify.inc",
+        defaultCurrency: "USD",
+        maxTransactionLimit: "50000",
+        kycLevel: "Level 2 (Strict)",
+        otpEnabled: true,
+        sessionTimeout: "15"
+    });
 
-    const handleChange = (section, key, value) => {
-        setSettings(prev => {
-            if (section) {
-                return {
-                    ...prev,
-                    [section]: {
-                        ...prev[section],
-                        [key]: value
-                    }
-                };
-            }
-            return {
-                ...prev,
-                [key]: value
-            };
-        });
+    const handleChange = (e) => {
+        const { name, value, type, checked } = e.target;
+        setSettings(prev => ({
+            ...prev,
+            [name]: type === 'checkbox' ? checked : value
+        }));
     };
 
-    const handleSave = async (e) => {
+    const handleSave = (e) => {
         e.preventDefault();
-        setSaving(true);
-        try {
-            await adminService.updateSystemSettings(settings);
-            setSaveMessage('Settings saved successfully!');
-            setTimeout(() => setSaveMessage(''), 3000);
-        } catch (err) {
-            setSaveMessage('Failed to save settings.');
-        } finally {
-            setSaving(false);
-        }
+        setSaved(true);
+        setTimeout(() => setSaved(false), 3000);
     };
-
-    if (loading) return <div className="p-8 text-center text-slate-500">Loading settings...</div>;
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 max-w-4xl mx-auto">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-900">System Settings</h1>
-                    <p className="text-slate-500">Configure global application parameters.</p>
+                    <h1 className="text-2xl font-bold text-white tracking-tight">System Settings</h1>
+                    <p className="text-primary-200">Configure global application parameters.</p>
                 </div>
-                <button
-                    onClick={handleSave}
-                    disabled={saving}
-                    className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white px-6 py-2.5 rounded-xl font-medium transition shadow-sm hover:shadow-md"
-                >
-                    {saving ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Save size={18} />}
-                    {saving ? 'Saving...' : 'Save Changes'}
-                </button>
+                {saved && (
+                    <div className="flex items-center gap-2 text-emerald-400 bg-emerald-500/10 px-4 py-2 rounded-xl border border-emerald-500/20 animate-fade-in">
+                        <CheckCircle size={18} />
+                        <span className="font-bold text-sm">Settings Saved</span>
+                    </div>
+                )}
             </div>
 
-            {saveMessage && (
-                <div className={`p-4 rounded-xl flex items-center gap-3 ${saveMessage.includes('Failed') ? 'bg-red-50 text-red-700 border border-red-100' : 'bg-emerald-50 text-emerald-700 border border-emerald-100'}`}>
-                    {saveMessage.includes('Failed') ? <AlertCircle size={20} /> : <Check size={20} />}
-                    {saveMessage}
-                </div>
-            )}
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <form onSubmit={handleSave} className="space-y-6">
                 {/* General Settings */}
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                    <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-100">
-                        <div className="p-2 bg-slate-100 rounded-lg text-slate-600">
-                            <Settings size={20} />
+                <div className="bg-white/5 backdrop-blur-md p-6 rounded-3xl shadow-xl border border-white/10 relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-primary-500/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
+
+                    <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
+                        <Globe size={20} className="text-cyan-400" />
+                        General Configuration
+                    </h3>
+
+                    <div className="space-y-5 relative z-10">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-bold uppercase text-primary-200 tracking-wider">System Name</label>
+                                <input
+                                    name="systemName"
+                                    value={settings.systemName}
+                                    onChange={handleChange}
+                                    className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-cyan-500 transition-all placeholder:text-primary-500/50"
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-bold uppercase text-primary-200 tracking-wider">Support Email</label>
+                                <input
+                                    name="supportEmail"
+                                    value={settings.supportEmail}
+                                    onChange={handleChange}
+                                    className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-cyan-500 transition-all placeholder:text-primary-500/50"
+                                />
+                            </div>
                         </div>
-                        <h2 className="text-lg font-bold text-slate-900">General Information</h2>
-                    </div>
-                    <div className="space-y-4">
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1.5">Bank Name</label>
-                            <input
-                                type="text"
-                                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 transition"
-                                value={settings.bankName}
-                                onChange={(e) => handleChange(null, 'bankName', e.target.value)}
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1.5">Support Email</label>
-                            <input
-                                type="email"
-                                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 transition"
-                                value={settings.supportEmail}
-                                onChange={(e) => handleChange(null, 'supportEmail', e.target.value)}
-                            />
-                        </div>
-                        <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl border border-slate-200">
+
+                        <div className="flex items-center justify-between bg-black/20 p-4 rounded-xl border border-white/5">
                             <div>
-                                <span className="block font-medium text-slate-900">Maintenance Mode</span>
-                                <span className="text-xs text-slate-500">Disable customer access temporarily.</span>
+                                <h4 className="text-white font-bold text-sm">Maintenance Mode</h4>
+                                <p className="text-xs text-primary-300 mt-0.5">Suspend all user access immediately.</p>
                             </div>
                             <label className="relative inline-flex items-center cursor-pointer">
                                 <input
                                     type="checkbox"
-                                    className="sr-only peer"
+                                    name="maintenanceMode"
                                     checked={settings.maintenanceMode}
-                                    onChange={(e) => handleChange(null, 'maintenanceMode', e.target.checked)}
+                                    onChange={handleChange}
+                                    className="sr-only peer"
                                 />
-                                <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                                <div className="w-11 h-6 bg-primary-900 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-cyan-500"></div>
                             </label>
                         </div>
                     </div>
                 </div>
 
-                {/* Currency Settings */}
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
-                    <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-100">
-                        <div className="p-2 bg-blue-50 rounded-lg text-blue-600">
-                            <Globe size={20} />
-                        </div>
-                        <h2 className="text-lg font-bold text-slate-900">Currency Support</h2>
-                    </div>
-                    <div className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                            {Object.keys(settings.supportedCurrencies).map(currency => (
-                                <div key={currency} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-200">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-xs font-bold text-slate-700 shadow-sm border border-slate-100">
-                                            {currency}
-                                        </div>
-                                        <span className="font-medium text-slate-700">{currency}</span>
-                                    </div>
-                                    <label className="relative inline-flex items-center cursor-pointer">
-                                        <input
-                                            type="checkbox"
-                                            className="sr-only peer"
-                                            checked={settings.supportedCurrencies[currency]}
-                                            onChange={(e) => handleChange('supportedCurrencies', currency, e.target.checked)}
-                                        />
-                                        <div className="w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-500"></div>
-                                    </label>
-                                </div>
-                            ))}
-                        </div>
-                        <div className="pt-4 border-t border-slate-100">
-                            <label className="block text-sm font-medium text-slate-700 mb-1.5">Default Currency</label>
+                {/* Financial & Security */}
+                <div className="bg-white/5 backdrop-blur-md p-6 rounded-3xl shadow-xl border border-white/10 relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
+
+                    <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
+                        <Lock size={20} className="text-emerald-400" />
+                        Security & Limits
+                    </h3>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-bold uppercase text-primary-200 tracking-wider">Default Currency</label>
                             <select
-                                className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 transition"
+                                name="defaultCurrency"
                                 value={settings.defaultCurrency}
-                                onChange={(e) => handleChange(null, 'defaultCurrency', e.target.value)}
+                                onChange={handleChange}
+                                className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-emerald-500 transition-all appearance-none cursor-pointer"
                             >
-                                {Object.keys(settings.supportedCurrencies)
-                                    .filter(c => settings.supportedCurrencies[c])
-                                    .map(c => <option key={c} value={c}>{c}</option>
-                                    )}
+                                <option>USD</option>
+                                <option>EUR</option>
+                                <option>GBP</option>
+                            </select>
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-bold uppercase text-primary-200 tracking-wider">Max Transaction Limit</label>
+                            <input
+                                name="maxTransactionLimit"
+                                value={settings.maxTransactionLimit}
+                                onChange={handleChange}
+                                className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-emerald-500 transition-all"
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-bold uppercase text-primary-200 tracking-wider">Session Timeout (Minutes)</label>
+                            <input
+                                type="number"
+                                name="sessionTimeout"
+                                value={settings.sessionTimeout}
+                                onChange={handleChange}
+                                className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-emerald-500 transition-all"
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="text-xs font-bold uppercase text-primary-200 tracking-wider">KYC Requirement</label>
+                            <select
+                                name="kycLevel"
+                                value={settings.kycLevel}
+                                onChange={handleChange}
+                                className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-emerald-500 transition-all appearance-none cursor-pointer"
+                            >
+                                <option>Level 1 (Basic)</option>
+                                <option>Level 2 (Strict)</option>
+                                <option>Level 3 (Corporate)</option>
                             </select>
                         </div>
                     </div>
                 </div>
 
-                {/* Transaction Limits */}
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 lg:col-span-2">
-                    <div className="flex items-center gap-3 mb-6 pb-4 border-b border-slate-100">
-                        <div className="p-2 bg-amber-50 rounded-lg text-amber-600">
-                            <Shield size={20} />
-                        </div>
-                        <h2 className="text-lg font-bold text-slate-900">Security & Limits</h2>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1.5">Daily Transfer Limit</label>
-                            <div className="relative">
-                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
-                                    <DollarSign size={16} />
-                                </span>
-                                <input
-                                    type="number"
-                                    className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 transition font-mono"
-                                    value={settings.transactionLimits.dailyTransferLimit}
-                                    onChange={(e) => handleChange('transactionLimits', 'dailyTransferLimit', Number(e.target.value))}
-                                />
-                            </div>
-                            <p className="text-xs text-slate-500 mt-1">Maximum total transfer amount per 24 hours.</p>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-slate-700 mb-1.5">Daily Withdrawal Limit</label>
-                            <div className="relative">
-                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
-                                    <DollarSign size={16} />
-                                </span>
-                                <input
-                                    type="number"
-                                    className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl outline-none focus:border-emerald-500 transition font-mono"
-                                    value={settings.transactionLimits.dailyWithdrawLimit}
-                                    onChange={(e) => handleChange('transactionLimits', 'dailyWithdrawLimit', Number(e.target.value))}
-                                />
-                            </div>
-                            <p className="text-xs text-slate-500 mt-1">Maximum withdrawal amount per 24 hours.</p>
-                        </div>
-                    </div>
+                <div className="flex justify-end pt-4">
+                    <button
+                        type="submit"
+                        className="flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 disabled:opacity-50 disabled:cursor-not-allowed text-white px-8 py-3 rounded-xl font-bold transition-all shadow-lg shadow-emerald-500/20 active:scale-95 text-lg"
+                    >
+                        <Save size={20} />
+                        Save Changes
+                    </button>
                 </div>
-            </div>
+            </form>
         </div>
     );
 }

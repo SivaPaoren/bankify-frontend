@@ -1,32 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { adminService } from '../../api';
-import {
-    Search,
-    Filter,
-    Download,
-    ArrowUpRight,
-    ArrowDownLeft,
-    RefreshCw,
-    CheckCircle,
-    XCircle,
-    Clock
-} from 'lucide-react';
+import { Search, Filter, ArrowUpRight, ArrowDownLeft, RefreshCw, Smartphone, CreditCard, CheckCircle, XCircle, Clock } from 'lucide-react';
 
 export default function TransactionManager() {
     const [transactions, setTransactions] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [filters, setFilters] = useState({
-        search: '',
-        type: 'ALL',
-        status: 'ALL',
-        startDate: '',
-        endDate: ''
-    });
+    const [filter, setFilter] = useState({ type: 'ALL', status: 'ALL', date: '' });
+
+    useEffect(() => {
+        fetchTransactions();
+    }, []);
 
     const fetchTransactions = async () => {
         setLoading(true);
         try {
-            const data = await adminService.getTransactions(filters);
+            const data = await adminService.getAllTransactions();
             setTransactions(data);
         } catch (error) {
             console.error("Failed to fetch transactions", error);
@@ -35,162 +23,148 @@ export default function TransactionManager() {
         }
     };
 
-    useEffect(() => {
-        const timeout = setTimeout(() => {
-            fetchTransactions();
-        }, 300); // Debounce
-        return () => clearTimeout(timeout);
-    }, [filters]);
-
-    const handleFilterChange = (key, value) => {
-        setFilters(prev => ({ ...prev, [key]: value }));
-    };
-
-    const getTypeIcon = (type) => {
-        switch (type) {
-            case 'DEPOSIT': return <ArrowDownLeft size={16} className="text-emerald-500" />;
-            case 'WITHDRAWAL': return <ArrowUpRight size={16} className="text-red-500" />;
-            case 'TRANSFER': return <RefreshCw size={16} className="text-blue-500" />;
-            default: return <Clock size={16} className="text-slate-500" />;
-        }
-    };
-
-    const getStatusBadge = (status) => {
-        const styles = {
-            SUCCESS: 'bg-emerald-50 text-emerald-600 border-emerald-100',
-            PENDING: 'bg-amber-50 text-amber-600 border-amber-100',
-            FAILED: 'bg-red-50 text-red-600 border-red-100'
-        };
-        const icons = {
-            SUCCESS: <CheckCircle size={12} />,
-            PENDING: <Clock size={12} />,
-            FAILED: <XCircle size={12} />
-        };
-        return (
-            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold uppercase border ${styles[status] || 'bg-slate-50 text-slate-500'}`}>
-                {icons[status]} {status}
-            </span>
-        );
-    };
+    const filteredTransactions = transactions.filter(tx => {
+        if (filter.type !== 'ALL' && tx.type !== filter.type) return false;
+        if (filter.status !== 'ALL' && tx.status !== filter.status) return false;
+        if (filter.date && !tx.timestamp.startsWith(filter.date)) return false;
+        return true;
+    });
 
     return (
         <div className="space-y-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-900">Transactions</h1>
-                    <p className="text-slate-500">Monitor and audit all system financial activities.</p>
+                    <h1 className="text-2xl font-bold text-white tracking-tight">Transactions</h1>
+                    <p className="text-primary-200">Monitor and audit system-wide financial movements.</p>
                 </div>
-                <div className="flex gap-2">
-                    <button className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-slate-600 hover:bg-slate-50 font-medium transition shadow-sm">
-                        <Download size={18} />
-                        Export CSV
-                    </button>
-                </div>
+                <button
+                    onClick={fetchTransactions}
+                    className="flex items-center gap-2 bg-white/5 hover:bg-white/10 text-white px-4 py-2.5 rounded-xl font-bold transition-all border border-white/5 active:scale-95"
+                >
+                    <RefreshCw size={18} />
+                    Refresh Feed
+                </button>
             </div>
 
-            {/* Filters Bar */}
-            <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col lg:flex-row gap-4 items-center">
-                <div className="flex items-center gap-2 flex-1 w-full bg-slate-50 border border-slate-200 px-3 py-2.5 rounded-xl focus-within:border-emerald-500 focus-within:bg-white transition">
-                    <Search size={18} className="text-slate-400" />
+            {/* Filter Bar */}
+            <div className="bg-white/5 backdrop-blur-md p-6 rounded-3xl shadow-xl border border-white/10 flex flex-col lg:flex-row gap-4 items-center">
+                <div className="flex items-center gap-3 w-full lg:w-auto flex-1">
+                    <div className="bg-black/20 p-2.5 rounded-xl border border-white/10 text-primary-400">
+                        <Filter size={20} />
+                    </div>
+                    <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-3">
+                        <select
+                            className="bg-black/20 border border-white/10 text-primary-100 rounded-xl px-4 py-2.5 focus:border-cyan-500 outline-none w-full hover:bg-white/5 transition-colors appearance-none cursor-pointer"
+                            value={filter.type}
+                            onChange={(e) => setFilter({ ...filter, type: e.target.value })}
+                        >
+                            <option value="ALL">All Types</option>
+                            <option value="DEPOSIT">Deposits</option>
+                            <option value="WITHDRAWAL">Withdrawals</option>
+                            <option value="TRANSFER">Transfers</option>
+                        </select>
+                        <select
+                            className="bg-black/20 border border-white/10 text-primary-100 rounded-xl px-4 py-2.5 focus:border-cyan-500 outline-none w-full hover:bg-white/5 transition-colors appearance-none cursor-pointer"
+                            value={filter.status}
+                            onChange={(e) => setFilter({ ...filter, status: e.target.value })}
+                        >
+                            <option value="ALL">All Status</option>
+                            <option value="SUCCESS">Success</option>
+                            <option value="PENDING">Pending</option>
+                            <option value="FAILED">Failed</option>
+                        </select>
+                        <input
+                            type="date"
+                            className="bg-black/20 border border-white/10 text-primary-100 rounded-xl px-4 py-2.5 focus:border-cyan-500 outline-none w-full hover:bg-white/5 transition-colors"
+                            value={filter.date}
+                            onChange={(e) => setFilter({ ...filter, date: e.target.value })}
+                        />
+                    </div>
+                </div>
+                <div className="w-full lg:w-auto lg:max-w-xs relative group">
+                    <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-primary-400 group-focus-within:text-cyan-400 transition-colors" />
                     <input
                         type="text"
                         placeholder="Search by Transaction ID..."
-                        className="bg-transparent outline-none w-full text-sm"
-                        value={filters.search}
-                        onChange={(e) => handleFilterChange('search', e.target.value)}
-                    />
-                </div>
-
-                <div className="flex gap-2 w-full lg:w-auto overflow-x-auto pb-2 lg:pb-0">
-                    <select
-                        className="bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl px-3 py-2.5 outline-none focus:border-emerald-500 transition"
-                        value={filters.type}
-                        onChange={(e) => handleFilterChange('type', e.target.value)}
-                    >
-                        <option value="ALL">All Types</option>
-                        <option value="DEPOSIT">Deposit</option>
-                        <option value="WITHDRAWAL">Withdrawal</option>
-                        <option value="TRANSFER">Transfer</option>
-                        <option value="PAYMENT">Payment</option>
-                    </select>
-
-                    <select
-                        className="bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl px-3 py-2.5 outline-none focus:border-emerald-500 transition"
-                        value={filters.status}
-                        onChange={(e) => handleFilterChange('status', e.target.value)}
-                    >
-                        <option value="ALL">All Status</option>
-                        <option value="SUCCESS">Success</option>
-                        <option value="PENDING">Pending</option>
-                        <option value="FAILED">Failed</option>
-                    </select>
-
-                    <input
-                        type="date"
-                        className="bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl px-3 py-2.5 outline-none focus:border-emerald-500 transition"
-                        value={filters.startDate}
-                        onChange={(e) => handleFilterChange('startDate', e.target.value)}
-                    />
-                    <span className="self-center text-slate-400">-</span>
-                    <input
-                        type="date"
-                        className="bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl px-3 py-2.5 outline-none focus:border-emerald-500 transition"
-                        value={filters.endDate}
-                        onChange={(e) => handleFilterChange('endDate', e.target.value)}
+                        className="w-full bg-black/20 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-white outline-none focus:border-cyan-500 transition-all placeholder:text-primary-500"
                     />
                 </div>
             </div>
 
-            {/* Table */}
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+            {/* Transactions Table */}
+            <div className="bg-white/5 backdrop-blur-md rounded-3xl shadow-xl border border-white/10 overflow-hidden">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                         <thead>
-                            <tr className="bg-slate-50 border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500 font-semibold">
+                            <tr className="bg-white/5 border-b border-white/5 text-xs uppercase tracking-widest text-primary-200 font-bold">
                                 <th className="px-6 py-4">Date & Time</th>
                                 <th className="px-6 py-4">Transaction ID</th>
                                 <th className="px-6 py-4">Type</th>
                                 <th className="px-6 py-4">Source / Dest</th>
                                 <th className="px-6 py-4 text-right">Amount</th>
-                                <th className="px-6 py-4">Status</th>
+                                <th className="px-6 py-4 text-right">Status</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-100">
+                        <tbody className="divide-y divide-white/5">
                             {loading ? (
-                                <tr><td colSpan="6" className="px-6 py-12 text-center text-slate-400">Loading transactions...</td></tr>
-                            ) : transactions.length > 0 ? (
-                                transactions.map((tx) => (
-                                    <tr key={tx.id} className="hover:bg-slate-50/50 transition-colors group">
-                                        <td className="px-6 py-4 text-sm text-slate-500 font-mono">
-                                            {new Date(tx.date).toLocaleString()}
-                                        </td>
-                                        <td className="px-6 py-4 font-mono text-sm text-slate-700 font-medium group-hover:text-emerald-600 transition-colors">
-                                            {tx.id}
+                                <tr><td colSpan="6" className="px-6 py-12 text-center text-primary-300 italic">Loading transactions...</td></tr>
+                            ) : filteredTransactions.length > 0 ? (
+                                filteredTransactions.map((tx) => (
+                                    <tr key={tx.id} className="hover:bg-white/5 transition-colors group">
+                                        <td className="px-6 py-4 text-sm text-primary-200 font-mono">
+                                            {new Date(tx.timestamp).toLocaleString(undefined, {
+                                                year: 'numeric', month: 'numeric', day: 'numeric',
+                                                hour: '2-digit', minute: '2-digit'
+                                            })}
                                         </td>
                                         <td className="px-6 py-4">
-                                            <div className="flex items-center gap-2 text-sm font-medium text-slate-700">
-                                                <div className="p-1.5 rounded-lg bg-slate-100 group-hover:bg-white transition-colors">
-                                                    {getTypeIcon(tx.type)}
+                                            <div className="font-mono text-xs text-primary-400">{tx.id.substring(0, 18)}...</div>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-2">
+                                                <div className={`p-1.5 rounded-lg ${tx.type === 'DEPOSIT' ? 'bg-emerald-500/10 text-emerald-400' :
+                                                        tx.type === 'WITHDRAWAL' ? 'bg-red-500/10 text-red-400' :
+                                                            'bg-blue-500/10 text-blue-400'
+                                                    }`}>
+                                                    {tx.type === 'DEPOSIT' && <ArrowDownLeft size={14} />}
+                                                    {tx.type === 'WITHDRAWAL' && <ArrowUpRight size={14} />}
+                                                    {tx.type === 'TRANSFER' && <RefreshCw size={14} />}
+                                                    {tx.type === 'PAYMENT' && <CreditCard size={14} />}
                                                 </div>
-                                                {tx.type}
+                                                <span className="font-bold text-white text-sm">{tx.type}</span>
                                             </div>
-                                        </td>
-                                        <td className="px-6 py-4 text-xs font-mono text-slate-500">
-                                            <div className="flex flex-col gap-0.5">
-                                                <span className="flex items-center gap-1">From: <span className="text-slate-700">{tx.source}</span></span>
-                                                <span className="flex items-center gap-1">To: <span className="text-slate-700">{tx.destination}</span></span>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 text-right font-bold text-slate-900">
-                                            {tx.currency} {tx.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                                         </td>
                                         <td className="px-6 py-4">
-                                            {getStatusBadge(tx.status)}
+                                            <div className="flex flex-col">
+                                                <span className="text-xs text-primary-400 uppercase tracking-wider mb-0.5">
+                                                    {tx.sourceAccountId ? 'Account' : 'External'}
+                                                </span>
+                                                <span className="font-mono text-sm text-primary-100">
+                                                    {tx.sourceAccountId || tx.targetAccountId || 'N/A'}
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                            <span className={`font-bold text-[15px] ${tx.type === 'DEPOSIT' ? 'text-emerald-400' : 'text-white'
+                                                }`}>
+                                                {tx.type === 'DEPOSIT' ? '+' : ''} {new Intl.NumberFormat('en-US', { style: 'currency', currency: tx.currency }).format(tx.amount)}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide border w-fit ml-auto ${tx.status === 'SUCCESS' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
+                                                    tx.status === 'PENDING' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
+                                                        'bg-red-500/10 text-red-400 border-red-500/20'
+                                                }`}>
+                                                {tx.status === 'SUCCESS' && <CheckCircle size={10} />}
+                                                {tx.status === 'PENDING' && <Clock size={10} />}
+                                                {tx.status === 'FAILED' && <XCircle size={10} />}
+                                                {tx.status}
+                                            </span>
                                         </td>
                                     </tr>
                                 ))
                             ) : (
-                                <tr><td colSpan="6" className="px-6 py-12 text-center text-slate-400 italic">No transactions found matching your filters.</td></tr>
+                                <tr><td colSpan="6" className="px-6 py-12 text-center text-primary-300 italic">No transactions found.</td></tr>
                             )}
                         </tbody>
                     </table>

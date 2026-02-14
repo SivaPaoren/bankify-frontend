@@ -1,268 +1,242 @@
 import React, { useState, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
 import { adminService } from '../../api';
-import { CreditCard, Plus, Snowflake, Ban, User, X, AlertTriangle, History, ArrowDownLeft, ArrowUpRight, CheckCircle, Clock } from 'lucide-react';
-
+import { Search, Plus, CreditCard, DollarSign, Calendar, X, ArrowRight, ArrowUpRight, ArrowDownLeft, Ban, AlertCircle, FileText } from 'lucide-react';
 
 export default function AccountManager() {
-    const [searchParams, setSearchParams] = useSearchParams();
-    const customerIdParam = searchParams.get('customerId');
-
     const [accounts, setAccounts] = useState([]);
-    const [customers, setCustomers] = useState([]); // List of customers for dropdown/lookup
     const [loading, setLoading] = useState(true);
-    const [showModal, setShowModal] = useState(false);
-
-    // New state for confirmation modal
-    const [confirmModal, setConfirmModal] = useState({ show: false, type: '', id: null, message: '' });
-
-    // Transaction View State
-    const [selectedAccountForTx, setSelectedAccountForTx] = useState(null); // Account Object
+    const [selectedAccount, setSelectedAccount] = useState(null);
+    const [showCreateModal, setShowCreateModal] = useState(false);
+    const [showTransactionsDrawer, setShowTransactionsDrawer] = useState(false);
     const [accountTransactions, setAccountTransactions] = useState([]);
-    const [loadingTx, setLoadingTx] = useState(false);
 
-    // Customer ID, Type, Currency for new account form
-    const [formData, setFormData] = useState({
-        customerId: customerIdParam || '',
-        type: 'SAVINGS',
-        currency: 'THB'
+    // Form State
+    const [newAccount, setNewAccount] = useState({
+        customerId: '',
+        accountType: 'SAVINGS',
+        initialDeposit: '',
+        currency: 'USD'
     });
 
-    const fetchData = async () => {
+    useEffect(() => {
+        fetchAccounts();
+    }, []);
+
+    const fetchAccounts = async () => {
         setLoading(true);
         try {
-            const [accData, custData] = await Promise.all([
-                adminService.getAccounts({ customerId: customerIdParam }),
-                adminService.getCustomers()
-            ]);
-            setAccounts(Array.isArray(accData) ? accData : (accData.content || []));
-            setCustomers(Array.isArray(custData) ? custData : (custData.content || []));
+            const data = await adminService.getAccounts();
+            setAccounts(data);
         } catch (error) {
-            console.error("Failed to fetch data", error);
+            console.error("Failed to fetch accounts", error);
         } finally {
             setLoading(false);
         }
     };
 
-    useEffect(() => {
-        fetchData();
-        if (customerIdParam) {
-            setFormData(prev => ({ ...prev, customerId: customerIdParam }));
-        }
-    }, [customerIdParam]);
-
-    const handleCreate = async (e) => {
+    const handleCreateAccount = async (e) => {
         e.preventDefault();
-        await adminService.createAccount(formData);
-        setShowModal(false);
-        setFormData({ customerId: '', type: 'SAVINGS', currency: 'THB' });
-        fetchData();
-    };
-
-    const executeAction = async () => {
-        if (confirmModal.type === 'FREEZE') {
-            await adminService.freezeAccount(confirmModal.id);
-        } else if (confirmModal.type === 'CLOSE') {
-            await adminService.closeAccount(confirmModal.id);
-        }
-        setConfirmModal({ show: false, type: '', id: null, message: '' });
-        fetchData();
-    };
-
-    const handleViewTransactions = async (account) => {
-        setSelectedAccountForTx(account);
-        setLoadingTx(true);
         try {
-            const data = await adminService.getAccountTransactions(account.id);
-            setAccountTransactions(data.content || data);
+            await adminService.createAccount(
+                newAccount.customerId,
+                newAccount.accountType,
+                parseFloat(newAccount.initialDeposit),
+                newAccount.currency
+            );
+            setShowCreateModal(false);
+            setNewAccount({ customerId: '', accountType: 'SAVINGS', initialDeposit: '', currency: 'USD' });
+            fetchAccounts();
         } catch (error) {
-            console.error(error);
-        } finally {
-            setLoadingTx(false);
+            alert("Failed to create account. Ensure Customer ID is valid.");
         }
     };
 
-    // Helper to get customer name
-    const getCustomerName = (cId) => {
-        const customer = customers.find(c => String(c.id) === String(cId));
-        return customer ? customer.fullName : cId; // Fallback to ID if name not found
+    const handleUpdateStatus = async (accountId, status) => {
+        try {
+            await adminService.updateAccountStatus(accountId, status);
+            fetchAccounts();
+            if (selectedAccount && selectedAccount.id === accountId) {
+                setSelectedAccount({ ...selectedAccount, status });
+            }
+        } catch (error) {
+            console.error("Status update failed", error);
+        }
+    };
+
+    const openTransactions = async (account) => {
+        setSelectedAccount(account);
+        setShowTransactionsDrawer(true);
+        try {
+            const txs = await adminService.getAccountTransactions(account.id);
+            setAccountTransactions(txs);
+        } catch (error) {
+            console.error("Failed to fetch transactions", error);
+        }
     };
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
+        <div className="space-y-6 relative">
+            {/* Header */}
+            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-900">Account Management</h1>
-                    <p className="text-slate-500">Oversee customer bank accounts and status.</p>
+                    <h1 className="text-2xl font-bold text-white tracking-tight">Accounts</h1>
+                    <p className="text-primary-200">Oversee customer bank accounts and balances.</p>
                 </div>
                 <button
-                    onClick={() => setShowModal(true)}
-                    className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2.5 rounded-xl font-medium transition shadow-sm hover:shadow-md"
+                    onClick={() => setShowCreateModal(true)}
+                    className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-emerald-500/20 active:scale-95"
                 >
-                    <Plus size={18} />
+                    <Plus size={20} />
                     Open Account
                 </button>
             </div>
 
-            {customerIdParam && (
-                <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl flex justify-between items-center text-blue-700">
-                    <span className="font-medium">
-                        Showing accounts for customer: <strong>{getCustomerName(customerIdParam)}</strong>
-                    </span>
-                    <button
-                        onClick={() => setSearchParams({})}
-                        className="flex items-center gap-1 text-sm bg-white hover:bg-blue-100 px-3 py-1.5 rounded-lg border border-blue-200 transition"
-                    >
-                        <X size={14} /> Clear Filter
-                    </button>
-                </div>
-            )}
-
             {/* Account List */}
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                <table className="w-full text-left border-collapse">
-                    <thead>
-                        <tr className="bg-slate-50 border-b border-slate-200 text-xs uppercase tracking-wider text-slate-500 font-semibold">
-                            <th className="px-6 py-4">Account No.</th>
-                            <th className="px-6 py-4">Customer</th>
-                            <th className="px-6 py-4">Type</th>
-                            <th className="px-6 py-4">Balance</th>
-                            <th className="px-6 py-4">Status</th>
-                            <th className="px-6 py-4">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                        {loading ? (
-                            <tr><td colSpan="6" className="px-6 py-8 text-center text-slate-500">Loading accounts...</td></tr>
-                        ) : accounts.length === 0 ? (
-                            <tr><td colSpan="6" className="px-6 py-8 text-center text-slate-500">No accounts found.</td></tr>
-                        ) : (
-                            accounts.map((acc) => (
-                                <tr key={acc.id} className="hover:bg-slate-50/50 transition-colors">
-                                    <td className="px-6 py-4 font-mono text-slate-600">{acc.accountNumber}</td>
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center gap-2 text-slate-900 font-medium">
-                                            <User size={14} className="text-slate-400" />
-                                            {getCustomerName(acc.customerId)}
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center gap-2 text-slate-600 text-sm font-medium">
-                                            <CreditCard size={14} className="text-slate-400" />
-                                            {acc.type}
-                                        </div>
-                                    </td>
-                                    <td className="px-6 py-4 font-bold text-slate-900">
-                                        {acc.currency} {(acc.balance || 0).toLocaleString()}
-                                    </td>
-                                    <td className="px-6 py-4">
-                                        <span className={`inline-flex px-2 py-1 rounded text-xs font-bold border ${acc.status === 'ACTIVE' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' :
-                                            acc.status === 'FROZEN' ? 'bg-blue-50 text-blue-600 border-blue-100' :
-                                                'bg-red-50 text-red-600 border-red-100'
-                                            }`}>
-                                            {acc.status}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 flex gap-2">
-                                        <button
-                                            onClick={() => handleViewTransactions(acc)}
-                                            className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition"
-                                            title="View Transactions"
-                                        >
-                                            <History size={18} />
-                                        </button>
-                                        <button
-                                            onClick={() => setConfirmModal({
-                                                show: true,
-                                                type: 'FREEZE',
-                                                id: acc.id,
-                                                message: `Are you sure you want to ${acc.status === 'FROZEN' ? 'unfreeze' : 'freeze'} account ${acc.accountNumber}?`
-                                            })}
-                                            className={`p-2 rounded-lg transition ${acc.status === 'FROZEN' ? 'text-blue-600 bg-blue-50' : 'text-slate-400 hover:text-blue-600 hover:bg-blue-50'}`}
-                                            title={acc.status === 'FROZEN' ? "Unfreeze" : "Freeze"}
-                                        >
-                                            <Snowflake size={18} />
-                                        </button>
-                                        <button
-                                            onClick={() => setConfirmModal({
-                                                show: true,
-                                                type: 'CLOSE',
-                                                id: acc.id,
-                                                message: `Are you sure you want to CLOSE account ${acc.accountNumber}? This cannot be undone.`
-                                            })}
-                                            className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
-                                            title="Close"
-                                        >
-                                            <Ban size={18} />
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))
-                        )}
-                    </tbody>
-                </table>
+            <div className="bg-white/5 backdrop-blur-md rounded-3xl shadow-xl border border-white/10 overflow-hidden min-h-[500px]">
+                <div className="p-4 border-b border-white/5">
+                    <div className="flex items-center gap-3 bg-black/20 px-4 py-2.5 rounded-xl border border-white/10 focus-within:border-emerald-500 transition-all max-w-md group">
+                        <Search size={18} className="text-primary-400 group-focus-within:text-emerald-400 scale-100 group-focus-within:scale-110 transition-all" />
+                        <input
+                            type="text"
+                            placeholder="Search accounts..."
+                            className="bg-transparent outline-none text-white w-full placeholder:text-primary-500"
+                        />
+                    </div>
+                </div>
+
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left border-collapse">
+                        <thead>
+                            <tr className="bg-white/5 border-b border-white/5 text-xs uppercase tracking-widest text-primary-200 font-bold">
+                                <th className="px-6 py-4">Account No.</th>
+                                <th className="px-6 py-4">Customer</th>
+                                <th className="px-6 py-4">Type</th>
+                                <th className="px-6 py-4 text-right">Balance</th>
+                                <th className="px-6 py-4 text-center">Status</th>
+                                <th className="px-6 py-4 text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-white/5">
+                            {loading ? (
+                                <tr><td colSpan="6" className="px-6 py-12 text-center text-primary-300 italic">Loading accounts...</td></tr>
+                            ) : accounts.length > 0 ? (
+                                accounts.map((account) => (
+                                    <tr key={account.id} onClick={() => openTransactions(account)} className="hover:bg-white/5 transition-colors cursor-pointer group">
+                                        <td className="px-6 py-4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 rounded-xl bg-primary-600/20 flex items-center justify-center text-primary-300 border border-white/5">
+                                                    <CreditCard size={18} />
+                                                </div>
+                                                <span className="font-mono text-white tracking-wide group-hover:text-emerald-300 transition-colors">{account.accountNumber}</span>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 text-primary-100 font-medium">
+                                            {account.customerName || `Customer #${account.customerId}`}
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span className="px-2.5 py-1 rounded-lg bg-white/5 border border-white/5 text-xs font-bold text-primary-200 uppercase tracking-wider">
+                                                {account.accountType}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                            <div className="font-bold text-white text-lg tracking-tight">
+                                                {new Intl.NumberFormat('en-US', { style: 'currency', currency: account.currency }).format(account.balance)}
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 text-center">
+                                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide border ${account.status === 'ACTIVE'
+                                                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                                                    : 'bg-red-500/10 text-red-400 border-red-500/20'
+                                                }`}>
+                                                {account.status}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 text-center">
+                                            <button className="p-2 rounded-xl text-primary-400 hover:text-white hover:bg-white/10 transition-all">
+                                                <ArrowRight size={18} />
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr><td colSpan="6" className="px-6 py-12 text-center text-primary-300 italic">No accounts found.</td></tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             {/* Create Account Modal */}
-            {showModal && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                    <div className="bg-white rounded-2xl w-full max-w-2xl shadow-xl border border-slate-100 p-6">
-                        <h2 className="text-xl font-bold text-slate-900 mb-1">Open New Account</h2>
-                        <form onSubmit={handleCreate} className="mt-6 space-y-4">
+            {showCreateModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-primary-950/80 backdrop-blur-sm animate-fade-in">
+                    <div className="bg-primary-900 border border-white/10 rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden relative">
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
+
+                        <div className="p-6 border-b border-white/5 flex justify-between items-center relative z-10">
+                            <h3 className="text-xl font-bold text-white">Open New Account</h3>
+                            <button onClick={() => setShowCreateModal(false)} className="text-primary-400 hover:text-white transition-colors">
+                                <X size={24} />
+                            </button>
+                        </div>
+                        <form onSubmit={handleCreateAccount} className="p-6 space-y-5 relative z-10">
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-bold uppercase text-primary-300 tracking-wider">Customer ID</label>
+                                <input
+                                    type="text"
+                                    className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-emerald-500 transition-all placeholder:text-primary-600"
+                                    placeholder="Enter Customer ID"
+                                    value={newAccount.customerId}
+                                    onChange={e => setNewAccount({ ...newAccount, customerId: e.target.value })}
+                                    required
+                                />
+                            </div>
                             <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Customer</label>
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold uppercase text-primary-300 tracking-wider">Account Type</label>
                                     <select
-                                        className="w-full p-3 bg-slate-50 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500/20 border border-transparent focus:border-emerald-500 transition"
-                                        value={formData.customerId}
-                                        onChange={e => setFormData({ ...formData, customerId: e.target.value })}
-                                        required
+                                        className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-emerald-500 transition-all appearance-none"
+                                        value={newAccount.accountType}
+                                        onChange={e => setNewAccount({ ...newAccount, accountType: e.target.value })}
                                     >
-                                        <option value="">Select Customer</option>
-                                        {customers.map(c => (
-                                            <option key={c.id} value={c.id}>{c.fullName} ({c.email})</option>
-                                        ))}
+                                        <option value="SAVINGS">Savings</option>
+                                        <option value="CHECKING">Checking</option>
+                                        <option value="BUSINESS">Business</option>
                                     </select>
                                 </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">Type</label>
-                                        <select
-                                            className="w-full p-3 bg-slate-50 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500/20 border border-transparent focus:border-emerald-500 transition"
-                                            value={formData.type}
-                                            onChange={e => setFormData({ ...formData, type: e.target.value })}
-                                        >
-                                            <option value="SAVINGS">Savings</option>
-                                            <option value="CURRENT">Current</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-slate-700 mb-1">Currency</label>
-                                        <select
-                                            className="w-full p-3 bg-slate-50 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500/20 border border-transparent focus:border-emerald-500 transition"
-                                            value={formData.currency}
-                                            onChange={e => setFormData({ ...formData, currency: e.target.value })}
-                                        >
-                                            <option value="THB">THB</option>
-                                            <option value="USD">USD</option>
-                                            <option value="EUR">EUR</option>
-                                        </select>
-                                    </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-xs font-bold uppercase text-primary-300 tracking-wider">Currency</label>
+                                    <select
+                                        className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-emerald-500 transition-all appearance-none"
+                                        value={newAccount.currency}
+                                        onChange={e => setNewAccount({ ...newAccount, currency: e.target.value })}
+                                    >
+                                        <option value="USD">USD ($)</option>
+                                        <option value="EUR">EUR (€)</option>
+                                        <option value="GBP">GBP (£)</option>
+                                        <option value="THB">THB (฿)</option>
+                                    </select>
                                 </div>
                             </div>
-                            <div className="flex gap-3 justify-end mt-8">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowModal(false)}
-                                    className="px-6 py-2.5 rounded-xl font-medium text-slate-600 hover:bg-slate-50 transition"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2.5 rounded-xl font-medium transition shadow-sm hover:shadow-md"
-                                >
-                                    Create Account
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-bold uppercase text-primary-300 tracking-wider">Initial Deposit</label>
+                                <div className="relative">
+                                    <DollarSign size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-primary-400" />
+                                    <input
+                                        type="number"
+                                        className="w-full bg-black/20 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-white outline-none focus:border-emerald-500 transition-all placeholder:text-primary-600"
+                                        placeholder="0.00"
+                                        value={newAccount.initialDeposit}
+                                        onChange={e => setNewAccount({ ...newAccount, initialDeposit: e.target.value })}
+                                        min="0"
+                                        step="0.01"
+                                        required
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="pt-2">
+                                <button type="submit" className="w-full bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-emerald-500/20 transition-all active:scale-[0.98]">
+                                    Confirm & Open Account
                                 </button>
                             </div>
                         </form>
@@ -270,98 +244,93 @@ export default function AccountManager() {
                 </div>
             )}
 
-            {/* Confirmation Modal */}
-            {confirmModal.show && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                    <div className="bg-white rounded-2xl w-full max-w-md shadow-xl border border-slate-100 p-6">
-                        <div className="flex items-center gap-3 mb-4 text-amber-500">
-                            <AlertTriangle size={24} />
-                            <h2 className="text-xl font-bold text-slate-900">Confirm Action</h2>
-                        </div>
-                        <p className="text-slate-600 mb-8">{confirmModal.message}</p>
-                        <div className="flex gap-3 justify-end">
-                            <button
-                                onClick={() => setConfirmModal({ ...confirmModal, show: false })}
-                                className="px-4 py-2 rounded-xl font-medium text-slate-600 hover:bg-slate-50 transition"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={executeAction}
-                                className={`px-4 py-2 rounded-xl font-medium text-white transition shadow-sm hover:shadow-md ${confirmModal.type === 'CLOSE' ? 'bg-red-500 hover:bg-red-600' : 'bg-blue-500 hover:bg-blue-600'
-                                    }`}
-                            >
-                                Confirm
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+            {/* Transactions Drawer */}
+            <div className={`fixed inset-y-0 right-0 w-full md:w-[600px] bg-primary-950/95 backdrop-blur-xl border-l border-white/10 shadow-2xl transform transition-transform duration-500 z-50 flex flex-col ${showTransactionsDrawer ? 'translate-x-0' : 'translate-x-full'}`}>
+                {selectedAccount && (
+                    <>
+                        <div className="p-6 md:p-8 border-b border-white/5 bg-gradient-to-r from-primary-900 to-primary-950 relative overflow-hidden shrink-0">
+                            {/* Decorative Blobs */}
+                            <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
 
-            {
-                selectedAccountForTx && (
-                    <div className="fixed inset-0 z-50 flex justify-end">
-                        {/* Backdrop */}
-                        <div
-                            className="absolute inset-0 bg-black/20 backdrop-blur-sm transition-opacity"
-                            onClick={() => setSelectedAccountForTx(null)}
-                        ></div>
-
-                        {/* Drawer Panel */}
-                        <div className="relative w-full max-w-lg bg-white h-full shadow-2xl flex flex-col animate-slide-in-right">
-                            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                                <div>
-                                    <h3 className="text-lg font-bold text-slate-800">Transaction History</h3>
-                                    <p className="text-sm text-slate-500 font-mono">{selectedAccountForTx.accountNumber}</p>
-                                </div>
-                                <button
-                                    onClick={() => setSelectedAccountForTx(null)}
-                                    className="p-2 text-slate-400 hover:bg-slate-200 rounded-full transition"
-                                >
-                                    <X size={20} />
+                            <div className="flex justify-between items-start mb-6 relative z-10 w-full">
+                                <button onClick={() => setShowTransactionsDrawer(false)} className="p-2 -ml-2 text-primary-400 hover:text-white hover:bg-white/5 rounded-xl transition-all">
+                                    <ArrowRight size={24} />
                                 </button>
+                                <div className="flex gap-2">
+                                    {selectedAccount.status === 'ACTIVE' ? (
+                                        <button
+                                            onClick={() => handleUpdateStatus(selectedAccount.id, 'SUSPENDED')}
+                                            className="flex items-center gap-2 px-4 py-2 bg-red-500/10 text-red-400 border border-red-500/20 rounded-xl font-bold text-sm hover:bg-red-500/20 transition-colors"
+                                        >
+                                            <Ban size={16} /> Suspend
+                                        </button>
+                                    ) : (
+                                        <button
+                                            onClick={() => handleUpdateStatus(selectedAccount.id, 'ACTIVE')}
+                                            className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-xl font-bold text-sm hover:bg-emerald-500/20 transition-colors"
+                                        >
+                                            <CheckCircle size={16} /> Activate
+                                        </button>
+                                    )}
+                                </div>
                             </div>
 
-                            <div className="flex-1 overflow-y-auto p-0">
-                                {loadingTx ? (
-                                    <div className="p-10 text-center text-slate-400">Loading history...</div>
-                                ) : accountTransactions.length === 0 ? (
-                                    <div className="p-10 text-center text-slate-400">No transactions found for this account.</div>
-                                ) : (
-                                    <div className="divide-y divide-slate-100">
-                                        {accountTransactions.map(tx => (
-                                            <div key={tx.id} className="p-4 hover:bg-slate-50 transition-colors flex items-center justify-between">
-                                                <div className="flex items-center gap-3">
-                                                    <div className={`p-2 rounded-full ${tx.type === 'DEPOSIT' ? 'bg-emerald-100 text-emerald-600' :
-                                                        tx.type === 'WITHDRAWAL' ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'}`}>
-                                                        {tx.type === 'DEPOSIT' ? <ArrowDownLeft size={16} /> :
-                                                            tx.type === 'WITHDRAWAL' ? <ArrowUpRight size={16} /> : <History size={16} />}
-                                                    </div>
-                                                    <div>
-                                                        <p className="text-sm font-bold text-slate-700">{tx.type}</p>
-                                                        <p className="text-xs text-slate-500">{new Date(tx.date || tx.createdAt).toLocaleString()}</p>
+                            <div className="relative z-10">
+                                <p className="text-primary-300 font-medium mb-1">{selectedAccount.accountType} Account</p>
+                                <h2 className="text-3xl font-mono text-white tracking-tight mb-4">{selectedAccount.accountNumber}</h2>
+                                <div className="flex items-end gap-3">
+                                    <span className="text-4xl font-bold text-white tracking-tighter">
+                                        {new Intl.NumberFormat('en-US', { style: 'currency', currency: selectedAccount.currency }).format(selectedAccount.balance)}
+                                    </span>
+                                    <span className="mb-1.5 px-2.5 py-0.5 rounded-lg bg-white/10 text-xs font-bold text-primary-200">Current Balance</span>
+                                </div>
+                            </div>
+                        </div>
 
-                                                    </div>
-                                                </div>
-                                                <div className="text-right">
-                                                    <p className={`font-bold text-sm ${tx.type === 'DEPOSIT' ? 'text-emerald-600' : 'text-slate-800'}`}>
-                                                        {tx.type === 'DEPOSIT' ? '+' : '-'} {selectedAccountForTx.currency} {Number(tx.amount).toLocaleString()}
-                                                    </p>
-                                                    <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded ${tx.status === 'SUCCESS' ? 'bg-emerald-50 text-emerald-600' :
-                                                        tx.status === 'PENDING' ? 'bg-amber-50 text-amber-600' : 'bg-red-50 text-red-600'
-                                                        }`}>
-                                                        {tx.status}
-                                                    </span>
+                        <div className="flex-1 overflow-y-auto p-6 md:p-8 custom-scrollbar relative bg-black/20">
+                            <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
+                                <FileText size={20} className="text-primary-400" />
+                                Transaction History
+                            </h3>
+
+                            <div className="space-y-4">
+                                {accountTransactions.length > 0 ? accountTransactions.map((tx) => (
+                                    <div key={tx.id} className="bg-white/5 border border-white/5 rounded-2xl p-5 flex items-center justify-between hover:bg-white/10 transition-colors group">
+                                        <div className="flex items-center gap-4">
+                                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center border ${tx.type === 'DEPOSIT' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' :
+                                                    tx.type === 'WITHDRAWAL' ? 'bg-red-500/10 border-red-500/20 text-red-400' :
+                                                        'bg-blue-500/10 border-blue-500/20 text-blue-400'
+                                                }`}>
+                                                {tx.type === 'DEPOSIT' && <ArrowDownLeft size={24} />}
+                                                {tx.type === 'WITHDRAWAL' && <ArrowUpRight size={24} />}
+                                                {tx.type === 'TRANSFER' && <ArrowRight size={24} />}
+                                            </div>
+                                            <div>
+                                                <div className="font-bold text-white mb-0.5">{tx.description || tx.type}</div>
+                                                <div className="text-xs text-primary-300 flex items-center gap-2">
+                                                    <Calendar size={12} />
+                                                    {new Date(tx.timestamp).toLocaleString()}
                                                 </div>
                                             </div>
-                                        ))}
+                                        </div>
+                                        <div className={`text-right font-bold text-lg ${tx.type === 'DEPOSIT' ? 'text-emerald-400' : 'text-white'
+                                            }`}>
+                                            {tx.type === 'DEPOSIT' ? '+' : '-'}{new Intl.NumberFormat('en-US', { style: 'currency', currency: selectedAccount.currency }).format(tx.amount)}
+                                        </div>
+                                    </div>
+                                )) : (
+                                    <div className="flex flex-col items-center justify-center py-20 text-primary-400/60">
+                                        <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mb-4">
+                                            <AlertCircle size={32} />
+                                        </div>
+                                        <p className="italic">No transactions found for this account.</p>
                                     </div>
                                 )}
                             </div>
                         </div>
-                    </div>
-                )
-            }
-        </div >
+                    </>
+                )}
+            </div>
+        </div>
     );
 }

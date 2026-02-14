@@ -5,7 +5,9 @@ import {
     Activity,
     AlertTriangle,
     Wallet,
-    ArrowUpRight
+    ArrowUpRight,
+    ArrowDownRight,
+    Clock
 } from 'lucide-react';
 import {
     AreaChart,
@@ -32,31 +34,38 @@ export default function AdminDashboard() {
         }).catch(console.error);
     }, []);
 
-    // Mock Chart Data
+    // Mock Chart Data - adjusted for a more "crypto/fintech" look
     const chartData = [
-        { name: '08:00', volume: 4000 },
-        { name: '10:00', volume: 3000 },
-        { name: '12:00', volume: 9800 },
-        { name: '14:00', volume: 3908 },
-        { name: '16:00', volume: 4800 },
-        { name: '18:00', volume: 7800 },
-        { name: '20:00', volume: 4300 },
+        { name: '00:00', volume: 4000 },
+        { name: '04:00', volume: 3000 },
+        { name: '08:00', volume: 5000 },
+        { name: '12:00', volume: 8800 },
+        { name: '16:00', volume: 6900 },
+        { name: '20:00', volume: 9200 },
+        { name: '23:59', volume: 7800 },
     ];
 
     const StatCard = ({ title, value, subtext, icon: Icon, colorClass, trend }) => (
-        <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex flex-col justify-between h-32 relative overflow-hidden group hover:shadow-md transition-shadow">
-            <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                <Icon size={64} className="text-slate-900" />
-            </div>
-            <div>
-                <p className="text-slate-500 text-sm font-semibold uppercase tracking-wider mb-1">{title}</p>
-                <h3 className="text-2xl font-bold text-slate-800">{value}</h3>
-            </div>
-            <div className="flex items-center gap-2 mt-2">
-                <div className={`p-1 rounded-full ${colorClass} bg-opacity-10`}>
-                    <Icon size={14} className={colorClass.replace('bg-', 'text-')} />
+        <div className="relative overflow-hidden p-6 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md hover:bg-white/10 transition-all duration-300 group shadow-lg">
+            {/* Glow Effect */}
+            <div className={`absolute -right-6 -top-6 w-24 h-24 rounded-full ${colorClass.replace('text-', 'bg-')}/20 blur-2xl group-hover:blur-3xl transition-all`}></div>
+
+            <div className="relative z-10 flex justify-between items-start">
+                <div>
+                    <p className="text-primary-200 text-xs font-bold uppercase tracking-widest mb-2">{title}</p>
+                    <h3 className="text-3xl font-bold text-white tracking-tight">{value}</h3>
                 </div>
-                <span className={`text-xs font-medium ${trend === 'up' ? 'text-emerald-600' : 'text-slate-500'}`}>
+                <div className={`p-2.5 rounded-xl ${colorClass.replace('text-', 'bg-')}/20 border border-white/5`}>
+                    <Icon size={24} className={colorClass} />
+                </div>
+            </div>
+
+            <div className="relative z-10 flex items-center gap-2 mt-4">
+                <div className={`flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-lg ${trend === 'up' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
+                    {trend === 'up' ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
+                    <span>12.5%</span>
+                </div>
+                <span className="text-xs text-primary-400 font-medium">
                     {subtext}
                 </span>
             </div>
@@ -64,10 +73,19 @@ export default function AdminDashboard() {
     );
 
     return (
-        <div className="space-y-6">
-            <div>
-                <h1 className="text-2xl font-bold text-slate-900">System Overview</h1>
-                <p className="text-slate-500">Real-time monitoring of Bankify infrastructure.</p>
+        <div className="space-y-8">
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+                <div>
+                    <h1 className="text-3xl font-bold text-white tracking-tight">System Overview</h1>
+                    <p className="text-primary-300 mt-1">Real-time monitoring of Bankify global infrastructure.</p>
+                </div>
+                <div className="flex items-center gap-2 text-primary-300 text-sm font-mono bg-black/20 px-3 py-1.5 rounded-lg border border-white/5">
+                    <span className="relative flex h-2 w-2">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                    </span>
+                    Systems Operational
+                </div>
             </div>
 
             {/* Stats Grid */}
@@ -75,33 +93,33 @@ export default function AdminDashboard() {
                 <StatCard
                     title="Active Customers"
                     value={stats.activeCustomers}
-                    subtext="+12% from last month"
+                    subtext="vs last month"
                     icon={Users}
-                    colorClass="text-blue-600"
+                    colorClass="text-cyan-400"
                     trend="up"
                 />
                 <StatCard
-                    title="System Balance"
-                    value={`฿${stats.totalBalance.toLocaleString()}`}
-                    subtext="Total liquidity"
+                    title="Liquid Assets"
+                    value={`฿${(stats.totalBalance / 1000000).toFixed(1)}M`}
+                    subtext="Total reserve"
                     icon={Wallet}
-                    colorClass="text-emerald-600"
+                    colorClass="text-emerald-400"
                     trend="up"
                 />
                 <StatCard
-                    title="Transactions (24h)"
+                    title="24h Transactions"
                     value={stats.todayTransactions}
-                    subtext="98.2% Success Rate"
+                    subtext="98.2% Success"
                     icon={Activity}
-                    colorClass="text-indigo-600"
+                    colorClass="text-primary-400"
                     trend="up"
                 />
                 <StatCard
-                    title="Failed Alerts"
+                    title="Security Alerts"
                     value={stats.failedTransactions}
-                    subtext="Requires attention"
+                    subtext="Requires triage"
                     icon={AlertTriangle}
-                    colorClass="text-orange-500"
+                    colorClass="text-orange-400"
                     trend="down"
                 />
             </div>
@@ -109,48 +127,90 @@ export default function AdminDashboard() {
             {/* Main Content Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Chart Section */}
-                <div className="lg:col-span-2 bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                    <h3 className="text-lg font-bold text-slate-800 mb-6">Transaction Volume</h3>
-                    <div className="h-[300px] w-full">
+                <div className="lg:col-span-2 bg-white/5 p-6 rounded-3xl border border-white/10 backdrop-blur-md shadow-xl relative overflow-hidden">
+                    <div className="flex items-center justify-between mb-8 relative z-10">
+                        <div>
+                            <h3 className="text-lg font-bold text-white">Transaction Volume</h3>
+                            <p className="text-sm text-primary-300">Inbound and outbound api calls</p>
+                        </div>
+                        <select className="bg-black/20 text-primary-200 text-sm border border-white/10 rounded-lg px-3 py-1.5 outline-none focus:border-primary-500">
+                            <option>Last 24 Hours</option>
+                            <option>Last 7 Days</option>
+                        </select>
+                    </div>
+
+                    <div className="h-[350px] w-full relative z-10">
                         <ResponsiveContainer width="100%" height="100%">
                             <AreaChart data={chartData}>
                                 <defs>
                                     <linearGradient id="colorVol" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.1} />
-                                        <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                                        <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3} />
+                                        <stop offset="95%" stopColor="#06b6d4" stopOpacity={0} />
                                     </linearGradient>
                                 </defs>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} dy={10} />
-                                <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12 }} />
-                                <Tooltip
-                                    contentStyle={{ backgroundColor: '#fff', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', border: 'none' }}
-                                    itemStyle={{ color: '#1e293b', fontWeight: 'bold' }}
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
+                                <XAxis
+                                    dataKey="name"
+                                    axisLine={false}
+                                    tickLine={false}
+                                    tick={{ fill: '#94a3b8', fontSize: 12 }}
+                                    dy={10}
                                 />
-                                <Area type="monotone" dataKey="volume" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorVol)" />
+                                <YAxis
+                                    axisLine={false}
+                                    tickLine={false}
+                                    tick={{ fill: '#94a3b8', fontSize: 12 }}
+                                />
+                                <Tooltip
+                                    contentStyle={{
+                                        backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                                        borderRadius: '12px',
+                                        border: '1px solid rgba(255,255,255,0.1)',
+                                        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.5)',
+                                        color: '#fff'
+                                    }}
+                                    itemStyle={{ color: '#bae6fd' }}
+                                />
+                                <Area
+                                    type="monotone"
+                                    dataKey="volume"
+                                    stroke="#06b6d4"
+                                    strokeWidth={3}
+                                    fillOpacity={1}
+                                    fill="url(#colorVol)"
+                                />
                             </AreaChart>
                         </ResponsiveContainer>
                     </div>
                 </div>
 
-                {/* Pending Actions */}
-                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
-                    <h3 className="text-lg font-bold text-slate-800 mb-4">Pending Actions</h3>
-                    <div className="space-y-4">
-                        {[1, 2, 3].map((i) => (
-                            <div key={i} className="flex items-start gap-3 p-3 rounded-xl bg-slate-50 border border-slate-100 hover:bg-slate-100 transition-colors cursor-pointer">
-                                <div className="mt-1 p-1.5 rounded-full bg-orange-100 text-orange-600">
-                                    <AlertTriangle size={14} />
+                {/* Pending Actions / Feed */}
+                <div className="bg-white/5 p-6 rounded-3xl border border-white/10 backdrop-blur-md shadow-xl flex flex-col">
+                    <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
+                        <Activity size={20} className="text-orange-400" />
+                        Live Security Feed
+                    </h3>
+
+                    <div className="space-y-4 flex-1 overflow-y-auto custom-scrollbar pr-2">
+                        {[1, 2, 3, 4].map((i) => (
+                            <div key={i} className="group flex items-start gap-4 p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/10 transition-all cursor-pointer">
+                                <div className="mt-1 p-2 rounded-xl bg-gradient-to-br from-orange-500/20 to-red-500/20 text-orange-400 border border-orange-500/10 group-hover:scale-110 transition-transform">
+                                    <AlertTriangle size={16} />
                                 </div>
                                 <div>
-                                    <p className="text-sm font-semibold text-slate-800">Suspicious Login Attempt</p>
-                                    <p className="text-xs text-slate-500 mt-0.5">Account #8822-11 · just now</p>
+                                    <p className="text-sm font-bold text-slate-100 group-hover:text-white transition-colors">Suspicious Login Blocked</p>
+                                    <p className="text-xs text-primary-300 mt-1">IP 192.168.1.••• tried to access Admin Panel</p>
+                                    <div className="flex items-center gap-1.5 mt-2 text-[10px] text-primary-400 font-mono">
+                                        <Clock size={10} />
+                                        <span>2 mins ago</span>
+                                    </div>
                                 </div>
                             </div>
                         ))}
                     </div>
-                    <button className="w-full mt-6 py-3 rounded-xl border border-slate-200 text-slate-600 text-sm font-semibold hover:bg-slate-50 transition-colors">
-                        View All Alerts
+
+                    <button className="w-full mt-6 py-3.5 rounded-xl border border-white/10 text-primary-200 text-sm font-bold hover:bg-white/5 hover:text-white transition-all shadow-lg">
+                        View Audit Logs
                     </button>
                 </div>
             </div>
