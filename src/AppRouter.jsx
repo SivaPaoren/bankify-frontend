@@ -7,7 +7,9 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import ClientManager from "./components/admin/ClientManager";
 import CustomerManager from "./components/admin/CustomerManager";
 import AccountManager from "./components/admin/AccountManager";
+import TransactionManager from "./components/admin/TransactionManager";
 import AuditLogs from "./pages/admin/AuditLogs";
+import SystemSettings from "./pages/admin/SystemSettings";
 
 // Client Components
 import ClientLayout from "./layouts/ClientLayout";
@@ -75,7 +77,9 @@ export default function AppRouter() {
         <Route path="clients" element={<ClientManager />} />
         <Route path="customers" element={<CustomerManager />} />
         <Route path="accounts" element={<AccountManager />} />
+        <Route path="transactions" element={<TransactionManager />} />
         <Route path="audit-logs" element={<AuditLogs />} />
+        <Route path="settings" element={<SystemSettings />} />
       </Route>
 
       {/* Client Routes */}

@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { adminService } from '../../api';
-import { CreditCard, Plus, Snowflake, Ban, User, X, AlertTriangle } from 'lucide-react';
+import { CreditCard, Plus, Snowflake, Ban, User, X, AlertTriangle, History, ArrowDownLeft, ArrowUpRight, CheckCircle, Clock } from 'lucide-react';
+import { transactionService } from '../../api';
 
 export default function AccountManager() {
     const [searchParams, setSearchParams] = useSearchParams();
@@ -14,6 +15,11 @@ export default function AccountManager() {
 
     // New state for confirmation modal
     const [confirmModal, setConfirmModal] = useState({ show: false, type: '', id: null, message: '' });
+
+    // Transaction View State
+    const [selectedAccountForTx, setSelectedAccountForTx] = useState(null); // Account Object
+    const [accountTransactions, setAccountTransactions] = useState([]);
+    const [loadingTx, setLoadingTx] = useState(false);
 
     // Customer ID, Type, Currency for new account form
     const [formData, setFormData] = useState({
@@ -61,6 +67,19 @@ export default function AccountManager() {
         }
         setConfirmModal({ show: false, type: '', id: null, message: '' });
         fetchData();
+    };
+
+    const handleViewTransactions = async (account) => {
+        setSelectedAccountForTx(account);
+        setLoadingTx(true);
+        try {
+            const data = await transactionService.getTransactionsByAccount(account.id);
+            setAccountTransactions(data.content || data);
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setLoadingTx(false);
+        }
     };
 
     // Helper to get customer name
@@ -145,6 +164,13 @@ export default function AccountManager() {
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 flex gap-2">
+                                        <button
+                                            onClick={() => handleViewTransactions(acc)}
+                                            className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition"
+                                            title="View Transactions"
+                                        >
+                                            <History size={18} />
+                                        </button>
                                         <button
                                             onClick={() => setConfirmModal({
                                                 show: true,
@@ -271,6 +297,71 @@ export default function AccountManager() {
                     </div>
                 </div>
             )}
-        </div>
+
+            {
+                selectedAccountForTx && (
+                    <div className="fixed inset-0 z-50 flex justify-end">
+                        {/* Backdrop */}
+                        <div
+                            className="absolute inset-0 bg-black/20 backdrop-blur-sm transition-opacity"
+                            onClick={() => setSelectedAccountForTx(null)}
+                        ></div>
+
+                        {/* Drawer Panel */}
+                        <div className="relative w-full max-w-lg bg-white h-full shadow-2xl flex flex-col animate-slide-in-right">
+                            <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+                                <div>
+                                    <h3 className="text-lg font-bold text-slate-800">Transaction History</h3>
+                                    <p className="text-sm text-slate-500 font-mono">{selectedAccountForTx.accountNumber}</p>
+                                </div>
+                                <button
+                                    onClick={() => setSelectedAccountForTx(null)}
+                                    className="p-2 text-slate-400 hover:bg-slate-200 rounded-full transition"
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            <div className="flex-1 overflow-y-auto p-0">
+                                {loadingTx ? (
+                                    <div className="p-10 text-center text-slate-400">Loading history...</div>
+                                ) : accountTransactions.length === 0 ? (
+                                    <div className="p-10 text-center text-slate-400">No transactions found for this account.</div>
+                                ) : (
+                                    <div className="divide-y divide-slate-100">
+                                        {accountTransactions.map(tx => (
+                                            <div key={tx.id} className="p-4 hover:bg-slate-50 transition-colors flex items-center justify-between">
+                                                <div className="flex items-center gap-3">
+                                                    <div className={`p-2 rounded-full ${tx.type === 'DEPOSIT' ? 'bg-emerald-100 text-emerald-600' :
+                                                        tx.type === 'WITHDRAWAL' ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'}`}>
+                                                        {tx.type === 'DEPOSIT' ? <ArrowDownLeft size={16} /> :
+                                                            tx.type === 'WITHDRAWAL' ? <ArrowUpRight size={16} /> : <History size={16} />}
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-sm font-bold text-slate-700">{tx.type}</p>
+                                                        <p className="text-xs text-slate-500">{new Date(tx.date || tx.createdAt).toLocaleString()}</p>
+
+                                                    </div>
+                                                </div>
+                                                <div className="text-right">
+                                                    <p className={`font-bold text-sm ${tx.type === 'DEPOSIT' ? 'text-emerald-600' : 'text-slate-800'}`}>
+                                                        {tx.type === 'DEPOSIT' ? '+' : '-'} {selectedAccountForTx.currency} {Number(tx.amount).toLocaleString()}
+                                                    </p>
+                                                    <span className={`text-[10px] font-bold uppercase px-1.5 py-0.5 rounded ${tx.status === 'SUCCESS' ? 'bg-emerald-50 text-emerald-600' :
+                                                        tx.status === 'PENDING' ? 'bg-amber-50 text-amber-600' : 'bg-red-50 text-red-600'
+                                                        }`}>
+                                                        {tx.status}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )
+            }
+        </div >
     );
 }

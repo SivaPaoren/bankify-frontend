@@ -102,7 +102,7 @@ export const authService = {
     }
 };
 
-import { initialClients, initialCustomers, initialAccounts, initialAuditLogs } from './mockData';
+import { initialClients, initialCustomers, initialAccounts, initialAuditLogs, initialTransactions, initialSystemSettings } from './mockData';
 
 // Helper to get data from LocalStorage or initialize it
 const getStorageData = (key, initialData) => {
@@ -334,6 +334,57 @@ export const adminService = {
         } catch (e) {
             return getStorageData('bankify_audit_logs', initialAuditLogs);
         }
+    },
+    // Transactions
+    getTransactions: async (params = {}) => {
+        try {
+            const response = await api.get('/admin/transactions', { params });
+            return response.data;
+        } catch (e) {
+            console.warn("Backend unavailable, loading transactions from LocalStorage");
+            let transactions = getStorageData('bankify_transactions', initialTransactions);
+
+            // Mock Filtering
+            if (params.type && params.type !== 'ALL') {
+                transactions = transactions.filter(t => t.type === params.type);
+            }
+            if (params.status && params.status !== 'ALL') {
+                transactions = transactions.filter(t => t.status === params.status);
+            }
+            if (params.search) {
+                const search = params.search.toLowerCase();
+                transactions = transactions.filter(t => t.id.toLowerCase().includes(search));
+            }
+            if (params.startDate && params.endDate) {
+                const start = new Date(params.startDate).getTime();
+                const end = new Date(params.endDate).getTime();
+                transactions = transactions.filter(t => {
+                    const date = new Date(t.date).getTime();
+                    return date >= start && date <= end;
+                });
+            }
+
+            return transactions;
+        }
+    },
+    // System Settings
+    getSystemSettings: async () => {
+        try {
+            const response = await api.get('/admin/settings');
+            return response.data;
+        } catch (e) {
+            return getStorageData('bankify_settings', initialSystemSettings);
+        }
+    },
+    updateSystemSettings: async (settings) => {
+        try {
+            const response = await api.put('/admin/settings', settings);
+            return response.data;
+        } catch (e) {
+            setStorageData('bankify_settings', settings);
+            logAudit('UPDATE_SETTINGS', 'Updated system settings');
+            return settings;
+        }
     }
 };
 
@@ -424,16 +475,17 @@ export const transactionService = {
             const response = await api.get(`/transactions`, { params: { accountId } });
             return response.data;
         } catch (e) {
-            return {
-                content: [
-                    { id: 'tx_1', type: 'DEPOSIT', amount: 1000, status: 'SUCCESS', currency: 'THB', createdAt: new Date().toISOString() },
-                    { id: 'tx_2', type: 'WITHDRAWAL', amount: 500, status: 'SUCCESS', currency: 'THB', createdAt: new Date().toISOString() },
-                    { id: 'tx_3', type: 'TRANSFER', amount: 250, status: 'PENDING', currency: 'THB', createdAt: new Date(Date.now() - 86400000).toISOString() },
-                    { id: 'tx_4', type: 'TRANSFER', amount: 100, status: 'FAILED', currency: 'THB', createdAt: new Date(Date.now() - 172800000).toISOString() }
-                ]
-            };
+            console.warn("Backend unavailable, loading account transactions from LocalStorage");
+            let transactions = getStorageData('bankify_transactions', initialTransactions);
+            const filtered = transactions.filter(t =>
+                String(t.source) === String(accountId) ||
+                String(t.destination) === String(accountId) ||
+                String(t.customerId) === String(accountId) // Fallback for testing
+            );
+            return { content: filtered };
         }
     },
+
 
     // Get single transaction
     getTransaction: async (transactionId) => {
