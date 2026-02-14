@@ -62,7 +62,7 @@ export default function AdminLayout() {
                         </div>
                         {!collapsed && (
                             <div className="opacity-100 transition-opacity duration-300">
-                                <h1 className="text-xl font-bold tracking-tight text-white">Bankify<span className="text-emerald-500">.</span></h1>
+                                <h1 className="text-xl font-bold tracking-tight text-white">Bankify</h1>
                                 <p className="text-[10px] text-slate-500 uppercase tracking-widest font-semibold">Admin Portal</p>
                             </div>
                         )}
