@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import bankifyLogo from "../../assets/BankifyWhiteLogo.png";
+import { atmService } from "../../api";
 
 /* ---------- SHARED HARDWARE UI COMPONENTS ---------- */
 
@@ -11,8 +12,8 @@ const BezelButton = ({ onClick, disabled, side }) => (
     className={`
       relative w-12 h-10 transition-all duration-100 ease-out z-20
       flex items-center justify-center
-      ${disabled 
-        ? "opacity-50 cursor-not-allowed" 
+      ${disabled
+        ? "opacity-50 cursor-not-allowed"
         : "active:scale-95 active:brightness-90 cursor-pointer"}
     `}
   >
@@ -33,19 +34,19 @@ const KeyButton = ({ label, color, onClick }) => {
   let bgGradient = "from-gray-100 to-gray-300";
   let borderColor = "border-gray-400";
   let textColor = "text-gray-800";
-  
-  if (color === "red") { 
-    bgGradient = "from-red-600 to-red-800"; 
-    borderColor = "border-red-900"; 
-    textColor = "text-white"; 
-  } else if (color === "yellow") { 
-    bgGradient = "from-yellow-400 to-yellow-600"; 
-    borderColor = "border-yellow-800"; 
-    textColor = "text-black"; 
-  } else if (color === "green") { 
-    bgGradient = "from-green-600 to-green-800"; 
-    borderColor = "border-green-900"; 
-    textColor = "text-white"; 
+
+  if (color === "red") {
+    bgGradient = "from-red-600 to-red-800";
+    borderColor = "border-red-900";
+    textColor = "text-white";
+  } else if (color === "yellow") {
+    bgGradient = "from-yellow-400 to-yellow-600";
+    borderColor = "border-yellow-800";
+    textColor = "text-black";
+  } else if (color === "green") {
+    bgGradient = "from-green-600 to-green-800";
+    borderColor = "border-green-900";
+    textColor = "text-white";
   }
 
   const labelStyle = label.length > 1 ? "text-[10px] tracking-tighter" : "text-xl";
@@ -66,7 +67,7 @@ const KeyButton = ({ label, color, onClick }) => {
 
 export default function ATMTransfer() {
   const navigate = useNavigate();
-  const [step, setStep] = useState("ACCOUNT"); 
+  const [step, setStep] = useState("ACCOUNT");
   const [targetAccount, setTargetAccount] = useState("");
   const [amount, setAmount] = useState("");
   const [error, setError] = useState("");
@@ -83,36 +84,37 @@ export default function ATMTransfer() {
     setError("");
   };
 
-  const handleEnter = () => {
+  const handleEnter = async () => {
     if (step === "ACCOUNT") {
       if (targetAccount.length < 4) { setError("INVALID ACCOUNT"); return; }
       setStep("AMOUNT");
     } else if (step === "AMOUNT") {
       if (!amount || Number(amount) <= 0) { setError("INVALID AMOUNT"); return; }
-      const bal = Number(localStorage.getItem("atm_balance")) || 0;
-      if (Number(amount) > bal) { setError("INSUFFICIENT FUNDS"); return; }
       setStep("CONFIRM");
     } else if (step === "CONFIRM") {
-      processTransfer();
+      await processTransfer();
     }
   };
 
-  const processTransfer = () => {
+  const processTransfer = async () => {
     setStep("PROCESSING");
-    setTimeout(() => {
-      const currentBalance = Number(localStorage.getItem("atm_balance")) || 0;
-      const newBalance = currentBalance - Number(amount);
-      localStorage.setItem("atm_balance", newBalance);
-      const tx = { type: "Transfer", amount: -Number(amount), targetAccount, date: new Date().toISOString() };
-      const existing = JSON.parse(localStorage.getItem("atm_transactions")) || [];
-      localStorage.setItem("atm_transactions", JSON.stringify([tx, ...existing]));
-      navigate("/atm");
-    }, 2000);
+    try {
+      await atmService.transfer(targetAccount, Number(amount), "ATM Transfer");
+
+      // Brief delay then navigate
+      setTimeout(() => {
+        navigate("/atm");
+      }, 1800);
+    } catch (error) {
+      console.error("Transfer failed:", error);
+      setError(error.response?.data?.message || "Transfer failed");
+      setStep("AMOUNT");
+    }
   };
 
   return (
     <div className="min-h-screen w-full bg-slate-200 flex flex-col items-center justify-center p-4">
-      
+
       {/* ATM HEADER */}
       <div className="bg-slate-800 w-full max-w-5xl rounded-t-2xl p-4 border-b-8 border-slate-900 flex justify-between items-center shadow-2xl">
         <div className="flex items-center gap-3">
@@ -140,14 +142,14 @@ export default function ATMTransfer() {
                 <div className="w-[480px] h-[340px] bg-slate-900 rounded border-4 border-black relative overflow-hidden shadow-[inset_0_0_40px_rgba(0,0,0,0.9)]">
                   <div className="absolute left-0 bottom-6 px-2 z-20">
                     <div className="h-10 flex items-center gap-1">
-                        <span className="text-cyan-400 font-bold">&lt;</span>
-                        <span className="bg-slate-800/90 text-white text-[10px] px-2 py-1.5 rounded border-l-2 border-cyan-500 min-w-[60px] text-center uppercase">Back</span>
+                      <span className="text-cyan-400 font-bold">&lt;</span>
+                      <span className="bg-slate-800/90 text-white text-[10px] px-2 py-1.5 rounded border-l-2 border-cyan-500 min-w-[60px] text-center uppercase">Back</span>
                     </div>
                   </div>
                   <div className="absolute right-0 bottom-6 px-2 z-20">
                     <div className="h-10 flex items-center gap-1">
-                        <span className="bg-slate-800/90 text-white text-[10px] px-2 py-1.5 rounded border-r-2 border-cyan-500 min-w-[60px] text-center uppercase">{step === "CONFIRM" ? "Confirm" : "Next"}</span>
-                        <span className="text-cyan-400 font-bold">&gt;</span>
+                      <span className="bg-slate-800/90 text-white text-[10px] px-2 py-1.5 rounded border-r-2 border-cyan-500 min-w-[60px] text-center uppercase">{step === "CONFIRM" ? "Confirm" : "Next"}</span>
+                      <span className="text-cyan-400 font-bold">&gt;</span>
                     </div>
                   </div>
 
@@ -231,8 +233,8 @@ export default function ATMTransfer() {
 
             {/* CLEAN RECEIPT SLOT (Matches Home h-32 size) */}
             <div className="bg-gray-200 p-3 rounded-lg border border-gray-400 shadow-inner flex flex-col items-center justify-center h-32">
-                <div className="w-3/4 h-1.5 bg-gray-900 rounded-full mb-2 border-b border-white/10 shadow-inner" />
-                <span className="text-[11px] text-gray-500 font-black uppercase tracking-widest">Receipt</span>
+              <div className="w-3/4 h-1.5 bg-gray-900 rounded-full mb-2 border-b border-white/10 shadow-inner" />
+              <span className="text-[11px] text-gray-500 font-black uppercase tracking-widest">Receipt</span>
             </div>
           </div>
 

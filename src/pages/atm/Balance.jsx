@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import bankifyLogo from "../../assets/BankifyWhiteLogo.png";
+import { atmService } from "../../api";
 
 /* ---------- SHARED HARDWARE UI COMPONENTS ---------- */
 const BezelButton = ({ onClick, disabled, side }) => (
@@ -10,8 +11,8 @@ const BezelButton = ({ onClick, disabled, side }) => (
     className={`
       relative w-12 h-10 transition-all duration-100 ease-out z-20
       flex items-center justify-center
-      ${disabled 
-        ? "opacity-50 cursor-not-allowed" 
+      ${disabled
+        ? "opacity-50 cursor-not-allowed"
         : "active:scale-95 active:brightness-90 cursor-pointer"}
     `}
   >
@@ -32,8 +33,8 @@ const KeyButton = ({ label, color, onClick }) => {
   let bgGradient = "from-gray-100 to-gray-300";
   let borderColor = "border-gray-400";
   let textColor = "text-gray-800";
-  if (color === "red") { bgGradient = "from-red-600 to-red-800"; borderColor = "border-red-900"; textColor = "text-white"; } 
-  else if (color === "yellow") { bgGradient = "from-yellow-400 to-yellow-600"; borderColor = "border-yellow-800"; textColor = "text-black"; } 
+  if (color === "red") { bgGradient = "from-red-600 to-red-800"; borderColor = "border-red-900"; textColor = "text-white"; }
+  else if (color === "yellow") { bgGradient = "from-yellow-400 to-yellow-600"; borderColor = "border-yellow-800"; textColor = "text-black"; }
   else if (color === "green") { bgGradient = "from-green-600 to-green-800"; borderColor = "border-green-900"; textColor = "text-white"; }
 
   return (
@@ -52,9 +53,19 @@ export default function ATMBalance() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const bal = Number(localStorage.getItem("atm_balance")) || 0;
-    setBalance(bal);
-    setLoading(false);
+    const fetchBalance = async () => {
+      try {
+        const response = await atmService.getBalance();
+        // Response: { accountId, balance, currency }
+        setBalance(response.balance || 0);
+      } catch (error) {
+        console.error("Failed to fetch balance:", error);
+        setBalance(0);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchBalance();
   }, []);
 
   const handlePrintSlip = () => {
@@ -145,15 +156,15 @@ export default function ATMBalance() {
             </div>
 
             <div className="bg-gray-200 p-3 rounded-lg border border-gray-400 shadow-inner flex flex-col items-center justify-center relative overflow-hidden h-32">
-                <div className={`absolute left-1/2 -translate-x-1/2 w-4/5 bg-white border border-gray-300 shadow-sm transition-all duration-1000 ease-out p-2 z-10 ${isPrinting ? "top-2 h-32" : "-top-40 h-0"}`}>
-                    <div className="text-[8px] text-black font-mono">
-                        <p className="font-bold border-b pb-1">BANKIFY RECEIPT</p>
-                        <p>BAL: ฿{Number(balance).toLocaleString()}</p>
-                        <p>{new Date().toLocaleDateString()}</p>
-                    </div>
+              <div className={`absolute left-1/2 -translate-x-1/2 w-4/5 bg-white border border-gray-300 shadow-sm transition-all duration-1000 ease-out p-2 z-10 ${isPrinting ? "top-2 h-32" : "-top-40 h-0"}`}>
+                <div className="text-[8px] text-black font-mono">
+                  <p className="font-bold border-b pb-1">BANKIFY RECEIPT</p>
+                  <p>BAL: ฿{Number(balance).toLocaleString()}</p>
+                  <p>{new Date().toLocaleDateString()}</p>
                 </div>
-                <div className="w-3/4 h-1.5 bg-gray-900 rounded-full mb-2 border-b border-white/10 shadow-inner" />
-                <span className="text-[11px] text-gray-500 font-black uppercase tracking-widest">Receipt</span>
+              </div>
+              <div className="w-3/4 h-1.5 bg-gray-900 rounded-full mb-2 border-b border-white/10 shadow-inner" />
+              <span className="text-[11px] text-gray-500 font-black uppercase tracking-widest">Receipt</span>
             </div>
           </div>
 

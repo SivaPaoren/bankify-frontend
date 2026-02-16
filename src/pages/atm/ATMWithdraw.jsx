@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import bankifyLogo from "../../assets/BankifyWhiteLogo.png";
+import { atmService } from "../../api";
 
 /* ---------- SHARED HARDWARE UI COMPONENTS ---------- */
 
@@ -43,41 +44,40 @@ export default function ATMWithdraw() {
     if (amount.length < 6) setAmount(prev => prev + num);
   };
 
-  const handleEnter = () => {
+  const handleEnter = async () => {
     const val = Number(amount);
-    const balance = Number(localStorage.getItem("atm_balance")) || 0;
 
     if (step === "AMOUNT") {
       if (val < 20) { setError("MIN WITHDRAW ฿20"); return; }
-      if (val > balance) { setError("INSUFFICIENT BALANCE"); return; }
       if (val > 100000) { setError("MAX LIMIT ฿100,000"); return; }
       setStep("PROCESSING");
-      processWithdraw();
+      await processWithdraw();
     }
   };
 
-  const processWithdraw = () => {
-    setTimeout(() => {
-      const currentBalance = Number(localStorage.getItem("atm_balance")) || 0;
-      localStorage.setItem("atm_balance", currentBalance - Number(amount));
-      
-      const tx = { type: "Withdraw", amount: -Number(amount), date: new Date().toISOString() };
-      const existing = JSON.parse(localStorage.getItem("atm_transactions")) || [];
-      localStorage.setItem("atm_transactions", JSON.stringify([tx, ...existing]));
-      
-      setStep("DISPENSING");
-    }, 2000);
+  const processWithdraw = async () => {
+    try {
+      await atmService.withdraw(Number(amount), "Cash withdrawal via ATM");
+
+      setTimeout(() => {
+        setStep("DISPENSING");
+      }, 1500);
+    } catch (error) {
+      console.error("Withdrawal failed:", error);
+      setError(error.response?.data?.message || "Insufficient balance or withdrawal failed");
+      setStep("AMOUNT");
+    }
   };
 
   const getBills = (val) => {
     let remain = Number(val);
     const bills = [];
     const denoms = [
-      { v: 1000, color: "bg-[#7d6e61]", border: "border-[#4a3f36]" }, 
-      { v: 500,  color: "bg-[#9b72b0]", border: "border-[#5e3d70]" }, 
-      { v: 100,  color: "bg-[#d14d4d]", border: "border-[#822a2a]" }, 
-      { v: 50,   color: "bg-[#4a89cc]", border: "border-[#2a4d73]" }, 
-      { v: 20,   color: "bg-[#52a36d]", border: "border-[#2d5c3d]" } 
+      { v: 1000, color: "bg-[#7d6e61]", border: "border-[#4a3f36]" },
+      { v: 500, color: "bg-[#9b72b0]", border: "border-[#5e3d70]" },
+      { v: 100, color: "bg-[#d14d4d]", border: "border-[#822a2a]" },
+      { v: 50, color: "bg-[#4a89cc]", border: "border-[#2a4d73]" },
+      { v: 20, color: "bg-[#52a36d]", border: "border-[#2d5c3d]" }
     ];
     denoms.forEach(d => {
       const count = Math.floor(remain / d.v);
@@ -116,22 +116,22 @@ export default function ATMWithdraw() {
                 </div>
 
                 <div className="w-[480px] h-[340px] bg-slate-900 rounded border-4 border-black relative overflow-hidden shadow-[inset_0_0_40px_rgba(0,0,0,0.9)]">
-                   <div className="absolute left-0 bottom-6 px-2 z-20">
+                  <div className="absolute left-0 bottom-6 px-2 z-20">
                     <div className="h-10 flex items-center gap-1">
-                        <span className="text-cyan-400 font-bold">&lt;</span>
-                        <span className="bg-slate-800/90 text-white text-[10px] px-2 py-1.5 rounded border-l-2 border-cyan-500 min-w-[60px] text-center uppercase tracking-widest">Back</span>
+                      <span className="text-cyan-400 font-bold">&lt;</span>
+                      <span className="bg-slate-800/90 text-white text-[10px] px-2 py-1.5 rounded border-l-2 border-cyan-500 min-w-[60px] text-center uppercase tracking-widest">Back</span>
                     </div>
                   </div>
                   <div className="absolute right-0 bottom-6 px-2 z-20">
                     <div className="h-10 flex items-center gap-1">
-                        <span className="bg-slate-800/90 text-white text-[10px] px-2 py-1.5 rounded border-r-2 border-cyan-500 min-w-[60px] text-center uppercase tracking-widest">
-                          {step === "DISPENSING" ? "Finish" : "Enter"}
-                        </span>
-                        <span className="text-cyan-400 font-bold">&gt;</span>
+                      <span className="bg-slate-800/90 text-white text-[10px] px-2 py-1.5 rounded border-r-2 border-cyan-500 min-w-[60px] text-center uppercase tracking-widest">
+                        {step === "DISPENSING" ? "Finish" : "Enter"}
+                      </span>
+                      <span className="text-cyan-400 font-bold">&gt;</span>
                     </div>
                   </div>
 
-                   <div className="w-full h-full flex items-center justify-center p-5 z-10 font-mono text-white">
+                  <div className="w-full h-full flex items-center justify-center p-5 z-10 font-mono text-white">
                     {step === "AMOUNT" && (
                       <div className="text-center">
                         <h2 className="text-cyan-500 text-xs font-bold uppercase mb-2 tracking-widest">Withdrawal Amount (THB)</h2>
@@ -163,13 +163,13 @@ export default function ATMWithdraw() {
 
             <div className="bg-gray-200 p-6 rounded-xl border border-gray-400 shadow-inner flex flex-col items-center">
               <div className="w-full max-w-[400px] h-16 bg-gradient-to-b from-gray-900 to-gray-800 rounded-md border-b-2 border-gray-600 flex items-center justify-center relative overflow-visible shadow-2xl">
-                <div 
+                <div
                   className={`absolute w-40 h-10 transition-all duration-[1200ms] ease-out
                     ${step === 'DISPENSING' ? 'translate-y-[-25px] opacity-100 z-30' : 'translate-y-0 opacity-0 z-0'}
                   `}
                 >
                   {billStack.map((bill, index) => (
-                    <div 
+                    <div
                       key={index}
                       className={`absolute inset-0 ${bill.color} ${bill.border} rounded border shadow-xl flex items-center justify-between px-2 text-[8px] text-white font-black`}
                       style={{ transform: `translateY(-${index * 2.5}px) rotate(${index % 2 === 0 ? 0.8 : -0.8}deg)` }}
@@ -191,7 +191,7 @@ export default function ATMWithdraw() {
           {/* RIGHT UNIT */}
           <div className="flex flex-col gap-6 w-72">
             <div className="bg-gray-200 p-4 rounded-xl border border-gray-400 shadow-inner">
-               <div className="h-10 bg-gray-900 rounded flex items-center justify-center border-b border-gray-700">
+              <div className="h-10 bg-gray-900 rounded flex items-center justify-center border-b border-gray-700">
                 <div className="w-16 h-1 bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.8)] animate-pulse" />
               </div>
               <div className="text-[10px] text-gray-500 font-bold uppercase mt-2 text-center tracking-tighter">Card Inserted</div>
@@ -217,8 +217,8 @@ export default function ATMWithdraw() {
 
             {/* RECEIPT MODULE WITH LABEL BELOW SLOT */}
             <div className="bg-gray-200 p-3 rounded-lg border border-gray-400 shadow-inner flex flex-col items-center justify-center h-32">
-                <div className="w-3/4 h-1.5 bg-gray-900 rounded-full border-b border-white/10 shadow-inner mb-3" />
-                <span className="text-[11px] text-gray-500 font-black uppercase tracking-widest">Receipt</span>
+              <div className="w-3/4 h-1.5 bg-gray-900 rounded-full border-b border-white/10 shadow-inner mb-3" />
+              <span className="text-[11px] text-gray-500 font-black uppercase tracking-widest">Receipt</span>
             </div>
           </div>
         </div>

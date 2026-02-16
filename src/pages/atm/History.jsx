@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import bankifyLogo from "../../assets/BankifyWhiteLogo.png";
+import { atmService } from "../../api";
 
 /* ---------- SHARED HARDWARE UI COMPONENTS ---------- */
 
@@ -23,8 +24,8 @@ const KeyButton = ({ label, color, onClick }) => {
   let bgGradient = "from-gray-100 to-gray-300";
   let borderColor = "border-gray-400";
   let textColor = "text-gray-800";
-  if (color === "red") { bgGradient = "from-red-600 to-red-800"; borderColor = "border-red-900"; textColor = "text-white"; } 
-  else if (color === "yellow") { bgGradient = "from-yellow-400 to-yellow-600"; borderColor = "border-yellow-800"; textColor = "text-black"; } 
+  if (color === "red") { bgGradient = "from-red-600 to-red-800"; borderColor = "border-red-900"; textColor = "text-white"; }
+  else if (color === "yellow") { bgGradient = "from-yellow-400 to-yellow-600"; borderColor = "border-yellow-800"; textColor = "text-black"; }
   else if (color === "green") { bgGradient = "from-green-600 to-green-800"; borderColor = "border-green-900"; textColor = "text-white"; }
 
   return (
@@ -39,10 +40,23 @@ const KeyButton = ({ label, color, onClick }) => {
 export default function ATMHistory() {
   const navigate = useNavigate();
   const [transactions, setTransactions] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const stored = JSON.parse(localStorage.getItem("atm_transactions")) || [];
-    setTransactions(stored.slice(0, 3));
+    const fetchTransactions = async () => {
+      try {
+        const response = await atmService.getTransactions();
+        // Response may be { content: [...] } or [...] directly
+        const txs = response.content || response || [];
+        setTransactions(txs.slice(0, 10)); // Show recent 10
+      } catch (error) {
+        console.error("Failed to fetch transactions:", error);
+        setTransactions([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTransactions();
   }, []);
 
   return (
@@ -72,14 +86,14 @@ export default function ATMHistory() {
                 <div className="w-[480px] h-[340px] bg-slate-900 rounded border-4 border-black relative overflow-hidden shadow-[inset_0_0_40px_rgba(0,0,0,0.9)]">
                   <div className="absolute left-0 bottom-6 px-2 z-20">
                     <div className="h-10 flex items-center gap-1">
-                        <span className="text-cyan-400 font-bold">&lt;</span>
-                        <span className="bg-slate-800/90 text-white text-[10px] px-2 py-1.5 rounded border-l-2 border-cyan-500 min-w-[60px] text-center uppercase">Back</span>
+                      <span className="text-cyan-400 font-bold">&lt;</span>
+                      <span className="bg-slate-800/90 text-white text-[10px] px-2 py-1.5 rounded border-l-2 border-cyan-500 min-w-[60px] text-center uppercase">Back</span>
                     </div>
                   </div>
 
                   <div className="w-full h-full p-6 font-mono text-white flex flex-col">
                     <h2 className="text-cyan-500 text-xs font-bold uppercase mb-4 tracking-widest text-center border-b border-cyan-900/50 pb-2">Last 3 Transactions</h2>
-                    
+
                     <div className="flex-1 overflow-hidden pr-2">
                       <table className="w-full text-[10px] uppercase">
                         <tbody className="divide-y divide-slate-800">
@@ -89,7 +103,7 @@ export default function ATMHistory() {
                             transactions.map((t, i) => (
                               <tr key={i} className="hover:bg-slate-800/50 transition-colors">
                                 <td className={`py-5 ${t.amount > 0 ? 'text-emerald-500' : 'text-red-400'}`}>
-                                  {t.type} <br/>
+                                  {t.type} <br />
                                   <span className="text-[8px] text-slate-500">{new Date(t.date).toLocaleDateString()}</span>
                                 </td>
                                 <td className="py-5 text-right font-bold text-lg tracking-tighter">
@@ -139,8 +153,8 @@ export default function ATMHistory() {
 
             {/* CORRECTED RECEIPT SLOT (Matches h-32 size from Home/Transfer) */}
             <div className="bg-gray-200 p-3 rounded-lg border border-gray-400 shadow-inner flex flex-col items-center justify-center h-32">
-                <div className="w-3/4 h-1.5 bg-gray-900 rounded-full mb-2 border-b border-white/10 shadow-inner" />
-                <span className="text-[11px] text-gray-500 font-black uppercase tracking-widest">Receipt</span>
+              <div className="w-3/4 h-1.5 bg-gray-900 rounded-full mb-2 border-b border-white/10 shadow-inner" />
+              <span className="text-[11px] text-gray-500 font-black uppercase tracking-widest">Receipt</span>
             </div>
           </div>
 
