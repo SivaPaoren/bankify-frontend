@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { adminService } from '../../api';
+import { formatCurrency } from '../../utils/formatters';
 import { Search, Plus, CreditCard, DollarSign, Calendar, X, ArrowRight, ArrowUpRight, ArrowDownLeft, Ban, AlertCircle, FileText } from 'lucide-react';
 
 export default function AccountManager() {
@@ -150,7 +151,7 @@ export default function AccountManager() {
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <div className="font-bold text-white text-lg tracking-tight">
-                                                {new Intl.NumberFormat('en-US', { style: 'currency', currency: account.currency }).format(account.balance)}
+                                                {formatCurrency(account.balance, account.currency)}
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-center">
@@ -294,10 +295,10 @@ export default function AccountManager() {
                                 <div className="flex gap-2">
                                     {selectedAccount.status === 'ACTIVE' ? (
                                         <button
-                                            onClick={() => handleUpdateStatus(selectedAccount.id, 'SUSPENDED')}
-                                            className="flex items-center gap-2 px-4 py-2 bg-red-500/10 text-red-400 border border-red-500/20 rounded-xl font-bold text-sm hover:bg-red-500/20 transition-colors"
+                                            onClick={() => handleUpdateStatus(selectedAccount.id, 'FROZEN')}
+                                            className="flex items-center gap-2 px-4 py-2 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-xl font-bold text-sm hover:bg-blue-500/20 transition-colors"
                                         >
-                                            <Ban size={16} /> Suspend
+                                            <Ban size={16} /> Freeze
                                         </button>
                                     ) : (
                                         <button
@@ -315,7 +316,7 @@ export default function AccountManager() {
                                 <h2 className="text-3xl font-mono text-white tracking-tight mb-4">{selectedAccount.accountNumber}</h2>
                                 <div className="flex items-end gap-3">
                                     <span className="text-4xl font-bold text-white tracking-tighter">
-                                        {new Intl.NumberFormat('en-US', { style: 'currency', currency: selectedAccount.currency }).format(selectedAccount.balance)}
+                                        {formatCurrency(selectedAccount.balance, selectedAccount.currency)}
                                     </span>
                                     <span className="mb-1.5 px-2.5 py-0.5 rounded-lg bg-white/10 text-xs font-bold text-primary-200">Current Balance</span>
                                 </div>
