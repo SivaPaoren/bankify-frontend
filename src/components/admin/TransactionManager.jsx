@@ -5,7 +5,10 @@ import { Search, Filter, ArrowUpRight, ArrowDownLeft, RefreshCw, Smartphone, Cre
 export default function TransactionManager() {
     const [transactions, setTransactions] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [filter, setFilter] = useState({ type: 'ALL', status: 'ALL', date: '' });
+    const [searchTerm, setSearchTerm] = useState('');
+    const [typeFilter, setTypeFilter] = useState('ALL');
+    const [statusFilter, setStatusFilter] = useState('ALL');
+    const [dateFilter, setDateFilter] = useState('');
 
     useEffect(() => {
         fetchTransactions();
@@ -24,11 +27,42 @@ export default function TransactionManager() {
     };
 
     const filteredTransactions = transactions.filter(tx => {
-        if (filter.type !== 'ALL' && tx.type !== filter.type) return false;
-        if (filter.status !== 'ALL' && tx.status !== filter.status) return false;
-        if (filter.date && !(tx.createdAt || '').startsWith(filter.date)) return false;
+        if (typeFilter !== 'ALL' && tx.type !== typeFilter) return false;
+        if (statusFilter !== 'ALL' && tx.status !== statusFilter) return false;
+        if (dateFilter && !(tx.createdAt || '').startsWith(dateFilter)) return false;
+        if (searchTerm) {
+            const term = searchTerm.toLowerCase();
+            return (
+                tx.id?.toLowerCase().includes(term) ||
+                tx.fromAccountId?.toLowerCase().includes(term) ||
+                tx.toAccountId?.toLowerCase().includes(term)
+            );
+        }
         return true;
     });
+
+    // Stats Calculation
+    const stats = {
+        totalVolume: filteredTransactions.filter(t => t.status === 'SUCCESS').reduce((sum, t) => sum + (t.amount || 0), 0),
+        count: filteredTransactions.length,
+        successCount: filteredTransactions.filter(t => t.status === 'SUCCESS').length,
+        failedCount: filteredTransactions.filter(t => t.status === 'FAILED').length,
+    };
+
+    const TYPE_CHIPS = [
+        { key: 'ALL', label: 'All Types' },
+        { key: 'DEPOSIT', label: 'Deposits', icon: <ArrowDownLeft size={14} /> },
+        { key: 'WITHDRAWAL', label: 'Withdrawals', icon: <ArrowUpRight size={14} /> },
+        { key: 'TRANSFER', label: 'Transfers', icon: <RefreshCw size={14} /> },
+        { key: 'PAYMENT', label: 'Payments', icon: <CreditCard size={14} /> },
+    ];
+
+    const STATUS_CHIPS = [
+        { key: 'ALL', label: 'All Status' },
+        { key: 'SUCCESS', label: 'Success', cls: 'border-emerald-500/20 text-emerald-400', activeCls: 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300' },
+        { key: 'PENDING', label: 'Pending', cls: 'border-amber-500/20 text-amber-400', activeCls: 'bg-amber-500/20 border-amber-500/40 text-amber-300' },
+        { key: 'FAILED', label: 'Failed', cls: 'border-red-500/20 text-red-400', activeCls: 'bg-red-500/20 border-red-500/40 text-red-300' },
+    ];
 
     return (
         <div className="space-y-6">
@@ -46,48 +80,87 @@ export default function TransactionManager() {
                 </button>
             </div>
 
-            {/* Filter Bar */}
-            <div className="bg-white/5 backdrop-blur-md p-6 rounded-3xl shadow-xl border border-white/10 flex flex-col lg:flex-row gap-4 items-center">
-                <div className="flex items-center gap-3 w-full lg:w-auto flex-1">
-                    <div className="bg-black/20 p-2.5 rounded-xl border border-white/10 text-primary-400">
-                        <Filter size={20} />
-                    </div>
-                    <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-3">
-                        <select
-                            className="bg-black/20 border border-white/10 text-primary-100 rounded-xl px-4 py-2.5 focus:border-cyan-500 outline-none w-full hover:bg-white/5 transition-colors appearance-none cursor-pointer"
-                            value={filter.type}
-                            onChange={(e) => setFilter({ ...filter, type: e.target.value })}
-                        >
-                            <option value="ALL">All Types</option>
-                            <option value="DEPOSIT">Deposits</option>
-                            <option value="WITHDRAWAL">Withdrawals</option>
-                            <option value="TRANSFER">Transfers</option>
-                        </select>
-                        <select
-                            className="bg-black/20 border border-white/10 text-primary-100 rounded-xl px-4 py-2.5 focus:border-cyan-500 outline-none w-full hover:bg-white/5 transition-colors appearance-none cursor-pointer"
-                            value={filter.status}
-                            onChange={(e) => setFilter({ ...filter, status: e.target.value })}
-                        >
-                            <option value="ALL">All Status</option>
-                            <option value="SUCCESS">Success</option>
-                            <option value="PENDING">Pending</option>
-                            <option value="FAILED">Failed</option>
-                        </select>
-                        <input
-                            type="date"
-                            className="bg-black/20 border border-white/10 text-primary-100 rounded-xl px-4 py-2.5 focus:border-cyan-500 outline-none w-full hover:bg-white/5 transition-colors"
-                            value={filter.date}
-                            onChange={(e) => setFilter({ ...filter, date: e.target.value })}
-                        />
+            {/* Stats Row */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+                    <div className="text-xs text-primary-400 uppercase tracking-widest font-bold mb-1">Total Volume</div>
+                    <div className="text-2xl font-bold text-white">
+                        {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'THB' }).format(stats.totalVolume)}
                     </div>
                 </div>
-                <div className="w-full lg:w-auto lg:max-w-xs relative group">
-                    <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-primary-400 group-focus-within:text-cyan-400 transition-colors" />
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+                    <div className="text-xs text-primary-400 uppercase tracking-widest font-bold mb-1">Transactions</div>
+                    <div className="text-2xl font-bold text-white">{stats.count}</div>
+                </div>
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+                    <div className="text-xs text-emerald-400/80 uppercase tracking-widest font-bold mb-1">Success Rate</div>
+                    <div className="text-2xl font-bold text-emerald-400">
+                        {stats.count > 0 ? Math.round((stats.successCount / stats.count) * 100) : 0}%
+                    </div>
+                </div>
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+                    <div className="text-xs text-red-400/80 uppercase tracking-widest font-bold mb-1">Failed</div>
+                    <div className="text-2xl font-bold text-red-400">{stats.failedCount}</div>
+                </div>
+            </div>
+
+            {/* Toolbar */}
+            <div className="flex flex-col xl:flex-row gap-4">
+                {/* Search & Date */}
+                <div className="flex gap-3 min-w-[300px]">
+                    <div className="flex items-center gap-3 bg-black/20 px-4 py-2.5 rounded-xl border border-white/10 focus-within:border-cyan-500 transition-all flex-1 group">
+                        <Search size={18} className="text-primary-400 group-focus-within:text-cyan-400 transition-colors shrink-0" />
+                        <input
+                            type="text"
+                            placeholder="Search ID, Account..."
+                            className="bg-transparent outline-none text-white w-full placeholder:text-primary-500"
+                            value={searchTerm}
+                            onChange={e => setSearchTerm(e.target.value)}
+                        />
+                    </div>
                     <input
-                        type="text"
-                        placeholder="Search by Transaction ID..."
-                        className="w-full bg-black/20 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-white outline-none focus:border-cyan-500 transition-all placeholder:text-primary-500"
+                        type="date"
+                        className="bg-black/20 border border-white/10 text-primary-300 rounded-xl px-4 py-2.5 focus:border-cyan-500 outline-none hover:bg-white/5 transition-colors"
+                        value={dateFilter}
+                        onChange={e => setDateFilter(e.target.value)}
                     />
+                </div>
+
+                {/* Filters */}
+                <div className="flex flex-col gap-3 flex-1">
+                    {/* Type Chips */}
+                    <div className="flex flex-wrap gap-2 items-center">
+                        <span className="text-xs text-primary-400 font-bold uppercase tracking-widest mr-1">Type</span>
+                        {TYPE_CHIPS.map(c => (
+                            <button
+                                key={c.key}
+                                onClick={() => setTypeFilter(c.key)}
+                                className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all flex items-center gap-1.5 ${typeFilter === c.key
+                                        ? 'bg-cyan-500/20 border-cyan-500/40 text-cyan-300'
+                                        : 'border-white/10 text-primary-300 hover:bg-white/5'
+                                    }`}
+                            >
+                                {c.icon} {c.label}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Status Chips */}
+                    <div className="flex flex-wrap gap-2 items-center">
+                        <span className="text-xs text-primary-400 font-bold uppercase tracking-widest mr-1">Status</span>
+                        {STATUS_CHIPS.map(c => (
+                            <button
+                                key={c.key}
+                                onClick={() => setStatusFilter(c.key)}
+                                className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${statusFilter === c.key
+                                        ? c.activeCls || 'bg-white/10 text-white border-white/30'
+                                        : c.cls || 'border-white/10 text-primary-300 hover:bg-white/5'
+                                    }`}
+                            >
+                                {c.label}
+                            </button>
+                        ))}
+                    </div>
                 </div>
             </div>
 

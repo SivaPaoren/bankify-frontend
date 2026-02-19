@@ -32,6 +32,9 @@ const ACTION_COLOR = {
 
 export default function AuditLogs() {
   const [searchTerm, setSearchTerm] = useState('');
+  const [actorFilter, setActorFilter] = useState('ALL');
+  const [actionFilter, setActionFilter] = useState('ALL');
+  const [dateFilter, setDateFilter] = useState('');
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -49,31 +52,132 @@ export default function AuditLogs() {
     fetchLogs();
   }, []);
 
-  const filteredLogs = logs.filter(log =>
-    log.action?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    log.actorId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    log.actorType?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    log.entityType?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (log.details && log.details.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const filteredLogs = logs.filter(log => {
+    if (actorFilter !== 'ALL' && log.actorType !== actorFilter) return false;
+    if (actionFilter !== 'ALL' && !log.action?.includes(actionFilter)) return false;
+    if (dateFilter && !log.createdAt?.startsWith(dateFilter)) return false;
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      return (
+        log.action?.toLowerCase().includes(term) ||
+        log.actorId?.toLowerCase().includes(term) ||
+        log.entityType?.toLowerCase().includes(term) ||
+        (log.details && log.details.toLowerCase().includes(term))
+      );
+    }
+    return true;
+  });
+
+  // Stats
+  const stats = {
+    total: filteredLogs.length,
+    users: filteredLogs.filter(l => l.actorType === 'USER').length,
+    errors: filteredLogs.filter(l => l.action?.includes('FAIL') || l.action?.includes('ERROR') || l.details?.includes('error')).length,
+    recent: filteredLogs.filter(l => {
+      const date = new Date(l.createdAt);
+      const now = new Date();
+      return (now - date) < 24 * 60 * 60 * 1000; // last 24h
+    }).length
+  };
+
+  const ACTOR_CHIPS = [
+    { key: 'ALL', label: 'All Actors' },
+    { key: 'ADMIN', label: 'Admin', cls: 'border-cyan-500/20 text-cyan-400', activeCls: 'bg-cyan-500/20 border-cyan-500/40 text-cyan-300' },
+    { key: 'USER', label: 'User', cls: 'border-blue-500/20 text-blue-400', activeCls: 'bg-blue-500/20 border-blue-500/40 text-blue-300' },
+    { key: 'ATM', label: 'ATM', cls: 'border-amber-500/20 text-amber-400', activeCls: 'bg-amber-500/20 border-amber-500/40 text-amber-300' },
+    { key: 'PARTNER', label: 'Partner', cls: 'border-purple-500/20 text-purple-400', activeCls: 'bg-purple-500/20 border-purple-500/40 text-purple-300' },
+    { key: 'SYSTEM', label: 'System', cls: 'border-primary-500/20 text-primary-400', activeCls: 'bg-primary-500/20 border-primary-500/40 text-primary-300' },
+  ];
+
+  // Common action groups to filter by
+  const ACTION_CHIPS = [
+    { key: 'ALL', label: 'All Actions' },
+    { key: 'LOGIN', label: 'Auth' },
+    { key: 'CREATE', label: 'Create' },
+    { key: 'UPDATE', label: 'Update' },
+    { key: 'DELETE', label: 'Delete' },
+    { key: 'TX', label: 'Transactions' },
+  ];
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight">Audit Logs</h1>
-          <p className="text-primary-200">System-wide activity trail.</p>
+      {/* Stats Row */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+          <div className="text-xs text-primary-400 uppercase tracking-widest font-bold mb-1">Total Events</div>
+          <div className="text-2xl font-bold text-white">{stats.total}</div>
         </div>
-        <div className="flex items-center gap-2 bg-white/5 border border-white/10 px-4 py-2.5 rounded-xl shadow-inner focus-within:border-cyan-500/50 focus-within:bg-black/20 transition-all group">
-          <Search size={18} className="text-primary-400 group-focus-within:text-cyan-400 transition-colors" />
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+          <div className="text-xs text-primary-400 uppercase tracking-widest font-bold mb-1">Last 24h</div>
+          <div className="text-2xl font-bold text-emerald-400">{stats.recent}</div>
+        </div>
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+          <div className="text-xs text-blue-400/80 uppercase tracking-widest font-bold mb-1">User Actions</div>
+          <div className="text-2xl font-bold text-blue-400">{stats.users}</div>
+        </div>
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+          <div className="text-xs text-red-400/80 uppercase tracking-widest font-bold mb-1">Errors/Failures</div>
+          <div className="text-2xl font-bold text-red-400">{stats.errors}</div>
+        </div>
+      </div>
+
+      {/* Toolbar */}
+      <div className="flex flex-col xl:flex-row gap-4">
+        {/* Search & Date */}
+        <div className="flex gap-3 min-w-[300px]">
+          <div className="flex items-center gap-2 bg-white/5 border border-white/10 px-4 py-2.5 rounded-xl shadow-inner focus-within:border-cyan-500/50 focus-within:bg-black/20 transition-all flex-1 group">
+            <Search size={18} className="text-primary-400 group-focus-within:text-cyan-400 transition-colors shrink-0" />
+            <input
+              type="text"
+              placeholder="Search logs..."
+              className="outline-none text-sm w-full bg-transparent text-white placeholder:text-primary-500"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
           <input
-            type="text"
-            placeholder="Search logs..."
-            className="outline-none text-sm w-64 bg-transparent text-white placeholder:text-primary-500"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            type="date"
+            className="bg-black/20 border border-white/10 text-primary-300 rounded-xl px-4 py-2.5 focus:border-cyan-500 outline-none hover:bg-white/5 transition-colors"
+            value={dateFilter}
+            onChange={e => setDateFilter(e.target.value)}
           />
+        </div>
+
+        {/* Filters */}
+        <div className="flex flex-col gap-3 flex-1">
+          {/* Actor Chips */}
+          <div className="flex flex-wrap gap-2 items-center">
+            <span className="text-xs text-primary-400 font-bold uppercase tracking-widest mr-1">Actor</span>
+            {ACTOR_CHIPS.map(c => (
+              <button
+                key={c.key}
+                onClick={() => setActorFilter(c.key)}
+                className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${actorFilter === c.key
+                    ? c.activeCls || 'bg-white/10 text-white border-white/30'
+                    : c.cls || 'border-white/10 text-primary-300 hover:bg-white/5'
+                  }`}
+              >
+                {c.label}
+              </button>
+            ))}
+          </div>
+          {/* Action Chips */}
+          <div className="flex flex-wrap gap-2 items-center">
+            <span className="text-xs text-primary-400 font-bold uppercase tracking-widest mr-1">Action</span>
+            {ACTION_CHIPS.map(c => (
+              <button
+                key={c.key}
+                onClick={() => setActionFilter(c.key)}
+                className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${actionFilter === c.key
+                    ? 'bg-cyan-500/20 border-cyan-500/40 text-cyan-300'
+                    : 'border-white/10 text-primary-300 hover:bg-white/5'
+                  }`}
+              >
+                {c.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
