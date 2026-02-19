@@ -23,12 +23,27 @@ const ACTOR_BADGE = {
 };
 
 const ACTION_COLOR = {
+  ACCOUNT_CREATED: 'text-emerald-300 bg-emerald-500/10 border-emerald-500/20',
   ACCOUNT_UPDATED: 'text-cyan-300 bg-cyan-500/10 border-cyan-500/20',
-  ACCOUNT_DISABLED: 'text-blue-300 bg-blue-500/10 border-blue-500/20',
+  ACCOUNT_FROZEN: 'text-amber-300 bg-amber-500/10 border-amber-500/20',
+  ACCOUNT_REACTIVATED: 'text-teal-300 bg-teal-500/10 border-teal-500/20',
+  ACCOUNT_CLOSED: 'text-red-300 bg-red-500/10 border-red-500/20',
+  ACCOUNT_DISABLED: 'text-amber-300 bg-amber-500/10 border-amber-500/20', // legacy support
   ACCOUNT_PIN_RESET: 'text-yellow-300 bg-yellow-500/10 border-yellow-500/20',
   TX_DEPOSIT: 'text-emerald-300 bg-emerald-500/10 border-emerald-500/20',
   TX_WITHDRAW: 'text-red-300 bg-red-500/10 border-red-500/20',
   TX_TRANSFER: 'text-violet-300 bg-violet-500/10 border-violet-500/20',
+
+  // Customer Actions
+  CUSTOMER_CREATED: 'text-emerald-300 bg-emerald-500/10 border-emerald-500/20',
+  CUSTOMER_UPDATED: 'text-emerald-300 bg-emerald-500/10 border-emerald-500/20',
+  CUSTOMER_FROZEN: 'text-amber-300 bg-amber-500/10 border-amber-500/20',
+  CUSTOMER_REACTIVATED: 'text-teal-300 bg-teal-500/10 border-teal-500/20',
+  CUSTOMER_CLOSED: 'text-red-300 bg-red-500/10 border-red-500/20',
+
+  // Partner Rotation
+  PARTNER_ROTATION_APPROVED: 'text-purple-300 bg-purple-500/10 border-purple-500/20',
+  PARTNER_ROTATION_REJECTED: 'text-red-300 bg-red-500/10 border-red-500/20',
 };
 
 export default function AuditLogs() {
@@ -98,6 +113,7 @@ export default function AuditLogs() {
     { key: 'UPDATE', label: 'Update' },
     { key: 'DELETE', label: 'Delete' },
     { key: 'TX', label: 'Transactions' },
+    { key: 'CUSTOMER', label: 'Customer' },
   ];
 
   return (
@@ -172,6 +188,7 @@ export default function AuditLogs() {
               UPDATE: logs.filter(l => l.action?.includes('UPDATE')).length,
               DELETE: logs.filter(l => l.action?.includes('DELETE')).length,
               TX: logs.filter(l => l.action?.includes('TX')).length,
+              CUSTOMER: logs.filter(l => l.action?.includes('CUSTOMER')).length,
             }}
           />
         </div>
