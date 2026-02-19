@@ -23,27 +23,47 @@ const ACTOR_BADGE = {
 };
 
 const ACTION_COLOR = {
-  ACCOUNT_CREATED: 'text-emerald-300 bg-emerald-500/10 border-emerald-500/20',
-  ACCOUNT_UPDATED: 'text-cyan-300 bg-cyan-500/10 border-cyan-500/20',
-  ACCOUNT_FROZEN: 'text-amber-300 bg-amber-500/10 border-amber-500/20',
-  ACCOUNT_REACTIVATED: 'text-teal-300 bg-teal-500/10 border-teal-500/20',
-  ACCOUNT_CLOSED: 'text-red-300 bg-red-500/10 border-red-500/20',
+  // Auth
+  USER_LOGIN: 'text-blue-300 bg-blue-500/10 border-blue-500/20',
+
+  // Account
+  ACCOUNT_CREATE: 'text-emerald-300 bg-emerald-500/10 border-emerald-500/20',
+  ACCOUNT_UPDATE: 'text-cyan-300 bg-cyan-500/10 border-cyan-500/20',
+  ACCOUNT_FREEZE: 'text-amber-300 bg-amber-500/10 border-amber-500/20',
+  ACCOUNT_REACTIVATE: 'text-teal-300 bg-teal-500/10 border-teal-500/20',
+  ACCOUNT_CLOSE: 'text-red-300 bg-red-500/10 border-red-500/20',
   ACCOUNT_DISABLED: 'text-amber-300 bg-amber-500/10 border-amber-500/20', // legacy support
   ACCOUNT_PIN_RESET: 'text-yellow-300 bg-yellow-500/10 border-yellow-500/20',
+
+  // Transactions
+  TRANSACTION_DEPOSIT: 'text-emerald-300 bg-emerald-500/10 border-emerald-500/20',
+  TRANSACTION_WITHDRAW: 'text-red-300 bg-red-500/10 border-red-500/20',
+  TRANSACTION_TRANSFER: 'text-violet-300 bg-violet-500/10 border-violet-500/20',
+
+  // Legacy TX support
   TX_DEPOSIT: 'text-emerald-300 bg-emerald-500/10 border-emerald-500/20',
   TX_WITHDRAW: 'text-red-300 bg-red-500/10 border-red-500/20',
   TX_TRANSFER: 'text-violet-300 bg-violet-500/10 border-violet-500/20',
 
   // Customer Actions
-  CUSTOMER_CREATED: 'text-emerald-300 bg-emerald-500/10 border-emerald-500/20',
-  CUSTOMER_UPDATED: 'text-emerald-300 bg-emerald-500/10 border-emerald-500/20',
-  CUSTOMER_FROZEN: 'text-amber-300 bg-amber-500/10 border-amber-500/20',
-  CUSTOMER_REACTIVATED: 'text-teal-300 bg-teal-500/10 border-teal-500/20',
-  CUSTOMER_CLOSED: 'text-red-300 bg-red-500/10 border-red-500/20',
+  CUSTOMER_CREATE: 'text-emerald-300 bg-emerald-500/10 border-emerald-500/20',
+  CUSTOMER_UPDATE: 'text-emerald-300 bg-emerald-500/10 border-emerald-500/20',
+  CUSTOMER_FREEZE: 'text-amber-300 bg-amber-500/10 border-amber-500/20',
+  CUSTOMER_REACTIVATE: 'text-teal-300 bg-teal-500/10 border-teal-500/20',
+  CUSTOMER_CLOSE: 'text-red-300 bg-red-500/10 border-red-500/20',
 
   // Partner Rotation
   PARTNER_ROTATION_APPROVED: 'text-purple-300 bg-purple-500/10 border-purple-500/20',
   PARTNER_ROTATION_REJECTED: 'text-red-300 bg-red-500/10 border-red-500/20',
+};
+
+// Start Case Helper: "ACCOUNT_CREATE" -> "Account Create"
+const toStartCase = (str) => {
+  if (!str) return '';
+  return str
+    .replace(/_/g, ' ')
+    .toLowerCase()
+    .replace(/\b\w/g, s => s.toUpperCase());
 };
 
 export default function AuditLogs() {
@@ -70,7 +90,9 @@ export default function AuditLogs() {
 
   const filteredLogs = logs.filter(log => {
     if (actorFilter !== 'ALL' && log.actorType !== actorFilter) return false;
-    if (actionFilter !== 'ALL' && !log.action?.includes(actionFilter)) return false;
+    if (actionFilter !== 'ALL') {
+      return log.action === actionFilter;
+    }
     if (dateFilter && !log.createdAt?.startsWith(dateFilter)) return false;
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
@@ -105,15 +127,50 @@ export default function AuditLogs() {
     { key: 'SYSTEM', label: 'System', cls: 'border-primary-500/20 text-primary-400', activeCls: 'bg-primary-500/20 border-primary-500/40 text-primary-300' },
   ];
 
-  // Common action groups to filter by
-  const ACTION_CHIPS = [
-    { key: 'ALL', label: 'All Actions' },
-    { key: 'LOGIN', label: 'Auth' },
-    { key: 'CREATE', label: 'Create' },
-    { key: 'UPDATE', label: 'Update' },
-    { key: 'DELETE', label: 'Delete' },
-    { key: 'TX', label: 'Transactions' },
-    { key: 'CUSTOMER', label: 'Customer' },
+  // Grouped Actions for Dropdown
+  const ACTION_GROUPS = [
+    { label: 'All Actions', value: 'ALL' },
+    {
+      label: 'Authentication',
+      options: [
+        { label: 'User Login', value: 'USER_LOGIN' },
+      ]
+    },
+    {
+      label: 'Account Management',
+      options: [
+        { label: 'Create Account', value: 'ACCOUNT_CREATE' },
+        { label: 'Update Account', value: 'ACCOUNT_UPDATE' },
+        { label: 'Freeze Account', value: 'ACCOUNT_FREEZE' },
+        { label: 'Reactivate Account', value: 'ACCOUNT_REACTIVATE' },
+        { label: 'Close Account', value: 'ACCOUNT_CLOSE' },
+      ]
+    },
+    {
+      label: 'Customer Management',
+      options: [
+        { label: 'Create Customer', value: 'CUSTOMER_CREATE' },
+        { label: 'Update Customer', value: 'CUSTOMER_UPDATE' },
+        { label: 'Freeze Customer', value: 'CUSTOMER_FREEZE' },
+        { label: 'Reactivate Customer', value: 'CUSTOMER_REACTIVATE' },
+        { label: 'Close Customer', value: 'CUSTOMER_CLOSE' },
+      ]
+    },
+    {
+      label: 'Transactions',
+      options: [
+        { label: 'Deposit', value: 'TRANSACTION_DEPOSIT' },
+        { label: 'Withdraw', value: 'TRANSACTION_WITHDRAW' },
+        { label: 'Transfer', value: 'TRANSACTION_TRANSFER' },
+      ]
+    },
+    {
+      label: 'Partner Management',
+      options: [
+        { label: 'Approve Rotation', value: 'PARTNER_ROTATION_APPROVED' },
+        { label: 'Reject Rotation', value: 'PARTNER_ROTATION_REJECTED' },
+      ]
+    }
   ];
 
   return (
@@ -177,20 +234,34 @@ export default function AuditLogs() {
               SYSTEM: logs.filter(l => l.actorType === 'SYSTEM').length,
             }}
           />
-          <FilterDropdown
-            label="Action"
-            options={ACTION_CHIPS}
-            value={actionFilter}
-            onChange={setActionFilter}
-            counts={{
-              LOGIN: logs.filter(l => l.action?.includes('LOGIN')).length,
-              CREATE: logs.filter(l => l.action?.includes('CREATE')).length,
-              UPDATE: logs.filter(l => l.action?.includes('UPDATE')).length,
-              DELETE: logs.filter(l => l.action?.includes('DELETE')).length,
-              TX: logs.filter(l => l.action?.includes('TX')).length,
-              CUSTOMER: logs.filter(l => l.action?.includes('CUSTOMER')).length,
-            }}
-          />
+          <div className="relative z-20">
+            <select
+              value={actionFilter}
+              onChange={(e) => setActionFilter(e.target.value)}
+              className="appearance-none bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 pr-10 text-sm text-primary-300 focus:border-cyan-500 outline-none hover:bg-white/10 transition-colors cursor-pointer min-w-[180px]"
+            >
+              {ACTION_GROUPS.map((group, idx) => (
+                group.options ? (
+                  <optgroup key={idx} label={group.label} className="bg-slate-900 text-primary-400">
+                    {group.options.map(opt => (
+                      <option key={opt.value} value={opt.value} className="text-white">
+                        {opt.label} ({logs.filter(l => l.action === opt.value).length})
+                      </option>
+                    ))}
+                  </optgroup>
+                ) : (
+                  <option key={idx} value={group.value} className="bg-slate-900 text-white">
+                    {group.label}
+                  </option>
+                )
+              ))}
+            </select>
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-primary-500">
+              <svg width="10" height="6" viewBox="0 0 10 6" fill="currentColor">
+                <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+              </svg>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -249,7 +320,7 @@ export default function AuditLogs() {
                     {/* ACTION */}
                     <td className="px-6 py-4">
                       <span className={`font-bold px-2.5 py-1 rounded-lg text-xs border shadow-sm ${actionCls}`}>
-                        {log.action}
+                        {toStartCase(log.action)}
                       </span>
                     </td>
 
