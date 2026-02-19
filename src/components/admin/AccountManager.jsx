@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { adminService } from '../../api';
 import { formatCurrency } from '../../utils/formatters';
+import FilterDropdown from '../common/FilterDropdown';
 import { Search, Plus, CreditCard, DollarSign, Calendar, X, ArrowRight, ArrowUpRight, ArrowDownLeft, Ban, AlertCircle, FileText, CheckCircle } from 'lucide-react';
 
 export default function AccountManager() {
@@ -40,7 +41,7 @@ export default function AccountManager() {
         e.preventDefault();
         try {
             const accountData = {
-                customerId: newAccount.customerId,
+                customerId: newAccount.customerId.trim(),
                 type: newAccount.accountType,
                 currency: newAccount.currency,
                 pin: newAccount.pin
@@ -53,7 +54,7 @@ export default function AccountManager() {
             fetchAccounts();
         } catch (error) {
             console.error("Create account error", error);
-            alert("Failed to create account. Ensure Customer ID is valid.");
+            alert(`Failed: ${error.response?.data?.message || error.message}`);
         }
     };
 
@@ -144,7 +145,7 @@ export default function AccountManager() {
                 </div>
                 <button
                     onClick={() => setShowCreateModal(true)}
-                    className="flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-emerald-500/20 active:scale-95"
+                    className="flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-cyan-500/20 active:scale-95"
                 >
                     <Plus size={20} />
                     Open Account
@@ -168,9 +169,9 @@ export default function AccountManager() {
             </div>
 
             {/* Toolbar: search + filter chips */}
-            <div className="space-y-3">
+            <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
                 {/* Search */}
-                <div className="flex items-center gap-3 bg-black/20 px-4 py-2.5 rounded-xl border border-white/10 focus-within:border-emerald-500 transition-all max-w-md group">
+                <div className="flex items-center gap-3 bg-black/20 px-4 py-2.5 rounded-xl border border-white/10 focus-within:border-emerald-500 transition-all w-full md:w-96 group">
                     <Search size={18} className="text-primary-400 group-focus-within:text-emerald-400 transition-colors shrink-0" />
                     <input
                         type="text"
@@ -180,45 +181,31 @@ export default function AccountManager() {
                         onChange={e => setSearchTerm(e.target.value)}
                     />
                 </div>
-                {/* Status chips */}
-                <div className="flex flex-wrap gap-2 items-center">
-                    <span className="text-xs text-primary-400 font-bold uppercase tracking-widest mr-1">Status</span>
-                    {STATUS_CHIPS.map(c => (
-                        <button
-                            key={c.key}
-                            onClick={() => setStatusFilter(c.key)}
-                            className={`px-3.5 py-1.5 rounded-full text-xs font-bold border transition-all ${statusFilter === c.key ? c.activeCls : `${c.cls} hover:opacity-80`
-                                }`}
-                        >
-                            {c.label}
-                            {c.key !== 'ALL' && (
-                                <span className="ml-1.5 opacity-70">
-                                    {accounts.filter(a => a.status === c.key).length}
-                                </span>
-                            )}
-                        </button>
-                    ))}
-                </div>
-                {/* Type chips */}
-                <div className="flex flex-wrap gap-2 items-center">
-                    <span className="text-xs text-primary-400 font-bold uppercase tracking-widest mr-1">Type</span>
-                    {TYPE_CHIPS.map(c => (
-                        <button
-                            key={c.key}
-                            onClick={() => setTypeFilter(c.key)}
-                            className={`px-3.5 py-1.5 rounded-full text-xs font-bold border transition-all ${typeFilter === c.key
-                                ? 'bg-cyan-500/15 text-cyan-400 border-cyan-500/30'
-                                : 'border-white/10 text-primary-300 hover:border-white/20'
-                                }`}
-                        >
-                            {c.label}
-                            {c.key !== 'ALL' && (
-                                <span className="ml-1.5 opacity-70">
-                                    {accounts.filter(a => a.type === c.key).length}
-                                </span>
-                            )}
-                        </button>
-                    ))}
+
+                {/* Filters */}
+                <div className="flex items-center gap-3 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
+                    <FilterDropdown
+                        label="Status"
+                        options={STATUS_CHIPS}
+                        value={statusFilter}
+                        onChange={setStatusFilter}
+                        counts={{
+                            ACTIVE: accounts.filter(a => a.status === 'ACTIVE').length,
+                            FROZEN: accounts.filter(a => a.status === 'FROZEN').length,
+                            CLOSED: accounts.filter(a => a.status === 'CLOSED').length
+                        }}
+                    />
+                    <FilterDropdown
+                        label="Type"
+                        options={TYPE_CHIPS}
+                        value={typeFilter}
+                        onChange={setTypeFilter}
+                        counts={{
+                            SAVINGS: accounts.filter(a => a.type === 'SAVINGS').length,
+                            CURRENT: accounts.filter(a => a.type === 'CURRENT').length,
+                            WALLET: accounts.filter(a => a.type === 'WALLET').length
+                        }}
+                    />
                 </div>
             </div>
 
@@ -395,7 +382,7 @@ export default function AccountManager() {
                             </div>
 
                             <div className="pt-2">
-                                <button type="submit" className="w-full bg-emerald-500 hover:bg-emerald-400 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-emerald-500/20 transition-all active:scale-[0.98]">
+                                <button type="submit" className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-cyan-500/20 transition-all active:scale-[0.98]">
                                     Confirm & Open Account
                                 </button>
                             </div>

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { adminService } from '../../api';
+import { formatCurrency } from '../../utils/formatters';
+import FilterDropdown from '../common/FilterDropdown';
 import { Search, Filter, ArrowUpRight, ArrowDownLeft, RefreshCw, Smartphone, CreditCard, CheckCircle, XCircle, Clock } from 'lucide-react';
 
 export default function TransactionManager() {
@@ -85,7 +87,7 @@ export default function TransactionManager() {
                 <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
                     <div className="text-xs text-primary-400 uppercase tracking-widest font-bold mb-1">Total Volume</div>
                     <div className="text-2xl font-bold text-white">
-                        {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'THB' }).format(stats.totalVolume)}
+                        {formatCurrency(stats.totalVolume)}
                     </div>
                 </div>
                 <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
@@ -105,10 +107,10 @@ export default function TransactionManager() {
             </div>
 
             {/* Toolbar */}
-            <div className="flex flex-col xl:flex-row gap-4">
+            <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
                 {/* Search & Date */}
-                <div className="flex gap-3 min-w-[300px]">
-                    <div className="flex items-center gap-3 bg-black/20 px-4 py-2.5 rounded-xl border border-white/10 focus-within:border-cyan-500 transition-all flex-1 group">
+                <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+                    <div className="flex items-center gap-3 bg-black/20 px-4 py-2.5 rounded-xl border border-white/10 focus-within:border-cyan-500 transition-all w-full sm:w-80 group">
                         <Search size={18} className="text-primary-400 group-focus-within:text-cyan-400 transition-colors shrink-0" />
                         <input
                             type="text"
@@ -120,47 +122,37 @@ export default function TransactionManager() {
                     </div>
                     <input
                         type="date"
-                        className="bg-black/20 border border-white/10 text-primary-300 rounded-xl px-4 py-2.5 focus:border-cyan-500 outline-none hover:bg-white/5 transition-colors"
+                        className="bg-black/20 border border-white/10 text-primary-300 rounded-xl px-4 py-2.5 focus:border-cyan-500 outline-none hover:bg-white/5 transition-colors w-full sm:w-auto"
                         value={dateFilter}
                         onChange={e => setDateFilter(e.target.value)}
                     />
                 </div>
 
                 {/* Filters */}
-                <div className="flex flex-col gap-3 flex-1">
-                    {/* Type Chips */}
-                    <div className="flex flex-wrap gap-2 items-center">
-                        <span className="text-xs text-primary-400 font-bold uppercase tracking-widest mr-1">Type</span>
-                        {TYPE_CHIPS.map(c => (
-                            <button
-                                key={c.key}
-                                onClick={() => setTypeFilter(c.key)}
-                                className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all flex items-center gap-1.5 ${typeFilter === c.key
-                                        ? 'bg-cyan-500/20 border-cyan-500/40 text-cyan-300'
-                                        : 'border-white/10 text-primary-300 hover:bg-white/5'
-                                    }`}
-                            >
-                                {c.icon} {c.label}
-                            </button>
-                        ))}
-                    </div>
-
-                    {/* Status Chips */}
-                    <div className="flex flex-wrap gap-2 items-center">
-                        <span className="text-xs text-primary-400 font-bold uppercase tracking-widest mr-1">Status</span>
-                        {STATUS_CHIPS.map(c => (
-                            <button
-                                key={c.key}
-                                onClick={() => setStatusFilter(c.key)}
-                                className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${statusFilter === c.key
-                                        ? c.activeCls || 'bg-white/10 text-white border-white/30'
-                                        : c.cls || 'border-white/10 text-primary-300 hover:bg-white/5'
-                                    }`}
-                            >
-                                {c.label}
-                            </button>
-                        ))}
-                    </div>
+                <div className="flex items-center gap-3 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
+                    <FilterDropdown
+                        label="Type"
+                        options={TYPE_CHIPS}
+                        value={typeFilter}
+                        onChange={setTypeFilter}
+                        counts={{
+                            DEPOSIT: transactions.filter(t => t.type === 'DEPOSIT').length,
+                            WITHDRAWAL: transactions.filter(t => t.type === 'WITHDRAWAL').length,
+                            TRANSFER: transactions.filter(t => t.type === 'TRANSFER').length,
+                            PAYMENT: transactions.filter(t => t.type === 'PAYMENT').length
+                        }}
+                    />
+                    <FilterDropdown
+                        label="Status"
+                        options={STATUS_CHIPS}
+                        value={statusFilter}
+                        onChange={setStatusFilter}
+                        counts={{
+                            SUCCESS: transactions.filter(t => t.status === 'SUCCESS').length,
+                            PENDING: transactions.filter(t => t.status === 'PENDING').length,
+                            FAILED: transactions.filter(t => t.status === 'FAILED').length
+                        }}
+                    />
                 </div>
             </div>
 
@@ -220,7 +212,7 @@ export default function TransactionManager() {
                                         <td className="px-6 py-4 text-right">
                                             <span className={`font-bold text-[15px] ${tx.type === 'DEPOSIT' ? 'text-emerald-400' : 'text-white'
                                                 }`}>
-                                                {tx.type === 'DEPOSIT' ? '+' : ''} {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'THB' }).format(tx.amount)}
+                                                {tx.type === 'DEPOSIT' ? '+' : ''} {formatCurrency(tx.amount)}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-right">

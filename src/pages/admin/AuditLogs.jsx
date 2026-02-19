@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { adminService } from '../../api';
 import { Search, Clock, User, Shield, Cpu, Database, AlertCircle } from 'lucide-react';
+import FilterDropdown from '../../components/common/FilterDropdown';
 
 // Parse "reason=admin_FROZEN" → "Admin → FROZEN"
 function parseDetails(details, entityType, entityId) {
@@ -145,39 +146,34 @@ export default function AuditLogs() {
         </div>
 
         {/* Filters */}
-        <div className="flex flex-col gap-3 flex-1">
-          {/* Actor Chips */}
-          <div className="flex flex-wrap gap-2 items-center">
-            <span className="text-xs text-primary-400 font-bold uppercase tracking-widest mr-1">Actor</span>
-            {ACTOR_CHIPS.map(c => (
-              <button
-                key={c.key}
-                onClick={() => setActorFilter(c.key)}
-                className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${actorFilter === c.key
-                    ? c.activeCls || 'bg-white/10 text-white border-white/30'
-                    : c.cls || 'border-white/10 text-primary-300 hover:bg-white/5'
-                  }`}
-              >
-                {c.label}
-              </button>
-            ))}
-          </div>
-          {/* Action Chips */}
-          <div className="flex flex-wrap gap-2 items-center">
-            <span className="text-xs text-primary-400 font-bold uppercase tracking-widest mr-1">Action</span>
-            {ACTION_CHIPS.map(c => (
-              <button
-                key={c.key}
-                onClick={() => setActionFilter(c.key)}
-                className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-all ${actionFilter === c.key
-                    ? 'bg-cyan-500/20 border-cyan-500/40 text-cyan-300'
-                    : 'border-white/10 text-primary-300 hover:bg-white/5'
-                  }`}
-              >
-                {c.label}
-              </button>
-            ))}
-          </div>
+        {/* Filters */}
+        <div className="flex items-center gap-3 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
+          <FilterDropdown
+            label="Actor"
+            options={ACTOR_CHIPS}
+            value={actorFilter}
+            onChange={setActorFilter}
+            counts={{
+              ADMIN: logs.filter(l => l.actorType === 'ADMIN').length,
+              USER: logs.filter(l => l.actorType === 'USER').length,
+              ATM: logs.filter(l => l.actorType === 'ATM').length,
+              PARTNER: logs.filter(l => l.actorType === 'PARTNER').length,
+              SYSTEM: logs.filter(l => l.actorType === 'SYSTEM').length,
+            }}
+          />
+          <FilterDropdown
+            label="Action"
+            options={ACTION_CHIPS}
+            value={actionFilter}
+            onChange={setActionFilter}
+            counts={{
+              LOGIN: logs.filter(l => l.action?.includes('LOGIN')).length,
+              CREATE: logs.filter(l => l.action?.includes('CREATE')).length,
+              UPDATE: logs.filter(l => l.action?.includes('UPDATE')).length,
+              DELETE: logs.filter(l => l.action?.includes('DELETE')).length,
+              TX: logs.filter(l => l.action?.includes('TX')).length,
+            }}
+          />
         </div>
       </div>
 

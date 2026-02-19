@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { adminService } from '../../api';
+import { formatCurrency } from '../../utils/formatters';
 import {
     Search, UserPlus, Mail, Phone, X, User,
-    Snowflake, CheckCircle, XCircle, AlertTriangle, ChevronDown, ChevronUp, RefreshCw
+    Snowflake, CheckCircle, XCircle, AlertTriangle, ChevronUp, RefreshCw, Copy, ExternalLink
 } from 'lucide-react';
+import FilterDropdown from '../common/FilterDropdown';
 
 // ─── Status Config ─────────────────────────────────────────────────────────────
 const STATUS_CFG = {
@@ -96,6 +98,7 @@ export default function CustomerManager() {
     const [actionLoading, setActionLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('ALL');
+    const [typeFilter, setTypeFilter] = useState('ALL');
     const [showModal, setShowModal] = useState(false);
     const [dialog, setDialog] = useState({ action: null, customer: null });
     const [selectedCustomer, setSelectedCustomer] = useState(null);
@@ -123,6 +126,7 @@ export default function CustomerManager() {
     // ── Filtered view ───────────────────────────────────────────────────────
     const visibleCustomers = customers.filter(c => {
         if (statusFilter !== 'ALL' && c.status !== statusFilter) return false;
+        if (typeFilter !== 'ALL' && c.type !== typeFilter) return false;
         if (!searchTerm) return true;
         const t = searchTerm.toLowerCase();
         return (
@@ -145,6 +149,12 @@ export default function CustomerManager() {
         { key: 'ACTIVE', label: 'Active', cls: 'border-emerald-500/20 text-emerald-400/60', activeCls: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' },
         { key: 'FROZEN', label: 'Frozen', cls: 'border-amber-500/20 text-amber-400/60', activeCls: 'bg-amber-500/15 text-amber-400 border-amber-500/30' },
         { key: 'CLOSED', label: 'Closed', cls: 'border-red-500/20 text-red-400/60', activeCls: 'bg-red-500/15 text-red-400 border-red-500/30' },
+    ];
+
+    const TYPE_CHIPS = [
+        { key: 'ALL', label: 'All', cls: 'border-white/20 text-primary-200', activeCls: 'bg-white/10 text-white border-white/30' },
+        { key: 'INDIVIDUAL', label: 'Individual', cls: 'border-blue-500/20 text-blue-400/60', activeCls: 'bg-blue-500/15 text-blue-400 border-blue-500/30' },
+        { key: 'BUSINESS', label: 'Business', cls: 'border-purple-500/20 text-purple-400/60', activeCls: 'bg-purple-500/15 text-purple-400 border-purple-500/30' },
     ];
 
     // ── Actions ─────────────────────────────────────────────────────────────
@@ -228,9 +238,9 @@ export default function CustomerManager() {
             </div>
 
             {/* Toolbar */}
-            <div className="space-y-3">
+            <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
                 {/* Search */}
-                <div className="flex items-center gap-3 bg-black/20 px-4 py-2.5 rounded-xl border border-white/10 focus-within:border-cyan-500 transition-all max-w-md group">
+                <div className="flex items-center gap-3 bg-black/20 px-4 py-2.5 rounded-xl border border-white/10 focus-within:border-cyan-500 transition-all w-full md:w-96 group">
                     <Search size={18} className="text-primary-400 group-focus-within:text-cyan-400 transition-colors shrink-0" />
                     <input
                         type="text"
@@ -240,24 +250,30 @@ export default function CustomerManager() {
                         onChange={e => setSearchTerm(e.target.value)}
                     />
                 </div>
-                {/* Status chips */}
-                <div className="flex flex-wrap gap-2 items-center">
-                    <span className="text-xs text-primary-400 font-bold uppercase tracking-widest mr-1">Status</span>
-                    {STATUS_CHIPS.map(c => (
-                        <button
-                            key={c.key}
-                            onClick={() => setStatusFilter(c.key)}
-                            className={`px-3.5 py-1.5 rounded-full text-xs font-bold border transition-all ${statusFilter === c.key ? c.activeCls : `${c.cls} hover:opacity-80`
-                                }`}
-                        >
-                            {c.label}
-                            {c.key !== 'ALL' && (
-                                <span className="ml-1.5 opacity-70">
-                                    {customers.filter(cust => cust.status === c.key).length}
-                                </span>
-                            )}
-                        </button>
-                    ))}
+
+                {/* Filters */}
+                <div className="flex items-center gap-3 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
+                    <FilterDropdown
+                        label="Status"
+                        options={STATUS_CHIPS}
+                        value={statusFilter}
+                        onChange={setStatusFilter}
+                        counts={{
+                            ACTIVE: customers.filter(c => c.status === 'ACTIVE').length,
+                            FROZEN: customers.filter(c => c.status === 'FROZEN').length,
+                            CLOSED: customers.filter(c => c.status === 'CLOSED').length
+                        }}
+                    />
+                    <FilterDropdown
+                        label="Type"
+                        options={TYPE_CHIPS}
+                        value={typeFilter}
+                        onChange={setTypeFilter}
+                        counts={{
+                            INDIVIDUAL: customers.filter(c => c.type === 'INDIVIDUAL').length,
+                            BUSINESS: customers.filter(c => c.type === 'BUSINESS').length
+                        }}
+                    />
                 </div>
             </div>
 
@@ -293,7 +309,20 @@ export default function CustomerManager() {
                                                 <div className={`font-bold group-hover:text-cyan-300 transition-colors ${c.status === 'CLOSED' ? 'line-through text-primary-400' : 'text-white'}`}>
                                                     {c.firstName} {c.lastName}
                                                 </div>
-                                                <div className="text-xs text-primary-400 font-mono">ID: {String(c.id).substring(0, 20)}…</div>
+                                                <div className="flex items-center gap-1.5 text-xs text-primary-400 font-mono">
+                                                    <span>ID: {String(c.id).substring(0, 8)}...</span>
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            navigator.clipboard.writeText(c.id);
+                                                            // Optional: toast or tooltip could go here
+                                                        }}
+                                                        className="p-1 hover:bg-white/10 rounded-md text-primary-500 hover:text-cyan-400 transition-colors"
+                                                        title="Copy Customer ID"
+                                                    >
+                                                        <Copy size={12} />
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     </td>
@@ -471,11 +500,13 @@ export default function CustomerManager() {
                                     <button
                                         onClick={() => {
                                             navigator.clipboard.writeText(selectedCustomer.id);
-                                            alert(`Customer ID copied! Go to Accounts tab to open a new account.\nCustomer ID: ${selectedCustomer.id}`);
+                                            // You might want to implement a toast here instead of alert
+                                            // But keeping alert for now as it's simple feedback
+                                            alert(`Customer ID copied! \n${selectedCustomer.id}`);
                                         }}
-                                        className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-bold rounded-xl transition-all flex items-center gap-2"
+                                        className="px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-sm font-bold rounded-xl transition-all flex items-center gap-2 shadow-lg shadow-blue-500/20"
                                     >
-                                        <UserPlus size={16} /> Open Account
+                                        <Copy size={16} /> Copy ID to Open Account
                                     </button>
                                 )}
                             </div>
@@ -489,10 +520,9 @@ export default function CustomerManager() {
                                         <StatusBadge status={account.status} />
                                     </div>
                                     <div className="flex justify-between items-end">
-                                        <div className="text-2xl font-bold text-white">
-                                            {new Intl.NumberFormat('en-US', { style: 'currency', currency: account.currency }).format(account.balance)}
+                                        <div className="text-2xl font-bold text-white tracking-tight">
+                                            {formatCurrency(account.balance, account.currency)}
                                         </div>
-                                        <div className="text-xs text-primary-400">{account.currency}</div>
                                     </div>
                                 </div>
                             )) : (
