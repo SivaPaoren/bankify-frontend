@@ -196,7 +196,7 @@ export const adminService = {
     // 1.2 View all API clients
     getClients: async () => {
         try {
-            const response = await adminApi.get('/admin/clients');
+            const response = await adminApi.get('/admin/partner-apps');
             return response.data;
         } catch (e) {
             console.warn("Backend unavailable, loading clients from LocalStorage");
@@ -206,16 +206,9 @@ export const adminService = {
     // 1.3 Create a new API client
     createClient: async (name) => {
         try {
-            const response = await adminApi.patch(`/admin/clients/${Date.now()}/approve`, { name }); // Guide says approve creates/activates? No, guide says list then approve. 
-            // Actually guide says: PATCH /admin/clients/{id}/approve
-            // But we are creating. The guide implies Partners signup themselves, and Admin approves.
-            // For now, we'll keep the mock behavior of "creating" directly for the dashboard.
-            // Or maybe POST /admin/clients? Guide doesn't list POST /admin/clients. 
-            // It lists GET /admin/clients and PATCH .../approve. 
-            // I will assume for now we mock it or use a non-spec endpoint if needed.
-            // Let's stick to the previous mock logic if no endpoint exists, OR use the Partner Signup flow?
-            // Let's keep it as is but use adminApi.
-            return { id: Date.now(), name, apiKey: 'mock-key', status: 'ACTIVE' };
+            // Partners self-signup; admin then approves via PATCH /admin/partner-apps/{id}/approve
+            // There is no POST /admin/partner-apps, so creation is mocked here
+            return { id: Date.now(), name, apiKey: 'mock-key', status: 'PENDING' };
         } catch (e) {
             const clients = getStorageData('bankify_clients', initialClients);
             const newClient = { id: Date.now(), name, apiKey: `test_${Date.now()}`, status: 'ACTIVE' };
@@ -227,7 +220,7 @@ export const adminService = {
     // 1.4 Disable a client
     disableClient: async (clientId) => {
         try {
-            const response = await adminApi.patch(`/admin/clients/${clientId}/disable`);
+            const response = await adminApi.patch(`/admin/partner-apps/${clientId}/disable`);
             return response.data;
         } catch (e) {
             console.warn("Mocking disable client");

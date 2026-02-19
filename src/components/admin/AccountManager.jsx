@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { adminService } from '../../api';
 import { formatCurrency } from '../../utils/formatters';
-import { Search, Plus, CreditCard, DollarSign, Calendar, X, ArrowRight, ArrowUpRight, ArrowDownLeft, Ban, AlertCircle, FileText } from 'lucide-react';
+import { Search, Plus, CreditCard, DollarSign, Calendar, X, ArrowRight, ArrowUpRight, ArrowDownLeft, Ban, AlertCircle, FileText, CheckCircle } from 'lucide-react';
 
 export default function AccountManager() {
     const [accounts, setAccounts] = useState([]);
@@ -10,13 +10,11 @@ export default function AccountManager() {
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showTransactionsDrawer, setShowTransactionsDrawer] = useState(false);
     const [accountTransactions, setAccountTransactions] = useState([]);
-
-    // Form State
+    const [confirmDialog, setConfirmDialog] = useState({
+        open: false, accountId: null, accountNumber: null, customerName: null, newStatus: null
+    });
     const [newAccount, setNewAccount] = useState({
-        customerId: '',
-        accountType: 'SAVINGS',
-        currency: 'THB',
-        pin: '123456'
+        customerId: '', accountType: 'SAVINGS', currency: 'THB', pin: '123456'
     });
 
     useEffect(() => {
@@ -56,6 +54,16 @@ export default function AccountManager() {
         }
     };
 
+    const openConfirm = (account, newStatus) => {
+        setConfirmDialog({
+            open: true,
+            accountId: account.id,
+            accountNumber: account.accountNumber,
+            customerName: account.customerName || `Customer #${String(account.customerId).substring(0, 8)}...`,
+            newStatus
+        });
+    };
+
     const handleUpdateStatus = async (accountId, status) => {
         try {
             await adminService.updateAccountStatus(accountId, status);
@@ -67,6 +75,12 @@ export default function AccountManager() {
             console.error("Status update failed", error);
             alert("Failed to update account status.");
         }
+    };
+
+    const confirmAndUpdate = async () => {
+        const { accountId, newStatus } = confirmDialog;
+        setConfirmDialog({ open: false });
+        await handleUpdateStatus(accountId, newStatus);
     };
 
     const openTransactions = async (account) => {
@@ -137,7 +151,16 @@ export default function AccountManager() {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-primary-100 font-medium">
-                                            {account.customerName || `Customer #${account.customerId}`}
+                                            <div className="flex flex-col">
+                                                <span className="font-semibold text-white">
+                                                    {account.customerName || 'Partner Account'}
+                                                </span>
+                                                <span className="text-xs text-primary-400 font-mono mt-0.5">
+                                                    {account.customerId
+                                                        ? `ID: ${String(account.customerId).substring(0, 16)}...`
+                                                        : account.partnerAppId ? `Partner: ${String(account.partnerAppId).substring(0, 16)}...` : '—'}
+                                                </span>
+                                            </div>
                                         </td>
                                         <td className="px-6 py-4">
                                             <span className={`px-2.5 py-1 rounded-lg border text-xs font-bold uppercase tracking-wider ${account.type === 'WALLET'
@@ -168,7 +191,7 @@ export default function AccountManager() {
                                             <div className="flex items-center justify-center gap-2">
                                                 {account.status === 'ACTIVE' && (
                                                     <button
-                                                        onClick={() => handleUpdateStatus(account.id, 'FROZEN')}
+                                                        onClick={(e) => { e.stopPropagation(); openConfirm(account, 'FROZEN'); }}
                                                         className="p-2 rounded-xl text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 transition-all"
                                                         title="Freeze Account"
                                                     >
@@ -177,16 +200,16 @@ export default function AccountManager() {
                                                 )}
                                                 {account.status === 'FROZEN' && (
                                                     <button
-                                                        onClick={() => handleUpdateStatus(account.id, 'ACTIVE')}
+                                                        onClick={(e) => { e.stopPropagation(); openConfirm(account, 'ACTIVE'); }}
                                                         className="p-2 rounded-xl text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 transition-all"
-                                                        title="Unfreeze Account"
+                                                        title="Activate Account"
                                                     >
                                                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12" /></svg>
                                                     </button>
                                                 )}
                                                 {account.status !== 'CLOSED' && (
                                                     <button
-                                                        onClick={() => handleUpdateStatus(account.id, 'CLOSED')}
+                                                        onClick={(e) => { e.stopPropagation(); openConfirm(account, 'CLOSED'); }}
                                                         className="p-2 rounded-xl text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all"
                                                         title="Close Account"
                                                     >
@@ -295,14 +318,14 @@ export default function AccountManager() {
                                 <div className="flex gap-2">
                                     {selectedAccount.status === 'ACTIVE' ? (
                                         <button
-                                            onClick={() => handleUpdateStatus(selectedAccount.id, 'FROZEN')}
+                                            onClick={() => openConfirm(selectedAccount, 'FROZEN')}
                                             className="flex items-center gap-2 px-4 py-2 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-xl font-bold text-sm hover:bg-blue-500/20 transition-colors"
                                         >
                                             <Ban size={16} /> Freeze
                                         </button>
                                     ) : (
                                         <button
-                                            onClick={() => handleUpdateStatus(selectedAccount.id, 'ACTIVE')}
+                                            onClick={() => openConfirm(selectedAccount, 'ACTIVE')}
                                             className="flex items-center gap-2 px-4 py-2 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-xl font-bold text-sm hover:bg-emerald-500/20 transition-colors"
                                         >
                                             <CheckCircle size={16} /> Activate
@@ -345,7 +368,7 @@ export default function AccountManager() {
                                                 <div className="font-bold text-white mb-0.5">{tx.description || tx.type}</div>
                                                 <div className="text-xs text-primary-300 flex items-center gap-2">
                                                     <Calendar size={12} />
-                                                    {new Date(tx.timestamp).toLocaleString()}
+                                                    {new Date(tx.createdAt).toLocaleString()}
                                                 </div>
                                             </div>
                                         </div>
@@ -367,6 +390,54 @@ export default function AccountManager() {
                     </>
                 )}
             </div>
+
+            {/* ── Confirmation Dialog ─────────────────────────────── */}
+            {confirmDialog.open && (() => {
+                const cfg = {
+                    FROZEN: { label: 'Freeze Account', verb: 'freeze', icon: '❄️', accent: 'blue', btnCls: 'bg-blue-500 hover:bg-blue-400 shadow-blue-500/30' },
+                    ACTIVE: { label: 'Activate Account', verb: 'activate', icon: '✅', accent: 'emerald', btnCls: 'bg-emerald-500 hover:bg-emerald-400 shadow-emerald-500/30' },
+                    CLOSED: { label: 'Close Account', verb: 'close', icon: '🔒', accent: 'red', btnCls: 'bg-red-500 hover:bg-red-400 shadow-red-500/30' },
+                }[confirmDialog.newStatus] || {};
+                return (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" onClick={() => setConfirmDialog({ open: false })}>
+                        {/* Backdrop */}
+                        <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+                        {/* Panel */}
+                        <div
+                            className="relative bg-primary-900 border border-white/10 rounded-2xl shadow-2xl w-full max-w-md p-8 animate-fade-in"
+                            onClick={e => e.stopPropagation()}
+                        >
+                            {/* Icon */}
+                            <div className="flex justify-center mb-5">
+                                <span className="text-5xl">{cfg.icon}</span>
+                            </div>
+                            <h2 className="text-xl font-bold text-white text-center mb-2">{cfg.label}</h2>
+                            <p className="text-primary-300 text-center text-sm mb-6">
+                                Are you sure you want to <span className="font-semibold text-white">{cfg.verb}</span> account
+                                {' '}<span className="font-mono text-primary-100">{confirmDialog.accountNumber}</span>
+                                {' '}belonging to <span className="font-semibold text-white">{confirmDialog.customerName}</span>?
+                                {confirmDialog.newStatus === 'CLOSED' && (
+                                    <span className="block mt-2 text-red-400 font-semibold">⚠️ This action cannot be undone.</span>
+                                )}
+                            </p>
+                            <div className="flex gap-3">
+                                <button
+                                    onClick={() => setConfirmDialog({ open: false })}
+                                    className="flex-1 py-3 rounded-xl border border-white/10 text-primary-200 font-semibold hover:bg-white/5 transition-all"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={confirmAndUpdate}
+                                    className={`flex-1 py-3 rounded-xl text-white font-bold shadow-lg transition-all active:scale-[0.98] ${cfg.btnCls}`}
+                                >
+                                    Confirm
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            })()}
         </div>
     );
 }

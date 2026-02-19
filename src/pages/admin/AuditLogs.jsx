@@ -22,8 +22,9 @@ export default function AuditLogs() {
   }, []);
 
   const filteredLogs = logs.filter(log =>
-    log.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    log.user.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    log.action?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    log.actorId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    log.actorType?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (log.details && log.details.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
@@ -65,7 +66,7 @@ export default function AuditLogs() {
                   <td className="px-6 py-4 text-sm text-primary-200 font-mono w-56">
                     <div className="flex items-center gap-2">
                       <Clock size={14} className="text-primary-400" />
-                      {new Date(log.timestamp).toLocaleString()}
+                      <span className="text-xs text-primary-400 uppercase">{log.actorType || '—'}</span>
                     </div>
                   </td>
                   <td className="px-6 py-4">
@@ -76,15 +77,15 @@ export default function AuditLogs() {
                       <div className="p-1 rounded bg-white/10">
                         <User size={12} className="text-primary-200" />
                       </div>
-                      <span className="text-sm group-hover:text-cyan-200 transition-colors">{log.user}</span>
+                      <span className="text-sm group-hover:text-cyan-200 transition-colors font-mono text-xs">{log.actorId || '—'}</span>
                     </div>
                   </td>
                   <td className="px-6 py-4 text-sm text-primary-100">
                     <div className="flex items-center gap-2">
-                      {log.details ? (
+                      {log.details || log.entityId ? (
                         <>
                           <AlertCircle size={14} className="text-primary-400" />
-                          {log.details}
+                          {log.details || `${log.entityType}: ${log.entityId}`}
                         </>
                       ) : (
                         <span className="text-primary-600">-</span>

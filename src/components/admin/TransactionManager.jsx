@@ -26,7 +26,7 @@ export default function TransactionManager() {
     const filteredTransactions = transactions.filter(tx => {
         if (filter.type !== 'ALL' && tx.type !== filter.type) return false;
         if (filter.status !== 'ALL' && tx.status !== filter.status) return false;
-        if (filter.date && !tx.timestamp.startsWith(filter.date)) return false;
+        if (filter.date && !(tx.createdAt || '').startsWith(filter.date)) return false;
         return true;
     });
 
@@ -112,10 +112,10 @@ export default function TransactionManager() {
                                 filteredTransactions.map((tx) => (
                                     <tr key={tx.id} className="hover:bg-white/5 transition-colors group">
                                         <td className="px-6 py-4 text-sm text-primary-200 font-mono">
-                                            {new Date(tx.timestamp).toLocaleString(undefined, {
+                                            {tx.createdAt ? new Date(tx.createdAt).toLocaleString(undefined, {
                                                 year: 'numeric', month: 'numeric', day: 'numeric',
                                                 hour: '2-digit', minute: '2-digit'
-                                            })}
+                                            }) : '—'}
                                         </td>
                                         <td className="px-6 py-4">
                                             <div className="font-mono text-xs text-primary-400">{tx.id.substring(0, 18)}...</div>
@@ -137,17 +137,17 @@ export default function TransactionManager() {
                                         <td className="px-6 py-4">
                                             <div className="flex flex-col">
                                                 <span className="text-xs text-primary-400 uppercase tracking-wider mb-0.5">
-                                                    {tx.sourceAccountId ? 'Account' : 'External'}
+                                                    {tx.fromAccountId ? 'From' : 'To'}
                                                 </span>
                                                 <span className="font-mono text-sm text-primary-100">
-                                                    {tx.sourceAccountId || tx.targetAccountId || 'N/A'}
+                                                    {tx.fromAccountId || tx.toAccountId || 'N/A'}
                                                 </span>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <span className={`font-bold text-[15px] ${tx.type === 'DEPOSIT' ? 'text-emerald-400' : 'text-white'
                                                 }`}>
-                                                {tx.type === 'DEPOSIT' ? '+' : ''} {new Intl.NumberFormat('en-US', { style: 'currency', currency: tx.currency }).format(tx.amount)}
+                                                {tx.type === 'DEPOSIT' ? '+' : ''} {new Intl.NumberFormat('en-US', { style: 'currency', currency: 'THB' }).format(tx.amount)}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-right">
