@@ -232,8 +232,8 @@ export default function AdminDashboard() {
                                         className="group flex items-start gap-3 p-3.5 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/10 transition-all cursor-pointer"
                                     >
                                         <div className={`mt-0.5 p-2 rounded-xl border group-hover:scale-110 transition-transform ${isError
-                                                ? 'bg-red-500/10 text-red-400 border-red-500/10'
-                                                : 'bg-orange-500/10 text-orange-400 border-orange-500/10'
+                                            ? 'bg-red-500/10 text-red-400 border-red-500/10'
+                                            : 'bg-orange-500/10 text-orange-400 border-orange-500/10'
                                             }`}>
                                             <AlertTriangle size={14} />
                                         </div>

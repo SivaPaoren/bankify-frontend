@@ -70,8 +70,8 @@ export default function TransactionManager() {
         <div className="space-y-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-white tracking-tight">Transactions</h1>
-                    <p className="text-primary-200">Monitor and audit system-wide financial movements.</p>
+                    <h1 className="text-3xl font-bold text-white tracking-tight">Transactions</h1>
+                    <p className="text-primary-300 mt-1">Monitor and audit system-wide financial movements.</p>
                 </div>
                 <button
                     onClick={fetchTransactions}
@@ -107,29 +107,31 @@ export default function TransactionManager() {
             </div>
 
             {/* Toolbar */}
-            <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
-                {/* Search & Date */}
-                <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-                    <div className="flex items-center gap-3 bg-black/20 px-4 py-2.5 rounded-xl border border-white/10 focus-within:border-cyan-500 transition-all w-full sm:w-80 group">
-                        <Search size={18} className="text-primary-400 group-focus-within:text-cyan-400 transition-colors shrink-0" />
-                        <input
-                            type="text"
-                            placeholder="Search ID, Account..."
-                            className="bg-transparent outline-none text-white w-full placeholder:text-primary-500"
-                            value={searchTerm}
-                            onChange={e => setSearchTerm(e.target.value)}
-                        />
-                    </div>
+            <div className="flex flex-col md:flex-row gap-3 items-start md:items-center bg-white/[0.03] border border-white/10 rounded-2xl px-4 py-3">
+                {/* Search */}
+                <div className="flex items-center gap-3 bg-black/20 px-4 py-2.5 rounded-xl border border-white/10 focus-within:border-cyan-500 focus-within:bg-black/30 transition-all flex-1 min-w-0 group">
+                    <Search size={18} className="text-primary-400 group-focus-within:text-cyan-400 transition-colors shrink-0" />
+                    <input
+                        type="text"
+                        placeholder="Search by ID or account..."
+                        className="bg-transparent outline-none text-white w-full placeholder:text-primary-500 text-sm"
+                        value={searchTerm}
+                        onChange={e => setSearchTerm(e.target.value)}
+                    />
+                </div>
+
+                {/* Date */}
+                <div className="flex items-center gap-1.5 bg-black/20 border border-white/10 rounded-xl px-3 py-2.5 hover:bg-white/5 transition-colors shrink-0">
                     <input
                         type="date"
-                        className="bg-black/20 border border-white/10 text-primary-300 rounded-xl px-4 py-2.5 focus:border-cyan-500 outline-none hover:bg-white/5 transition-colors w-full sm:w-auto"
+                        className="bg-transparent text-primary-300 text-sm outline-none cursor-pointer"
                         value={dateFilter}
                         onChange={e => setDateFilter(e.target.value)}
                     />
                 </div>
 
-                {/* Filters */}
-                <div className="flex items-center gap-3 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
+                {/* Filters — pushed to the right */}
+                <div className="flex items-center gap-3 ml-auto shrink-0">
                     <FilterDropdown
                         label="Type"
                         options={TYPE_CHIPS}

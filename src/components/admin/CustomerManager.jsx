@@ -210,8 +210,8 @@ export default function CustomerManager() {
             {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-white tracking-tight">Customers</h1>
-                    <p className="text-primary-200">Manage user profiles and identity verification.</p>
+                    <h1 className="text-3xl font-bold text-white tracking-tight">Customers</h1>
+                    <p className="text-primary-300 mt-1">Manage user profiles and identity verification.</p>
                 </div>
                 <button
                     onClick={() => setShowModal(true)}
@@ -238,21 +238,21 @@ export default function CustomerManager() {
             </div>
 
             {/* Toolbar */}
-            <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
+            <div className="flex flex-col md:flex-row gap-3 items-start md:items-center bg-white/[0.03] border border-white/10 rounded-2xl px-4 py-3">
                 {/* Search */}
-                <div className="flex items-center gap-3 bg-black/20 px-4 py-2.5 rounded-xl border border-white/10 focus-within:border-cyan-500 transition-all w-full md:w-96 group">
+                <div className="flex items-center gap-3 bg-black/20 px-4 py-2.5 rounded-xl border border-white/10 focus-within:border-cyan-500 focus-within:bg-black/30 transition-all flex-1 min-w-0 group">
                     <Search size={18} className="text-primary-400 group-focus-within:text-cyan-400 transition-colors shrink-0" />
                     <input
                         type="text"
-                        placeholder="Search customers..."
-                        className="bg-transparent outline-none text-white w-full placeholder:text-primary-500"
+                        placeholder="Search by name, email or phone..."
+                        className="bg-transparent outline-none text-white w-full placeholder:text-primary-500 text-sm"
                         value={searchTerm}
                         onChange={e => setSearchTerm(e.target.value)}
                     />
                 </div>
 
-                {/* Filters */}
-                <div className="flex items-center gap-3 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
+                {/* Filters — pushed to the right */}
+                <div className="flex items-center gap-3 ml-auto shrink-0">
                     <FilterDropdown
                         label="Status"
                         options={STATUS_CHIPS}

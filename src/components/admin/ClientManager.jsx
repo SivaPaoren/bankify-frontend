@@ -49,8 +49,8 @@ export default function ClientManager() {
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-white tracking-tight">API Clients</h1>
-                    <p className="text-primary-200">Manage external access and API keys.</p>
+                    <h1 className="text-3xl font-bold text-white tracking-tight">API Clients</h1>
+                    <p className="text-primary-300 mt-1">Manage external access and API keys.</p>
                 </div>
                 <button
                     onClick={() => setShowCreateModal(!showCreateModal)}

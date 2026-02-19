@@ -34,8 +34,8 @@ export default function SystemSettings() {
         <div className="space-y-6 max-w-4xl mx-auto">
             <div className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-white tracking-tight">System Settings</h1>
-                    <p className="text-primary-200">Configure global application parameters.</p>
+                    <h1 className="text-3xl font-bold text-white tracking-tight">System Settings</h1>
+                    <p className="text-primary-300 mt-1">Configure global application parameters.</p>
                 </div>
                 {saved && (
                     <div className="flex items-center gap-2 text-emerald-400 bg-emerald-500/10 px-4 py-2 rounded-xl border border-emerald-500/20 animate-fade-in">
