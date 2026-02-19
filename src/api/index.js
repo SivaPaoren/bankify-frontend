@@ -286,14 +286,10 @@ export const adminService = {
             console.warn("Mocking freeze account");
         }
     },
-    // Close Account (Delete?) Spec doesn't explicitly list DELETE /admin/accounts/{id}, only disable.
-    // But usually needed. We will keep logic but warn.
+    // Close Account — uses PATCH with status=CLOSED (no DELETE endpoint in backend)
     closeAccount: async (accountId) => {
-        try {
-            await adminApi.delete(`/admin/accounts/${accountId}`);
-        } catch (e) {
-            console.warn("Mocking close account");
-        }
+        const response = await adminApi.patch(`/admin/accounts/${accountId}`, { status: 'CLOSED' });
+        return response.data;
     },
     updateAccountStatus: async (accountId, status) => {
         const response = await adminApi.patch(`/admin/accounts/${accountId}`, { status });

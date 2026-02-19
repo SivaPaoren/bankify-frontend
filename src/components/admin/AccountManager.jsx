@@ -15,7 +15,7 @@ export default function AccountManager() {
     const [newAccount, setNewAccount] = useState({
         customerId: '',
         accountType: 'SAVINGS',
-        currency: 'USD',
+        currency: 'THB',
         pin: '123456'
     });
 
