@@ -16,6 +16,7 @@ export default function AccountManager() {
     const [newAccount, setNewAccount] = useState({
         customerId: '', accountType: 'SAVINGS', currency: 'THB', pin: '123456'
     });
+    const [searchTerm, setSearchTerm] = useState('');
 
     useEffect(() => {
         fetchAccounts();
@@ -94,6 +95,19 @@ export default function AccountManager() {
         }
     };
 
+    // Filter accounts by searchTerm across key fields
+    const filteredAccounts = accounts.filter(acc => {
+        const term = searchTerm.toLowerCase();
+        if (!term) return true;
+        return (
+            acc.accountNumber?.toLowerCase().includes(term) ||
+            acc.customerName?.toLowerCase().includes(term) ||
+            acc.customerId?.toLowerCase().includes(term) ||
+            acc.type?.toLowerCase().includes(term) ||
+            acc.status?.toLowerCase().includes(term)
+        );
+    });
+
     return (
         <div className="space-y-6 relative">
             {/* Header */}
@@ -120,6 +134,8 @@ export default function AccountManager() {
                             type="text"
                             placeholder="Search accounts..."
                             className="bg-transparent outline-none text-white w-full placeholder:text-primary-500"
+                            value={searchTerm}
+                            onChange={e => setSearchTerm(e.target.value)}
                         />
                     </div>
                 </div>
@@ -139,8 +155,8 @@ export default function AccountManager() {
                         <tbody className="divide-y divide-white/5">
                             {loading ? (
                                 <tr><td colSpan="6" className="px-6 py-12 text-center text-primary-300 italic">Loading accounts...</td></tr>
-                            ) : accounts.length > 0 ? (
-                                accounts.map((account) => (
+                            ) : filteredAccounts.length > 0 ? (
+                                filteredAccounts.map((account) => (
                                     <tr key={account.id} onClick={() => openTransactions(account)} className="hover:bg-white/5 transition-colors cursor-pointer group">
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
