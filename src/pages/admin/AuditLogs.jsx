@@ -1,6 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { adminService } from '../../api';
-import { Search, Clock, User, Shield, Cpu, Database, AlertCircle } from 'lucide-react';
+import {
+  Search, Clock, User, Shield, Cpu, Database,
+  AlertCircle, ChevronLeft, ChevronRight, InboxIcon,
+  Filter, Calendar
+} from 'lucide-react';
 import FilterDropdown from '../../components/common/FilterDropdown';
 
 // Parse "reason=admin_FROZEN" → "Admin → FROZEN"
@@ -23,56 +27,75 @@ const ACTOR_BADGE = {
 };
 
 const ACTION_COLOR = {
-  // Auth
   USER_LOGIN: 'text-blue-300 bg-blue-500/10 border-blue-500/20',
-
-  // Account
   ACCOUNT_CREATE: 'text-emerald-300 bg-emerald-500/10 border-emerald-500/20',
   ACCOUNT_UPDATE: 'text-cyan-300 bg-cyan-500/10 border-cyan-500/20',
   ACCOUNT_FREEZE: 'text-amber-300 bg-amber-500/10 border-amber-500/20',
   ACCOUNT_REACTIVATE: 'text-teal-300 bg-teal-500/10 border-teal-500/20',
   ACCOUNT_CLOSE: 'text-red-300 bg-red-500/10 border-red-500/20',
-  ACCOUNT_DISABLED: 'text-amber-300 bg-amber-500/10 border-amber-500/20', // legacy support
+  ACCOUNT_DISABLED: 'text-amber-300 bg-amber-500/10 border-amber-500/20',
   ACCOUNT_PIN_RESET: 'text-yellow-300 bg-yellow-500/10 border-yellow-500/20',
-
-  // Transactions
   TRANSACTION_DEPOSIT: 'text-emerald-300 bg-emerald-500/10 border-emerald-500/20',
   TRANSACTION_WITHDRAW: 'text-red-300 bg-red-500/10 border-red-500/20',
   TRANSACTION_TRANSFER: 'text-violet-300 bg-violet-500/10 border-violet-500/20',
-
-  // Legacy TX support
   TX_DEPOSIT: 'text-emerald-300 bg-emerald-500/10 border-emerald-500/20',
   TX_WITHDRAW: 'text-red-300 bg-red-500/10 border-red-500/20',
   TX_TRANSFER: 'text-violet-300 bg-violet-500/10 border-violet-500/20',
-
-  // Customer Actions
   CUSTOMER_CREATE: 'text-emerald-300 bg-emerald-500/10 border-emerald-500/20',
   CUSTOMER_UPDATE: 'text-emerald-300 bg-emerald-500/10 border-emerald-500/20',
   CUSTOMER_FREEZE: 'text-amber-300 bg-amber-500/10 border-amber-500/20',
   CUSTOMER_REACTIVATE: 'text-teal-300 bg-teal-500/10 border-teal-500/20',
   CUSTOMER_CLOSE: 'text-red-300 bg-red-500/10 border-red-500/20',
-
-  // Partner Rotation
   PARTNER_ROTATION_APPROVED: 'text-purple-300 bg-purple-500/10 border-purple-500/20',
   PARTNER_ROTATION_REJECTED: 'text-red-300 bg-red-500/10 border-red-500/20',
 };
 
-// Start Case Helper: "ACCOUNT_CREATE" -> "Account Create"
-const toStartCase = (str) => {
-  if (!str) return '';
-  return str
-    .replace(/_/g, ' ')
-    .toLowerCase()
-    .replace(/\b\w/g, s => s.toUpperCase());
-};
+const toStartCase = (str) =>
+  str ? str.replace(/_/g, ' ').toLowerCase().replace(/\b\w/g, s => s.toUpperCase()) : '';
+
+const PAGE_SIZE_OPTIONS = [
+  { key: '25', label: '25 rows' },
+  { key: '50', label: '50 rows' },
+  { key: '100', label: '100 rows' },
+];
+
+// Grouped action options for FilterDropdown (flat list with section separators)
+const ACTION_FLAT_OPTIONS = [
+  { key: 'ALL', label: 'All Actions' },
+  { key: 'USER_LOGIN', label: 'User Login' },
+  { key: 'ACCOUNT_CREATE', label: 'Create Account' },
+  { key: 'ACCOUNT_FREEZE', label: 'Freeze Account' },
+  { key: 'ACCOUNT_REACTIVATE', label: 'Reactivate Account' },
+  { key: 'ACCOUNT_CLOSE', label: 'Close Account' },
+  { key: 'ACCOUNT_PIN_RESET', label: 'PIN Reset' },
+  { key: 'CUSTOMER_CREATE', label: 'Create Customer' },
+  { key: 'CUSTOMER_FREEZE', label: 'Freeze Customer' },
+  { key: 'CUSTOMER_REACTIVATE', label: 'Reactivate Customer' },
+  { key: 'CUSTOMER_CLOSE', label: 'Close Customer' },
+  { key: 'TRANSACTION_DEPOSIT', label: 'Deposit' },
+  { key: 'TRANSACTION_WITHDRAW', label: 'Withdraw' },
+  { key: 'TRANSACTION_TRANSFER', label: 'Transfer' },
+  { key: 'PARTNER_ROTATION_APPROVED', 'label': 'Approve Rotation' },
+  { key: 'PARTNER_ROTATION_REJECTED', label: 'Reject Rotation' },
+];
+
+const ACTOR_OPTIONS = [
+  { key: 'ALL', label: 'All Sources' },
+  { key: 'USER', label: 'Portal Users', cls: 'border-blue-500/20 text-blue-400', activeCls: 'bg-blue-500/20 border-blue-500/40 text-blue-300' },
+  { key: 'ATM', label: 'ATM Terminals', cls: 'border-amber-500/20 text-amber-400', activeCls: 'bg-amber-500/20 border-amber-500/40 text-amber-300' },
+  { key: 'PARTNER', label: 'Partner Apps', cls: 'border-purple-500/20 text-purple-400', activeCls: 'bg-purple-500/20 border-purple-500/40 text-purple-300' },
+];
 
 export default function AuditLogs() {
   const [searchTerm, setSearchTerm] = useState('');
   const [actorFilter, setActorFilter] = useState('ALL');
   const [actionFilter, setActionFilter] = useState('ALL');
-  const [dateFilter, setDateFilter] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
   const [logs, setLogs] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [pageSize, setPageSize] = useState(25);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     const fetchLogs = async () => {
@@ -88,12 +111,14 @@ export default function AuditLogs() {
     fetchLogs();
   }, []);
 
-  const filteredLogs = logs.filter(log => {
+  // Reset to page 1 when any filter changes
+  useEffect(() => { setCurrentPage(1); }, [searchTerm, actorFilter, actionFilter, dateFrom, dateTo, pageSize]);
+
+  const filteredLogs = useMemo(() => logs.filter(log => {
     if (actorFilter !== 'ALL' && log.actorType !== actorFilter) return false;
-    if (actionFilter !== 'ALL') {
-      return log.action === actionFilter;
-    }
-    if (dateFilter && !log.createdAt?.startsWith(dateFilter)) return false;
+    if (actionFilter !== 'ALL' && log.action !== actionFilter) return false;
+    if (dateFrom && log.createdAt && log.createdAt < dateFrom) return false;
+    if (dateTo && log.createdAt && log.createdAt.slice(0, 10) > dateTo) return false;
     if (searchTerm) {
       const term = searchTerm.toLowerCase();
       return (
@@ -106,124 +131,148 @@ export default function AuditLogs() {
       );
     }
     return true;
-  });
+  }), [logs, actorFilter, actionFilter, dateFrom, dateTo, searchTerm]);
 
-  // Stats
+  // Pagination
+  const totalPages = Math.max(1, Math.ceil(filteredLogs.length / pageSize));
+  const paginatedLogs = filteredLogs.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+
+  // Stats — always from full (unfiltered) log set for the cards
   const stats = {
-    total: filteredLogs.length,
-    users: filteredLogs.filter(l => l.actorType === 'USER').length,
-    errors: filteredLogs.filter(l => l.action?.includes('FAIL') || l.action?.includes('ERROR') || l.details?.includes('error')).length,
-    recent: filteredLogs.filter(l => {
+    total: logs.length,
+    recent: logs.filter(l => {
       const date = new Date(l.createdAt);
-      const now = new Date();
-      return (now - date) < 24 * 60 * 60 * 1000; // last 24h
-    }).length
+      return (Date.now() - date) < 24 * 60 * 60 * 1000;
+    }).length,
+    users: logs.filter(l => l.actorType === 'USER').length,
+    errors: logs.filter(l =>
+      l.action?.includes('FAIL') || l.action?.includes('ERROR') || l.details?.includes('error')
+    ).length,
   };
 
-  const ACTOR_CHIPS = [
-    { key: 'ALL', label: 'All Actors' },
-    { key: 'USER', label: 'Users', cls: 'border-blue-500/20 text-blue-400', activeCls: 'bg-blue-500/20 border-blue-500/40 text-blue-300' },
-    { key: 'ATM', label: 'ATM', cls: 'border-amber-500/20 text-amber-400', activeCls: 'bg-amber-500/20 border-amber-500/40 text-amber-300' },
-    { key: 'PARTNER', label: 'Partner', cls: 'border-purple-500/20 text-purple-400', activeCls: 'bg-purple-500/20 border-purple-500/40 text-purple-300' },
-  ];
+  // Quick-filter click handlers for stat cards
+  const applyQuickFilter = (actor, action) => {
+    setActorFilter(actor ?? 'ALL');
+    setActionFilter(action ?? 'ALL');
+    setCurrentPage(1);
+  };
 
-  // Grouped Actions for Dropdown
-  const ACTION_GROUPS = [
-    { label: 'All Actions', value: 'ALL' },
-    {
-      label: 'Authentication',
-      options: [
-        { label: 'User Login', value: 'USER_LOGIN' },
-      ]
-    },
-    {
-      label: 'Account Management',
-      options: [
-        { label: 'Create Account', value: 'ACCOUNT_CREATE' },
-        { label: 'Update Account', value: 'ACCOUNT_UPDATE' },
-        { label: 'Freeze Account', value: 'ACCOUNT_FREEZE' },
-        { label: 'Reactivate Account', value: 'ACCOUNT_REACTIVATE' },
-        { label: 'Close Account', value: 'ACCOUNT_CLOSE' },
-      ]
-    },
-    {
-      label: 'Customer Management',
-      options: [
-        { label: 'Create Customer', value: 'CUSTOMER_CREATE' },
-        { label: 'Update Customer', value: 'CUSTOMER_UPDATE' },
-        { label: 'Freeze Customer', value: 'CUSTOMER_FREEZE' },
-        { label: 'Reactivate Customer', value: 'CUSTOMER_REACTIVATE' },
-        { label: 'Close Customer', value: 'CUSTOMER_CLOSE' },
-      ]
-    },
-    {
-      label: 'Transactions',
-      options: [
-        { label: 'Deposit', value: 'TRANSACTION_DEPOSIT' },
-        { label: 'Withdraw', value: 'TRANSACTION_WITHDRAW' },
-        { label: 'Transfer', value: 'TRANSACTION_TRANSFER' },
-      ]
-    },
-    {
-      label: 'Partner Management',
-      options: [
-        { label: 'Approve Rotation', value: 'PARTNER_ROTATION_APPROVED' },
-        { label: 'Reject Rotation', value: 'PARTNER_ROTATION_REJECTED' },
-      ]
-    }
-  ];
+  // Action option counts
+  const actionCounts = useMemo(() => {
+    const counts = {};
+    ACTION_FLAT_OPTIONS.forEach(opt => {
+      if (opt.key !== 'ALL') counts[opt.key] = logs.filter(l => l.action === opt.key).length;
+    });
+    return counts;
+  }, [logs]);
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      {/* Stats Row */}
+
+      {/* ── Stats Row ── */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+        {/* Total Events */}
+        <button
+          onClick={() => applyQuickFilter('ALL', 'ALL')}
+          className="text-left bg-white/5 border border-white/10 rounded-2xl p-4 hover:bg-white/10 hover:border-white/20 transition-all cursor-pointer group"
+        >
           <div className="text-xs text-primary-400 uppercase tracking-widest font-bold mb-1">Total Events</div>
-          <div className="text-2xl font-bold text-white">{stats.total}</div>
-        </div>
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+          <div className="text-2xl font-bold text-white group-hover:text-cyan-200 transition-colors">{stats.total}</div>
+          <div className="text-[10px] text-primary-500 mt-1">Click to reset filters</div>
+        </button>
+
+        {/* Last 24h */}
+        <button
+          onClick={() => {
+            const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+            const today = new Date().toISOString().slice(0, 10);
+            setDateFrom(yesterday);
+            setDateTo(today);
+            setActorFilter('ALL');
+            setActionFilter('ALL');
+            setCurrentPage(1);
+          }}
+          className="text-left bg-white/5 border border-white/10 rounded-2xl p-4 hover:bg-white/10 hover:border-white/20 transition-all cursor-pointer group"
+        >
           <div className="text-xs text-primary-400 uppercase tracking-widest font-bold mb-1">Last 24h</div>
-          <div className="text-2xl font-bold text-emerald-400">{stats.recent}</div>
-        </div>
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
+          <div className="text-2xl font-bold text-emerald-400 group-hover:text-emerald-300 transition-colors">{stats.recent}</div>
+          <div className="text-[10px] text-primary-500 mt-1">Click to filter</div>
+        </button>
+
+        {/* User Actions */}
+        <button
+          onClick={() => applyQuickFilter('USER', 'ALL')}
+          className="text-left bg-white/5 border border-white/10 rounded-2xl p-4 hover:bg-white/10 hover:border-blue-500/30 transition-all cursor-pointer group"
+        >
           <div className="text-xs text-blue-400/80 uppercase tracking-widest font-bold mb-1">User Actions</div>
-          <div className="text-2xl font-bold text-blue-400">{stats.users}</div>
-        </div>
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-          <div className="text-xs text-red-400/80 uppercase tracking-widest font-bold mb-1">Errors/Failures</div>
-          <div className="text-2xl font-bold text-red-400">{stats.errors}</div>
-        </div>
+          <div className="text-2xl font-bold text-blue-400 group-hover:text-blue-300 transition-colors">{stats.users}</div>
+          <div className="text-[10px] text-primary-500 mt-1">Click to filter</div>
+        </button>
+
+        {/* Errors / Failures */}
+        <button
+          onClick={() => {
+            setActorFilter('ALL');
+            setActionFilter('ALL');
+            setSearchTerm('FAIL');
+            setCurrentPage(1);
+          }}
+          className="text-left bg-white/5 border border-white/10 rounded-2xl p-4 hover:bg-white/10 hover:border-red-500/30 transition-all cursor-pointer group"
+        >
+          <div className="text-xs text-red-400/80 uppercase tracking-widest font-bold mb-1">Errors / Failures</div>
+          <div className="text-2xl font-bold text-red-400 group-hover:text-red-300 transition-colors">{stats.errors}</div>
+          <div className="text-[10px] text-primary-500 mt-1">Click to filter</div>
+        </button>
       </div>
 
-      {/* Toolbar */}
-      <div className="flex flex-col xl:flex-row gap-4">
-        {/* Search & Date */}
-        <div className="flex gap-3 min-w-[450px]">
-          <div className="flex items-center gap-2 bg-white/5 border border-white/10 px-4 py-2.5 rounded-xl shadow-inner focus-within:border-cyan-500/50 focus-within:bg-black/20 transition-all flex-1 group">
-            <Search size={18} className="text-primary-400 group-focus-within:text-cyan-400 transition-colors shrink-0" />
+      {/* ── Toolbar ── */}
+      <div className="flex flex-col lg:flex-row gap-3 w-full">
+
+        {/* Left: Search + Date Range */}
+        <div className="flex flex-col sm:flex-row gap-3 flex-1 min-w-0">
+          {/* Search
+          <div className="flex items-center gap-2 bg-white/5 border border-white/10 px-4 py-2.5 rounded-xl shadow-inner focus-within:border-cyan-500/50 focus-within:bg-black/20 transition-all flex-1 min-w-0 group">
+            <Search size={16} className="text-primary-400 group-focus-within:text-cyan-400 transition-colors shrink-0" />
             <input
               type="text"
-              placeholder="Search by action, ID, or details..."
+              placeholder="Search by action, actor ID, or details…"
               className="outline-none text-sm w-full bg-transparent text-white placeholder:text-primary-500"
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={e => setSearchTerm(e.target.value)}
             />
+          </div> */}
+
+          {/* Date range */}
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-1.5 bg-black/20 border border-white/10 rounded-xl px-3 py-2.5 hover:bg-white/5 transition-colors">
+              <Calendar size={14} className="text-primary-400 shrink-0" />
+              <input
+                type="date"
+                className="bg-transparent text-primary-300 text-sm outline-none cursor-pointer"
+                value={dateFrom}
+                onChange={e => setDateFrom(e.target.value)}
+                title="From date"
+              />
+            </div>
+            <span className="text-primary-500 text-xs">to</span>
+            <div className="flex items-center gap-1.5 bg-black/20 border border-white/10 rounded-xl px-3 py-2.5 hover:bg-white/5 transition-colors">
+              <Calendar size={14} className="text-primary-400 shrink-0" />
+              <input
+                type="date"
+                className="bg-transparent text-primary-300 text-sm outline-none cursor-pointer"
+                value={dateTo}
+                onChange={e => setDateTo(e.target.value)}
+                title="To date"
+              />
+            </div>
           </div>
-          <input
-            type="date"
-            className="bg-black/20 border border-white/10 text-primary-300 rounded-xl px-4 py-2.5 focus:border-cyan-500 outline-none hover:bg-white/5 transition-colors"
-            value={dateFilter}
-            onChange={e => setDateFilter(e.target.value)}
-          />
         </div>
 
-        {/* Filters */}
-        {/* Filters */}
-        <div className="flex items-center gap-3 w-full md:w-auto overflow-x-auto pb-1 md:pb-0">
+        {/* Right: Filters + Page Size */}
+        <div className="flex items-center gap-3 shrink-0 flex-wrap">
           <FilterDropdown
             label="Actor"
-            options={ACTOR_CHIPS}
+            options={ACTOR_OPTIONS}
             value={actorFilter}
             onChange={setActorFilter}
             counts={{
@@ -232,38 +281,40 @@ export default function AuditLogs() {
               PARTNER: logs.filter(l => l.actorType === 'PARTNER').length,
             }}
           />
-          <div className="relative z-20">
-            <select
-              value={actionFilter}
-              onChange={(e) => setActionFilter(e.target.value)}
-              className="appearance-none bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 pr-10 text-sm text-primary-300 focus:border-cyan-500 outline-none hover:bg-white/10 transition-colors cursor-pointer min-w-[180px]"
+          <FilterDropdown
+            label="Action"
+            options={ACTION_FLAT_OPTIONS}
+            value={actionFilter}
+            onChange={setActionFilter}
+            counts={actionCounts}
+          />
+          <FilterDropdown
+            label="Rows"
+            options={PAGE_SIZE_OPTIONS}
+            value={String(pageSize)}
+            onChange={v => setPageSize(Number(v))}
+          />
+
+          {/* Clear filters button — only visible when filters are active */}
+          {(actorFilter !== 'ALL' || actionFilter !== 'ALL' || dateFrom || dateTo || searchTerm) && (
+            <button
+              onClick={() => {
+                setActorFilter('ALL');
+                setActionFilter('ALL');
+                setDateFrom('');
+                setDateTo('');
+                setSearchTerm('');
+                setCurrentPage(1);
+              }}
+              className="text-xs text-primary-400 hover:text-red-400 border border-white/10 hover:border-red-500/30 px-3 py-2.5 rounded-xl transition-all hover:bg-red-500/5 font-medium"
             >
-              {ACTION_GROUPS.map((group, idx) => (
-                group.options ? (
-                  <optgroup key={idx} label={group.label} className="bg-slate-900 text-primary-400">
-                    {group.options.map(opt => (
-                      <option key={opt.value} value={opt.value} className="text-white">
-                        {opt.label} ({logs.filter(l => l.action === opt.value).length})
-                      </option>
-                    ))}
-                  </optgroup>
-                ) : (
-                  <option key={idx} value={group.value} className="bg-slate-900 text-white">
-                    {group.label}
-                  </option>
-                )
-              ))}
-            </select>
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-primary-500">
-              <svg width="10" height="6" viewBox="0 0 10 6" fill="currentColor">
-                <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-              </svg>
-            </div>
-          </div>
+              Clear filters
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Table */}
+      {/* ── Table ── */}
       <div className="bg-white/5 backdrop-blur-md rounded-3xl shadow-xl border border-white/10 overflow-hidden">
         <table className="w-full text-left border-collapse">
           <thead>
@@ -277,9 +328,16 @@ export default function AuditLogs() {
           </thead>
           <tbody className="divide-y divide-white/5">
             {loading ? (
-              <tr><td colSpan="5" className="text-center py-12 text-primary-400/60 italic">Loading audit logs...</td></tr>
-            ) : filteredLogs.length > 0 ? (
-              filteredLogs.map((log, idx) => {
+              <tr>
+                <td colSpan="5" className="text-center py-16">
+                  <div className="flex flex-col items-center gap-3 text-primary-400/60">
+                    <div className="w-8 h-8 border-2 border-primary-400/30 border-t-cyan-400 rounded-full animate-spin" />
+                    <span className="text-sm italic">Loading audit logs…</span>
+                  </div>
+                </td>
+              </tr>
+            ) : paginatedLogs.length > 0 ? (
+              paginatedLogs.map((log, idx) => {
                 const actor = ACTOR_BADGE[log.actorType] ?? ACTOR_BADGE.USER;
                 const ActorIcon = actor.Icon;
                 const actionCls = ACTION_COLOR[log.action] ?? 'text-cyan-300 bg-cyan-500/10 border-cyan-500/20';
@@ -293,7 +351,6 @@ export default function AuditLogs() {
 
                 return (
                   <tr key={log.id ?? idx} className="hover:bg-white/5 transition-colors group">
-
                     {/* TIMESTAMP */}
                     <td className="px-6 py-4 text-sm text-primary-300 font-mono w-44">
                       <div className="flex items-center gap-2">
@@ -351,11 +408,99 @@ export default function AuditLogs() {
                 );
               })
             ) : (
-              <tr><td colSpan="5" className="text-center py-12 text-primary-400/60 italic">No audit logs found.</td></tr>
+              /* ── Empty State ── */
+              <tr>
+                <td colSpan="5" className="py-20">
+                  <div className="flex flex-col items-center gap-4 text-center">
+                    <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center">
+                      <Filter size={28} className="text-primary-500" />
+                    </div>
+                    <div>
+                      <p className="text-white font-bold text-base">No logs found</p>
+                      <p className="text-sm text-primary-400 mt-1">
+                        No audit events match your current filters.
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setActorFilter('ALL');
+                        setActionFilter('ALL');
+                        setDateFrom('');
+                        setDateTo('');
+                        setSearchTerm('');
+                        setCurrentPage(1);
+                      }}
+                      className="text-sm text-cyan-400 hover:text-cyan-300 border border-cyan-500/20 hover:border-cyan-500/40 px-4 py-2 rounded-xl transition-all hover:bg-cyan-500/5 font-medium"
+                    >
+                      Clear all filters
+                    </button>
+                  </div>
+                </td>
+              </tr>
             )}
           </tbody>
         </table>
       </div>
+
+      {/* ── Pagination ── */}
+      {!loading && filteredLogs.length > 0 && (
+        <div className="flex items-center justify-between text-sm text-primary-400">
+          <span>
+            Showing{' '}
+            <span className="text-white font-semibold">
+              {Math.min((currentPage - 1) * pageSize + 1, filteredLogs.length)}–{Math.min(currentPage * pageSize, filteredLogs.length)}
+            </span>
+            {' '}of{' '}
+            <span className="text-white font-semibold">{filteredLogs.length}</span>
+            {' '}events
+          </span>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="p-2 rounded-xl border border-white/10 hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+            >
+              <ChevronLeft size={16} />
+            </button>
+
+            {/* Page numbers */}
+            {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
+              let page;
+              if (totalPages <= 5) {
+                page = i + 1;
+              } else if (currentPage <= 3) {
+                page = i + 1;
+              } else if (currentPage >= totalPages - 2) {
+                page = totalPages - 4 + i;
+              } else {
+                page = currentPage - 2 + i;
+              }
+              return (
+                <button
+                  key={page}
+                  onClick={() => setCurrentPage(page)}
+                  className={`w-9 h-9 rounded-xl text-sm font-medium border transition-all
+                    ${currentPage === page
+                      ? 'bg-cyan-500/20 border-cyan-500/40 text-cyan-300'
+                      : 'border-white/10 hover:bg-white/5 text-primary-300 hover:text-white'
+                    }`}
+                >
+                  {page}
+                </button>
+              );
+            })}
+
+            <button
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="p-2 rounded-xl border border-white/10 hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

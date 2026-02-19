@@ -141,15 +141,15 @@ export default function AdminLayout() {
             <div className="flex-1 flex flex-col h-screen overflow-hidden relative z-10">
                 {/* Header */}
                 <header className="h-20 flex items-center justify-between px-8 bg-primary-950/80 backdrop-blur-xl border-b border-white/5 sticky top-0 z-20">
-                    <div className="flex items-center gap-6">
+                    <div className="flex items-center gap-4">
                         <button
                             onClick={() => setCollapsed(!collapsed)}
-                            className="p-2.5 rounded-xl text-primary-300 hover:bg-white/5 hover:text-white transition-all border border-transparent hover:border-white/10"
+                            className="p-2.5 rounded-xl text-primary-300 hover:bg-white/5 hover:text-white transition-all border border-transparent hover:border-white/10 shrink-0"
                         >
                             {collapsed ? <Menu size={20} /> : <ChevronLeft size={20} />}
                         </button>
-                        <div className="hidden md:block h-8 w-px bg-white/10 mx-2"></div>
-                        <h2 className="text-2xl font-bold text-white tracking-tight drop-shadow-sm">{getPageTitle()}</h2>
+                        <div className="h-8 w-px bg-white/10 mx-1 hidden sm:block"></div>
+                        <h2 className="text-lg sm:text-2xl font-bold text-white tracking-tight drop-shadow-sm truncate">{getPageTitle()}</h2>
                     </div>
 
                     <div className="flex items-center gap-5">

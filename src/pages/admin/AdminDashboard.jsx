@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { adminService } from '../../api';
+import { useNavigate } from 'react-router-dom';
 import {
     Users,
     Activity,
@@ -7,7 +8,8 @@ import {
     Wallet,
     ArrowUpRight,
     ArrowDownRight,
-    Clock
+    Clock,
+    ShieldAlert
 } from 'lucide-react';
 import {
     AreaChart,
@@ -20,17 +22,29 @@ import {
 } from 'recharts';
 
 export default function AdminDashboard() {
+    const navigate = useNavigate();
     const [stats, setStats] = useState({
         activeCustomers: 0,
         totalBalance: 2450000.00,
         todayTransactions: 142,
         failedTransactions: 3
     });
+    const [recentAlerts, setRecentAlerts] = useState([]);
 
     useEffect(() => {
         adminService.getCustomers().then(data => {
             const count = Array.isArray(data) ? data.length : (data.content?.length || 0);
             setStats(prev => ({ ...prev, activeCustomers: count }));
+        }).catch(console.error);
+
+        // Pull recent non-user security-relevant events from audit logs
+        adminService.getAuditLogs().then(data => {
+            if (!Array.isArray(data)) return;
+            const alerts = data
+                .filter(l => l.actorType !== 'USER' || l.action?.includes('FAIL') || l.action?.includes('FREEZE') || l.action?.includes('CLOSE'))
+                .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+                .slice(0, 5);
+            setRecentAlerts(alerts);
         }).catch(console.error);
     }, []);
 
@@ -184,33 +198,68 @@ export default function AdminDashboard() {
                     </div>
                 </div>
 
-                {/* Pending Actions / Feed */}
+                {/* Recent Security Events from real audit log */}
                 <div className="bg-white/5 p-6 rounded-3xl border border-white/10 backdrop-blur-md shadow-xl flex flex-col">
-                    <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
-                        <Activity size={20} className="text-orange-400" />
-                        Live Security Feed
+                    <h3 className="text-lg font-bold text-white mb-1 flex items-center gap-2">
+                        <ShieldAlert size={20} className="text-orange-400" />
+                        Recent Security Events
                     </h3>
+                    <p className="text-xs text-primary-400 mb-5">System & partner actions · live from audit log</p>
 
-                    <div className="space-y-4 flex-1 overflow-y-auto custom-scrollbar pr-2">
-                        {[1, 2, 3, 4].map((i) => (
-                            <div key={i} className="group flex items-start gap-4 p-4 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/10 transition-all cursor-pointer">
-                                <div className="mt-1 p-2 rounded-xl bg-gradient-to-br from-orange-500/20 to-red-500/20 text-orange-400 border border-orange-500/10 group-hover:scale-110 transition-transform">
-                                    <AlertTriangle size={16} />
-                                </div>
-                                <div>
-                                    <p className="text-sm font-bold text-slate-100 group-hover:text-white transition-colors">Suspicious Login Blocked</p>
-                                    <p className="text-xs text-primary-300 mt-1">IP 192.168.1.••• tried to access Admin Panel</p>
-                                    <div className="flex items-center gap-1.5 mt-2 text-[10px] text-primary-400 font-mono">
-                                        <Clock size={10} />
-                                        <span>2 mins ago</span>
-                                    </div>
-                                </div>
+                    <div className="space-y-3 flex-1 overflow-y-auto custom-scrollbar pr-1">
+                        {recentAlerts.length === 0 ? (
+                            <div className="flex-1 flex flex-col items-center justify-center py-8 text-primary-500">
+                                <ShieldAlert size={28} className="mb-2 opacity-40" />
+                                <p className="text-sm">No recent alerts</p>
                             </div>
-                        ))}
+                        ) : (
+                            recentAlerts.map((event, i) => {
+                                const isError = event.action?.includes('FAIL') || event.action?.includes('ERROR');
+                                const relTime = event.createdAt
+                                    ? (() => {
+                                        const diff = Date.now() - new Date(event.createdAt);
+                                        const mins = Math.floor(diff / 60000);
+                                        const hrs = Math.floor(diff / 3600000);
+                                        if (mins < 60) return `${mins}m ago`;
+                                        if (hrs < 24) return `${hrs}h ago`;
+                                        return new Date(event.createdAt).toLocaleDateString();
+                                    })()
+                                    : '—';
+                                return (
+                                    <div
+                                        key={event.id ?? i}
+                                        onClick={() => navigate('/admin/audit-logs')}
+                                        className="group flex items-start gap-3 p-3.5 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/10 transition-all cursor-pointer"
+                                    >
+                                        <div className={`mt-0.5 p-2 rounded-xl border group-hover:scale-110 transition-transform ${isError
+                                                ? 'bg-red-500/10 text-red-400 border-red-500/10'
+                                                : 'bg-orange-500/10 text-orange-400 border-orange-500/10'
+                                            }`}>
+                                            <AlertTriangle size={14} />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <p className="text-sm font-bold text-slate-100 group-hover:text-white transition-colors truncate">
+                                                {event.action?.replace(/_/g, ' ')}
+                                            </p>
+                                            <p className="text-xs text-primary-300 mt-0.5 truncate">
+                                                {event.actorType} · {event.actorId ?? '—'}
+                                            </p>
+                                            <div className="flex items-center gap-1.5 mt-1.5 text-[10px] text-primary-400 font-mono">
+                                                <Clock size={9} />
+                                                <span>{relTime}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })
+                        )}
                     </div>
 
-                    <button className="w-full mt-6 py-3.5 rounded-xl border border-white/10 text-primary-200 text-sm font-bold hover:bg-white/5 hover:text-white transition-all shadow-lg">
-                        View Audit Logs
+                    <button
+                        onClick={() => navigate('/admin/audit-logs')}
+                        className="w-full mt-5 py-3 rounded-xl border border-white/10 text-primary-200 text-sm font-bold hover:bg-white/5 hover:text-white transition-all shadow-lg"
+                    >
+                        View All Audit Logs
                     </button>
                 </div>
             </div>
