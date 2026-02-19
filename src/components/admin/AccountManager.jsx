@@ -17,6 +17,8 @@ export default function AccountManager() {
         customerId: '', accountType: 'SAVINGS', currency: 'THB', pin: '123456'
     });
     const [searchTerm, setSearchTerm] = useState('');
+    const [statusFilter, setStatusFilter] = useState('ALL');
+    const [typeFilter, setTypeFilter] = useState('ALL');
 
     useEffect(() => {
         fetchAccounts();
@@ -47,7 +49,7 @@ export default function AccountManager() {
             await adminService.createAccount(accountData);
 
             setShowCreateModal(false);
-            setNewAccount({ customerId: '', accountType: 'SAVINGS', currency: 'USD', pin: '123456' });
+            setNewAccount({ customerId: '', accountType: 'SAVINGS', currency: 'THB', pin: '123456' });
             fetchAccounts();
         } catch (error) {
             console.error("Create account error", error);
@@ -95,8 +97,10 @@ export default function AccountManager() {
         }
     };
 
-    // Filter accounts by searchTerm across key fields
+    // Filter accounts by searchTerm + statusFilter + typeFilter
     const filteredAccounts = accounts.filter(acc => {
+        if (statusFilter !== 'ALL' && acc.status !== statusFilter) return false;
+        if (typeFilter !== 'ALL' && acc.type !== typeFilter) return false;
         const term = searchTerm.toLowerCase();
         if (!term) return true;
         return (
@@ -107,6 +111,28 @@ export default function AccountManager() {
             acc.status?.toLowerCase().includes(term)
         );
     });
+
+    // Stats
+    const stats = {
+        total: accounts.length,
+        active: accounts.filter(a => a.status === 'ACTIVE').length,
+        frozen: accounts.filter(a => a.status === 'FROZEN').length,
+        closed: accounts.filter(a => a.status === 'CLOSED').length,
+        totalBalance: accounts.filter(a => a.status === 'ACTIVE').reduce((s, a) => s + (a.balance || 0), 0),
+    };
+
+    const STATUS_CHIPS = [
+        { key: 'ALL', label: 'All', cls: 'border-white/20 text-primary-200', activeCls: 'bg-white/10 text-white border-white/30' },
+        { key: 'ACTIVE', label: 'Active', cls: 'border-emerald-500/20 text-emerald-400/60', activeCls: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' },
+        { key: 'FROZEN', label: 'Frozen', cls: 'border-amber-500/20 text-amber-400/60', activeCls: 'bg-amber-500/15 text-amber-400 border-amber-500/30' },
+        { key: 'CLOSED', label: 'Closed', cls: 'border-red-500/20 text-red-400/60', activeCls: 'bg-red-500/15 text-red-400 border-red-500/30' },
+    ];
+    const TYPE_CHIPS = [
+        { key: 'ALL', label: 'All Types' },
+        { key: 'SAVINGS', label: 'Savings' },
+        { key: 'CURRENT', label: 'Current' },
+        { key: 'WALLET', label: 'Wallet' },
+    ];
 
     return (
         <div className="space-y-6 relative">
@@ -125,21 +151,79 @@ export default function AccountManager() {
                 </button>
             </div>
 
-            {/* Account List */}
-            <div className="bg-white/5 backdrop-blur-md rounded-3xl shadow-xl border border-white/10 overflow-hidden min-h-[500px]">
-                <div className="p-4 border-b border-white/5">
-                    <div className="flex items-center gap-3 bg-black/20 px-4 py-2.5 rounded-xl border border-white/10 focus-within:border-emerald-500 transition-all max-w-md group">
-                        <Search size={18} className="text-primary-400 group-focus-within:text-emerald-400 scale-100 group-focus-within:scale-110 transition-all" />
-                        <input
-                            type="text"
-                            placeholder="Search accounts..."
-                            className="bg-transparent outline-none text-white w-full placeholder:text-primary-500"
-                            value={searchTerm}
-                            onChange={e => setSearchTerm(e.target.value)}
-                        />
+            {/* Stats Summary Row */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {[
+                    { label: 'Total Accounts', value: stats.total, color: 'text-white', sub: `${stats.active} active` },
+                    { label: 'Active', value: stats.active, color: 'text-emerald-400', sub: 'earning interest' },
+                    { label: 'Frozen', value: stats.frozen, color: 'text-amber-400', sub: 'access suspended' },
+                    { label: 'Closed', value: stats.closed, color: 'text-red-400', sub: 'permanently closed' },
+                ].map(s => (
+                    <div key={s.label} className="bg-white/5 border border-white/10 rounded-2xl px-5 py-4">
+                        <div className="text-xs text-primary-400 uppercase tracking-widest font-bold mb-1">{s.label}</div>
+                        <div className={`text-3xl font-bold ${s.color}`}>{s.value}</div>
+                        <div className="text-xs text-primary-500 mt-1">{s.sub}</div>
                     </div>
-                </div>
+                ))}
+            </div>
 
+            {/* Toolbar: search + filter chips */}
+            <div className="space-y-3">
+                {/* Search */}
+                <div className="flex items-center gap-3 bg-black/20 px-4 py-2.5 rounded-xl border border-white/10 focus-within:border-emerald-500 transition-all max-w-md group">
+                    <Search size={18} className="text-primary-400 group-focus-within:text-emerald-400 transition-colors shrink-0" />
+                    <input
+                        type="text"
+                        placeholder="Search accounts, customers..."
+                        className="bg-transparent outline-none text-white w-full placeholder:text-primary-500"
+                        value={searchTerm}
+                        onChange={e => setSearchTerm(e.target.value)}
+                    />
+                </div>
+                {/* Status chips */}
+                <div className="flex flex-wrap gap-2 items-center">
+                    <span className="text-xs text-primary-400 font-bold uppercase tracking-widest mr-1">Status</span>
+                    {STATUS_CHIPS.map(c => (
+                        <button
+                            key={c.key}
+                            onClick={() => setStatusFilter(c.key)}
+                            className={`px-3.5 py-1.5 rounded-full text-xs font-bold border transition-all ${statusFilter === c.key ? c.activeCls : `${c.cls} hover:opacity-80`
+                                }`}
+                        >
+                            {c.label}
+                            {c.key !== 'ALL' && (
+                                <span className="ml-1.5 opacity-70">
+                                    {accounts.filter(a => a.status === c.key).length}
+                                </span>
+                            )}
+                        </button>
+                    ))}
+                </div>
+                {/* Type chips */}
+                <div className="flex flex-wrap gap-2 items-center">
+                    <span className="text-xs text-primary-400 font-bold uppercase tracking-widest mr-1">Type</span>
+                    {TYPE_CHIPS.map(c => (
+                        <button
+                            key={c.key}
+                            onClick={() => setTypeFilter(c.key)}
+                            className={`px-3.5 py-1.5 rounded-full text-xs font-bold border transition-all ${typeFilter === c.key
+                                ? 'bg-cyan-500/15 text-cyan-400 border-cyan-500/30'
+                                : 'border-white/10 text-primary-300 hover:border-white/20'
+                                }`}
+                        >
+                            {c.label}
+                            {c.key !== 'ALL' && (
+                                <span className="ml-1.5 opacity-70">
+                                    {accounts.filter(a => a.type === c.key).length}
+                                </span>
+                            )}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {/* Account List */}
+            <div className="bg-white/5 backdrop-blur-md rounded-3xl shadow-xl border border-white/10 overflow-hidden min-h-[300px]">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left border-collapse">
                         <thead>
@@ -289,10 +373,11 @@ export default function AccountManager() {
                                         value={newAccount.currency}
                                         onChange={e => setNewAccount({ ...newAccount, currency: e.target.value })}
                                     >
+                                        <option value="THB">THB (฿)</option>
                                         <option value="USD">USD ($)</option>
                                         <option value="EUR">EUR (€)</option>
                                         <option value="GBP">GBP (£)</option>
-                                        <option value="THB">THB (฿)</option>
+                                        <option value="CHF">CHF (Fr)</option>
                                     </select>
                                 </div>
                             </div>

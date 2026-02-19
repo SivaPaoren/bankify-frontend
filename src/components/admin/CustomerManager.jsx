@@ -1,36 +1,172 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { adminService } from '../../api';
-import { Search, UserPlus, Trash2, Mail, Phone, X, User } from 'lucide-react';
+import {
+    Search, UserPlus, Mail, Phone, X, User,
+    Snowflake, CheckCircle, XCircle, AlertTriangle, ChevronDown, ChevronUp, RefreshCw
+} from 'lucide-react';
 
+// ─── Status Config ─────────────────────────────────────────────────────────────
+const STATUS_CFG = {
+    ACTIVE: { label: 'Active', cls: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20', dot: 'bg-emerald-400' },
+    FROZEN: { label: 'Frozen', cls: 'bg-amber-500/10  text-amber-400  border-amber-500/20', dot: 'bg-amber-400' },
+    CLOSED: { label: 'Closed', cls: 'bg-red-500/10    text-red-400    border-red-500/20', dot: 'bg-red-400' },
+};
+
+function StatusBadge({ status }) {
+    const cfg = STATUS_CFG[status] ?? STATUS_CFG.ACTIVE;
+    return (
+        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wide border ${cfg.cls}`}>
+            <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`} />
+            {cfg.label}
+        </span>
+    );
+}
+
+// ─── Confirmation Dialog ────────────────────────────────────────────────────────
+const DIALOG_CFG = {
+    freeze: {
+        title: 'Freeze Customer?',
+        icon: <Snowflake size={32} className="text-amber-400" />,
+        ring: 'border-amber-500/20 bg-amber-500/10',
+        bar: 'from-amber-500 to-yellow-500',
+        btnCls: 'bg-amber-500 hover:bg-amber-400 shadow-amber-500/20',
+        btnLabel: 'Freeze',
+        desc: (name) => <>Freeze <b className="text-white">{name}</b>? Their active accounts will also be frozen. This can be undone.</>,
+    },
+    reactivate: {
+        title: 'Re-activate Customer?',
+        icon: <CheckCircle size={32} className="text-emerald-400" />,
+        ring: 'border-emerald-500/20 bg-emerald-500/10',
+        bar: 'from-emerald-500 to-cyan-500',
+        btnCls: 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-500/20',
+        btnLabel: 'Re-activate',
+        desc: (name) => <>Re-activate <b className="text-white">{name}</b>? Their frozen accounts will also be restored to active.</>,
+    },
+    close: {
+        title: 'Close Customer Permanently?',
+        icon: <XCircle size={32} className="text-red-400" />,
+        ring: 'border-red-500/20 bg-red-500/10',
+        bar: 'from-red-600 to-rose-500',
+        btnCls: 'bg-red-600 hover:bg-red-500 shadow-red-500/20',
+        btnLabel: 'Close Permanently',
+        desc: (name) => (
+            <>
+                <b className="text-white">{name}</b> will be permanently closed. All their bank accounts will also be closed.
+                <br /><span className="text-amber-400 text-xs font-semibold">⚠ This cannot be reversed.</span>
+            </>
+        ),
+    },
+};
+
+function ConfirmDialog({ action, customer, onConfirm, onCancel, loading }) {
+    if (!action || !customer) return null;
+    const cfg = DIALOG_CFG[action];
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-primary-950/90 backdrop-blur-md animate-fade-in">
+            <div className="bg-primary-900 border border-white/10 rounded-3xl shadow-2xl w-full max-w-md p-6 text-center relative overflow-hidden">
+                <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${cfg.bar}`} />
+                <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 border ${cfg.ring}`}>
+                    {cfg.icon}
+                </div>
+                <h3 className="text-xl font-bold text-white mb-2">{cfg.title}</h3>
+                <p className="text-primary-300 mb-6 leading-relaxed text-sm">{cfg.desc(`${customer.firstName} ${customer.lastName}`)}</p>
+                <div className="flex gap-3">
+                    <button
+                        onClick={onCancel}
+                        disabled={loading}
+                        className="flex-1 px-4 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl font-bold transition-colors border border-white/5"
+                    >Cancel</button>
+                    <button
+                        onClick={onConfirm}
+                        disabled={loading}
+                        className={`flex-1 px-4 py-3 text-white rounded-xl font-bold transition-colors shadow-lg ${cfg.btnCls}`}
+                    >
+                        {loading ? <RefreshCw size={16} className="animate-spin mx-auto" /> : cfg.btnLabel}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ─── Main Component ─────────────────────────────────────────────────────────────
 export default function CustomerManager() {
     const [customers, setCustomers] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [actionLoading, setActionLoading] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [statusFilter, setStatusFilter] = useState('ALL');
     const [showModal, setShowModal] = useState(false);
-    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [dialog, setDialog] = useState({ action: null, customer: null });
     const [selectedCustomer, setSelectedCustomer] = useState(null);
+    const [customerAccounts, setCustomerAccounts] = useState([]);
+    const [showDrawer, setShowDrawer] = useState(false);
     const [newCustomer, setNewCustomer] = useState({
         firstName: '', lastName: '', email: '', phoneNumber: '', type: 'INDIVIDUAL'
     });
-    const [showAccountsDrawer, setShowAccountsDrawer] = useState(false);
-    const [customerAccounts, setCustomerAccounts] = useState([]);
 
-    useEffect(() => {
-        fetchCustomers();
-    }, []);
-
-    const fetchCustomers = async () => {
+    const fetchCustomers = useCallback(async () => {
         setLoading(true);
         try {
             const data = await adminService.getCustomers();
-            console.log("Fetched customers:", data);
-            // Show ALL customers; FROZEN ones will have a visible status badge
-            const allCustomers = Array.isArray(data) ? data : [];
-            setCustomers(allCustomers);
-        } catch (error) {
-            console.error("Failed to fetch customers", error);
+            setCustomers(Array.isArray(data) ? data : []);
+        } catch (err) {
+            console.error('Failed to fetch customers', err);
             setCustomers([]);
         } finally {
             setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => { fetchCustomers(); }, [fetchCustomers]);
+
+    // ── Filtered view ───────────────────────────────────────────────────────
+    const visibleCustomers = customers.filter(c => {
+        if (statusFilter !== 'ALL' && c.status !== statusFilter) return false;
+        if (!searchTerm) return true;
+        const t = searchTerm.toLowerCase();
+        return (
+            c.firstName?.toLowerCase().includes(t) ||
+            c.lastName?.toLowerCase().includes(t) ||
+            c.email?.toLowerCase().includes(t) ||
+            c.id?.toString().includes(t)
+        );
+    });
+
+    const stats = {
+        total: customers.length,
+        active: customers.filter(c => c.status === 'ACTIVE').length,
+        frozen: customers.filter(c => c.status === 'FROZEN').length,
+        closed: customers.filter(c => c.status === 'CLOSED').length,
+    };
+
+    const STATUS_CHIPS = [
+        { key: 'ALL', label: 'All', cls: 'border-white/20 text-primary-200', activeCls: 'bg-white/10 text-white border-white/30' },
+        { key: 'ACTIVE', label: 'Active', cls: 'border-emerald-500/20 text-emerald-400/60', activeCls: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30' },
+        { key: 'FROZEN', label: 'Frozen', cls: 'border-amber-500/20 text-amber-400/60', activeCls: 'bg-amber-500/15 text-amber-400 border-amber-500/30' },
+        { key: 'CLOSED', label: 'Closed', cls: 'border-red-500/20 text-red-400/60', activeCls: 'bg-red-500/15 text-red-400 border-red-500/30' },
+    ];
+
+    // ── Actions ─────────────────────────────────────────────────────────────
+    const openDialog = (action, customer, e) => {
+        e.stopPropagation();
+        setDialog({ action, customer });
+    };
+
+    const handleConfirm = async () => {
+        const { action, customer } = dialog;
+        if (!action || !customer) return;
+        setActionLoading(true);
+        try {
+            if (action === 'freeze') await adminService.freezeCustomer(customer.id);
+            if (action === 'reactivate') await adminService.reactivateCustomer(customer.id);
+            if (action === 'close') await adminService.closeCustomer(customer.id);
+            setDialog({ action: null, customer: null });
+            await fetchCustomers();
+        } catch (err) {
+            console.error('Action failed', err);
+        } finally {
+            setActionLoading(false);
         }
     };
 
@@ -41,172 +177,221 @@ export default function CustomerManager() {
             setShowModal(false);
             setNewCustomer({ firstName: '', lastName: '', email: '', phoneNumber: '', type: 'INDIVIDUAL' });
             fetchCustomers();
-        } catch (error) {
-            console.error("Create failed", error);
-        }
-    };
-
-    const handleDelete = async () => {
-        if (!selectedCustomer) return;
-        console.log("Disabling customer:", selectedCustomer.id);
-        try {
-            const result = await adminService.deleteCustomer(selectedCustomer.id);
-            console.log("Disable result:", result);
-            setShowDeleteModal(false);
-            setSelectedCustomer(null);
-
-            // Force refresh the customer list
-            console.log("Refreshing customer list...");
-            await fetchCustomers();
-
-            alert(`Customer "${selectedCustomer.firstName} ${selectedCustomer.lastName}" has been disabled.`);
-        } catch (error) {
-            console.error("Delete failed", error);
-            alert("Failed to disable customer. Please try again.");
+        } catch (err) {
+            console.error('Create failed', err);
         }
     };
 
     const handleViewAccounts = async (customer) => {
         setSelectedCustomer(customer);
-        setShowAccountsDrawer(true);
+        setShowDrawer(true);
         try {
             const accounts = await adminService.getAccounts({ customerId: customer.id });
             setCustomerAccounts(Array.isArray(accounts) ? accounts : []);
-        } catch (error) {
-            console.error("Failed to fetch customer accounts", error);
+        } catch {
             setCustomerAccounts([]);
         }
     };
 
-    const [searchTerm, setSearchTerm] = useState('');
-
-    const filteredCustomers = customers.filter(c => {
-        if (!c) return false;
-        const searchLower = searchTerm.toLowerCase();
-        return (
-            (c.firstName?.toLowerCase() || '').includes(searchLower) ||
-            (c.lastName?.toLowerCase() || '').includes(searchLower) ||
-            (c.email?.toLowerCase() || '').includes(searchLower) ||
-            (c.id?.toString() || '').includes(searchTerm)
-        );
-    });
-
+    // ── Render ───────────────────────────────────────────────────────────────
     return (
         <div className="space-y-6">
+
+            {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-white tracking-tight">Customers</h1>
                     <p className="text-primary-200">Manage user profiles and identity verification.</p>
                 </div>
-                <div className="flex gap-2">
-                    <button
-                        onClick={() => setShowModal(true)}
-                        className="flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-cyan-500/20 active:scale-95"
-                    >
-                        <UserPlus size={20} />
-                        Add Customer
-                    </button>
-                </div>
+                <button
+                    onClick={() => setShowModal(true)}
+                    className="flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-cyan-500/20 active:scale-95"
+                >
+                    <UserPlus size={20} /> Add Customer
+                </button>
             </div>
 
-            <div className="bg-white/5 backdrop-blur-md rounded-3xl shadow-xl border border-white/10 overflow-hidden">
-                <div className="p-4 border-b border-white/5">
-                    <div className="flex items-center gap-3 bg-black/20 px-4 py-2.5 rounded-xl border border-white/10 focus-within:border-cyan-500 transition-all max-w-md group">
-                        <Search size={18} className="text-primary-400 group-focus-within:text-cyan-400 scale-100 group-focus-within:scale-110 transition-all" />
-                        <input
-                            type="text"
-                            placeholder="Search customers..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="bg-transparent outline-none text-white w-full placeholder:text-primary-500"
-                        />
+            {/* Stats Summary Row */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {[
+                    { label: 'Total Customers', value: stats.total, color: 'text-white', sub: `${stats.active} active` },
+                    { label: 'Active', value: stats.active, color: 'text-emerald-400', sub: 'fully verified' },
+                    { label: 'Frozen', value: stats.frozen, color: 'text-amber-400', sub: 'temporarily suspended' },
+                    { label: 'Closed', value: stats.closed, color: 'text-red-400', sub: 'archived profiles' },
+                ].map(s => (
+                    <div key={s.label} className="bg-white/5 border border-white/10 rounded-2xl px-5 py-4">
+                        <div className="text-xs text-primary-400 uppercase tracking-widest font-bold mb-1">{s.label}</div>
+                        <div className={`text-3xl font-bold ${s.color}`}>{s.value}</div>
+                        <div className="text-xs text-primary-500 mt-1">{s.sub}</div>
                     </div>
-                </div>
+                ))}
+            </div>
 
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left border-collapse">
-                        <thead>
-                            <tr className="bg-white/5 border-b border-white/5 text-xs uppercase tracking-widest text-primary-200 font-bold">
-                                <th className="px-6 py-4">Customer</th>
-                                <th className="px-6 py-4">Contact</th>
-                                <th className="px-6 py-4">Type</th>
-                                <th className="px-6 py-4 text-center">Status</th>
-                                <th className="px-6 py-4 text-center">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-white/5">
-                            {loading ? (
-                                <tr><td colSpan="5" className="px-6 py-12 text-center text-primary-300 italic">Loading customer data...</td></tr>
-                            ) : filteredCustomers.length > 0 ? (
-                                filteredCustomers.map((c) => (
-                                    <tr key={c.id} onClick={() => handleViewAccounts(c)} className={`hover:bg-white/5 transition-colors group cursor-pointer ${c.status === 'FROZEN' ? 'opacity-70' : ''}`}>
-                                        <td className="px-6 py-4">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-600 to-primary-800 flex items-center justify-center text-white border border-white/10 shadow-inner">
-                                                    <User size={16} />
-                                                </div>
-                                                <div>
-                                                    <div className="font-bold text-white group-hover:text-cyan-300 transition-colors">{c.firstName} {c.lastName}</div>
-                                                    <div className="text-xs text-primary-300">ID: {c.id}</div>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4 space-y-1">
-                                            <div className="flex items-center gap-2 text-sm text-primary-100">
-                                                <Mail size={14} className="text-primary-400" />
-                                                {c.email}
-                                            </div>
-                                            <div className="flex items-center gap-2 text-sm text-primary-100">
-                                                <Phone size={14} className="text-primary-400" />
-                                                {c.phone || 'N/A'}
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide ${c.type === 'BUSINESS'
-                                                ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20'
-                                                : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
-                                                }`}>
-                                                {c.type}
-                                            </span>
-                                        </td>
-                                        {/* STATUS BADGE — shows FROZEN visually so admin can see disabled customers */}
-                                        <td className="px-6 py-4 text-center">
-                                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide ${c.status === 'ACTIVE'
-                                                ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
-                                                : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
-                                                }`}>
-                                                {c.status}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 text-center">
-                                            <button
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    setSelectedCustomer(c);
-                                                    setShowDeleteModal(true);
-                                                }}
-                                                className="p-2 text-primary-400 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all"
-                                                title="Disable Customer"
-                                            >
-                                                <Trash2 size={16} />
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))
-                            ) : (
-                                <tr><td colSpan="5" className="px-6 py-12 text-center text-primary-300 italic">No customers found.</td></tr>
+            {/* Toolbar */}
+            <div className="space-y-3">
+                {/* Search */}
+                <div className="flex items-center gap-3 bg-black/20 px-4 py-2.5 rounded-xl border border-white/10 focus-within:border-cyan-500 transition-all max-w-md group">
+                    <Search size={18} className="text-primary-400 group-focus-within:text-cyan-400 transition-colors shrink-0" />
+                    <input
+                        type="text"
+                        placeholder="Search customers..."
+                        className="bg-transparent outline-none text-white w-full placeholder:text-primary-500"
+                        value={searchTerm}
+                        onChange={e => setSearchTerm(e.target.value)}
+                    />
+                </div>
+                {/* Status chips */}
+                <div className="flex flex-wrap gap-2 items-center">
+                    <span className="text-xs text-primary-400 font-bold uppercase tracking-widest mr-1">Status</span>
+                    {STATUS_CHIPS.map(c => (
+                        <button
+                            key={c.key}
+                            onClick={() => setStatusFilter(c.key)}
+                            className={`px-3.5 py-1.5 rounded-full text-xs font-bold border transition-all ${statusFilter === c.key ? c.activeCls : `${c.cls} hover:opacity-80`
+                                }`}
+                        >
+                            {c.label}
+                            {c.key !== 'ALL' && (
+                                <span className="ml-1.5 opacity-70">
+                                    {customers.filter(cust => cust.status === c.key).length}
+                                </span>
                             )}
-                        </tbody>
-                    </table>
+                        </button>
+                    ))}
                 </div>
             </div>
 
-            {/* Create Modal */}
+            {/* Table */}
+            <div className="bg-white/5 backdrop-blur-md rounded-3xl shadow-xl border border-white/10 overflow-hidden">
+                <table className="w-full text-left border-collapse">
+                    <thead>
+                        <tr className="bg-white/5 border-b border-white/5 text-xs uppercase tracking-widest text-primary-200 font-bold">
+                            <th className="px-6 py-4">Customer</th>
+                            <th className="px-6 py-4">Contact</th>
+                            <th className="px-6 py-4">Type</th>
+                            <th className="px-6 py-4 text-center">Status</th>
+                            <th className="px-6 py-4 text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                        {loading ? (
+                            <tr><td colSpan="5" className="px-6 py-12 text-center text-primary-300 italic">Loading customers...</td></tr>
+                        ) : visibleCustomers.length > 0 ? (
+                            visibleCustomers.map(c => (
+                                <tr
+                                    key={c.id}
+                                    onClick={() => handleViewAccounts(c)}
+                                    className={`hover:bg-white/5 transition-colors group cursor-pointer ${c.status === 'CLOSED' ? 'opacity-50' : ''}`}
+                                >
+                                    {/* Customer name */}
+                                    <td className="px-6 py-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-600 to-primary-800 flex items-center justify-center text-white border border-white/10 shadow-inner shrink-0">
+                                                <User size={16} />
+                                            </div>
+                                            <div>
+                                                <div className={`font-bold group-hover:text-cyan-300 transition-colors ${c.status === 'CLOSED' ? 'line-through text-primary-400' : 'text-white'}`}>
+                                                    {c.firstName} {c.lastName}
+                                                </div>
+                                                <div className="text-xs text-primary-400 font-mono">ID: {String(c.id).substring(0, 20)}…</div>
+                                            </div>
+                                        </div>
+                                    </td>
+
+                                    {/* Contact */}
+                                    <td className="px-6 py-4 space-y-1">
+                                        <div className="flex items-center gap-2 text-sm text-primary-100">
+                                            <Mail size={14} className="text-primary-400 shrink-0" />{c.email}
+                                        </div>
+                                        <div className="flex items-center gap-2 text-sm text-primary-100">
+                                            <Phone size={14} className="text-primary-400 shrink-0" />{c.phoneNumber || c.phone || 'N/A'}
+                                        </div>
+                                    </td>
+
+                                    {/* Type */}
+                                    <td className="px-6 py-4">
+                                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide ${c.type === 'BUSINESS'
+                                            ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20'
+                                            : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'
+                                            }`}>
+                                            {c.type}
+                                        </span>
+                                    </td>
+
+                                    {/* Status */}
+                                    <td className="px-6 py-4 text-center">
+                                        <StatusBadge status={c.status} />
+                                    </td>
+
+                                    {/* Actions */}
+                                    <td className="px-6 py-4">
+                                        <div className="flex items-center justify-center gap-1.5" onClick={e => e.stopPropagation()}>
+                                            {c.status === 'ACTIVE' && (
+                                                <>
+                                                    <button
+                                                        onClick={e => openDialog('freeze', c, e)}
+                                                        title="Freeze customer"
+                                                        className="p-2 rounded-xl text-primary-400 hover:text-amber-400 hover:bg-amber-500/10 border border-transparent hover:border-amber-500/20 transition-all"
+                                                    >
+                                                        <Snowflake size={16} />
+                                                    </button>
+                                                    <button
+                                                        onClick={e => openDialog('close', c, e)}
+                                                        title="Close permanently"
+                                                        className="p-2 rounded-xl text-primary-400 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all"
+                                                    >
+                                                        <XCircle size={16} />
+                                                    </button>
+                                                </>
+                                            )}
+                                            {c.status === 'FROZEN' && (
+                                                <>
+                                                    <button
+                                                        onClick={e => openDialog('reactivate', c, e)}
+                                                        title="Re-activate customer"
+                                                        className="p-2 rounded-xl text-primary-400 hover:text-emerald-400 hover:bg-emerald-500/10 border border-transparent hover:border-emerald-500/20 transition-all"
+                                                    >
+                                                        <CheckCircle size={16} />
+                                                    </button>
+                                                    <button
+                                                        onClick={e => openDialog('close', c, e)}
+                                                        title="Close permanently"
+                                                        className="p-2 rounded-xl text-primary-400 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all"
+                                                    >
+                                                        <XCircle size={16} />
+                                                    </button>
+                                                </>
+                                            )}
+                                            {c.status === 'CLOSED' && (
+                                                <span className="text-xs text-primary-600 italic px-2">Closed</span>
+                                            )}
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))
+                        ) : (
+                            <tr><td colSpan="5" className="px-6 py-12 text-center text-primary-400/60 italic">
+                                {searchTerm ? 'No customers match your search.' : 'No customers found.'}
+                            </td></tr>
+                        )}
+                    </tbody>
+                </table>
+            </div>
+
+            {/* Confirmation Dialog */}
+            <ConfirmDialog
+                action={dialog.action}
+                customer={dialog.customer}
+                onConfirm={handleConfirm}
+                onCancel={() => setDialog({ action: null, customer: null })}
+                loading={actionLoading}
+            />
+
+            {/* Add Customer Modal */}
             {showModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-primary-950/80 backdrop-blur-sm animate-fade-in">
                     <div className="bg-primary-900 border border-white/10 rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden relative">
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
-
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
                         <div className="p-6 border-b border-white/5 flex justify-between items-center relative z-10">
                             <h3 className="text-xl font-bold text-white">Add New Customer</h3>
                             <button onClick={() => setShowModal(false)} className="text-primary-400 hover:text-white transition-colors">
@@ -217,169 +402,102 @@ export default function CustomerManager() {
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-1.5">
                                     <label className="text-xs font-bold uppercase text-primary-300 tracking-wider">First Name</label>
-                                    <input
-                                        className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-cyan-500 transition-all placeholder:text-primary-600"
-                                        placeholder="John"
-                                        value={newCustomer.firstName}
-                                        onChange={e => setNewCustomer({ ...newCustomer, firstName: e.target.value })}
-                                        required
-                                    />
+                                    <input className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-cyan-500 transition-all placeholder:text-primary-600"
+                                        placeholder="John" value={newCustomer.firstName}
+                                        onChange={e => setNewCustomer({ ...newCustomer, firstName: e.target.value })} required />
                                 </div>
                                 <div className="space-y-1.5">
                                     <label className="text-xs font-bold uppercase text-primary-300 tracking-wider">Last Name</label>
-                                    <input
-                                        className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-cyan-500 transition-all placeholder:text-primary-600"
-                                        placeholder="Doe"
-                                        value={newCustomer.lastName}
-                                        onChange={e => setNewCustomer({ ...newCustomer, lastName: e.target.value })}
-                                        required
-                                    />
+                                    <input className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-cyan-500 transition-all placeholder:text-primary-600"
+                                        placeholder="Doe" value={newCustomer.lastName}
+                                        onChange={e => setNewCustomer({ ...newCustomer, lastName: e.target.value })} required />
                                 </div>
                             </div>
                             <div className="space-y-1.5">
                                 <label className="text-xs font-bold uppercase text-primary-300 tracking-wider">Email Address</label>
-                                <input
-                                    type="email"
-                                    className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-cyan-500 transition-all placeholder:text-primary-600"
-                                    placeholder="john@example.com"
-                                    value={newCustomer.email}
-                                    onChange={e => setNewCustomer({ ...newCustomer, email: e.target.value })}
-                                    required
-                                />
+                                <input type="email" className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-cyan-500 transition-all placeholder:text-primary-600"
+                                    placeholder="john@example.com" value={newCustomer.email}
+                                    onChange={e => setNewCustomer({ ...newCustomer, email: e.target.value })} required />
                             </div>
                             <div className="space-y-1.5">
                                 <label className="text-xs font-bold uppercase text-primary-300 tracking-wider">Phone Number</label>
-                                <input
-                                    type="tel"
-                                    className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-cyan-500 transition-all placeholder:text-primary-600"
-                                    placeholder="+1 (555) 000-0000"
-                                    value={newCustomer.phoneNumber}
-                                    onChange={e => setNewCustomer({ ...newCustomer, phoneNumber: e.target.value })}
-                                    required
-                                />
+                                <input type="tel" className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-cyan-500 transition-all placeholder:text-primary-600"
+                                    placeholder="+1 (555) 000-0000" value={newCustomer.phoneNumber}
+                                    onChange={e => setNewCustomer({ ...newCustomer, phoneNumber: e.target.value })} required />
                             </div>
                             <div className="space-y-1.5">
                                 <label className="text-xs font-bold uppercase text-primary-300 tracking-wider">Customer Type</label>
-                                <select
-                                    className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-cyan-500 transition-all appearance-none"
+                                <select className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-cyan-500 transition-all appearance-none"
                                     value={newCustomer.type}
-                                    onChange={e => setNewCustomer({ ...newCustomer, type: e.target.value })}
-                                    required
-                                >
+                                    onChange={e => setNewCustomer({ ...newCustomer, type: e.target.value })} required>
                                     <option value="INDIVIDUAL">Individual</option>
                                     <option value="BUSINESS">Business</option>
                                 </select>
                             </div>
-                            <div className="pt-2">
-                                <button type="submit" className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-blue-500/20 transition-all active:scale-[0.98]">
-                                    Create Customer Profile
-                                </button>
-                            </div>
+                            <button type="submit" className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-blue-500/20 transition-all active:scale-[0.98]">
+                                Create Customer Profile
+                            </button>
                         </form>
                     </div>
                 </div>
             )}
 
-            {/* Delete Confirmation Modal */}
-            {showDeleteModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-primary-950/90 backdrop-blur-md animate-fade-in">
-                    <div className="bg-primary-900 border border-white/10 rounded-3xl shadow-2xl w-full max-w-md p-6 text-center relative overflow-hidden">
-                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-500 to-orange-500"></div>
-
-                        <div className="w-16 h-16 bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-red-500/20">
-                            <Trash2 size={32} className="text-red-500" />
-                        </div>
-                        <h3 className="text-xl font-bold text-white mb-2">Disable Customer?</h3>
-                        <p className="text-primary-300 mb-6">
-                            Are you sure you want to disable <span className="text-white font-bold">{selectedCustomer?.firstName} {selectedCustomer?.lastName}</span>?
-                            This will prevent them from accessing their accounts until re-enabled.
-                        </p>
-                        <div className="flex gap-3">
-                            <button
-                                onClick={() => setShowDeleteModal(false)}
-                                className="flex-1 px-4 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl font-bold transition-colors border border-white/5"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={handleDelete}
-                                className="flex-1 px-4 py-3 bg-red-600 hover:bg-red-500 text-white rounded-xl font-bold transition-colors shadow-lg shadow-red-600/20"
-                            >
-                                Disable
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
             {/* Customer Accounts Drawer */}
-            <div className={`fixed inset-y-0 right-0 w-full md:w-[600px] bg-primary-950/95 backdrop-blur-xl border-l border-white/10 shadow-2xl transform transition-transform duration-500 z-50 flex flex-col ${showAccountsDrawer ? 'translate-x-0' : 'translate-x-full'}`}>
+            <div className={`fixed inset-y-0 right-0 w-full md:w-[600px] bg-primary-950/95 backdrop-blur-xl border-l border-white/10 shadow-2xl transform transition-transform duration-500 z-50 flex flex-col ${showDrawer ? 'translate-x-0' : 'translate-x-full'}`}>
                 {selectedCustomer && (
                     <>
                         <div className="p-6 border-b border-white/5 bg-gradient-to-r from-primary-900 to-primary-950 relative overflow-hidden shrink-0">
-                            <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
-
+                            <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none" />
                             <div className="flex justify-between items-start mb-4 relative z-10">
-                                <button onClick={() => setShowAccountsDrawer(false)} className="p-2 text-primary-400 hover:text-white hover:bg-white/5 rounded-xl transition-all">
+                                <button onClick={() => setShowDrawer(false)} className="p-2 text-primary-400 hover:text-white hover:bg-white/5 rounded-xl transition-all">
                                     <X size={24} />
                                 </button>
                             </div>
-
                             <div className="relative z-10">
                                 <h2 className="text-2xl font-bold text-white mb-1">{selectedCustomer.firstName} {selectedCustomer.lastName}</h2>
                                 <p className="text-primary-300 text-sm mb-3">{selectedCustomer.email}</p>
-                                <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-3 flex-wrap">
                                     <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase ${selectedCustomer.type === 'BUSINESS' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'}`}>
                                         {selectedCustomer.type}
                                     </span>
-                                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase ${selectedCustomer.status === 'ACTIVE' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
-                                        {selectedCustomer.status}
-                                    </span>
+                                    <StatusBadge status={selectedCustomer.status} />
                                 </div>
                             </div>
                         </div>
-
                         <div className="flex-1 overflow-y-auto p-6 space-y-4">
-                            <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center justify-between mb-2">
                                 <h3 className="text-lg font-bold text-white">Bank Accounts ({customerAccounts.length})</h3>
-                                <button
-                                    onClick={() => {
-                                        // Copy customer ID to clipboard for easy account creation
-                                        navigator.clipboard.writeText(selectedCustomer.id);
-                                        alert(`Customer ID copied! Go to Accounts tab to create a new account.\nCustomer ID: ${selectedCustomer.id}`);
-                                    }}
-                                    className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-bold rounded-xl transition-all flex items-center gap-2"
-                                >
-                                    <UserPlus size={16} />
-                                    Create Account
-                                </button>
+                                {selectedCustomer.status !== 'CLOSED' && (
+                                    <button
+                                        onClick={() => {
+                                            navigator.clipboard.writeText(selectedCustomer.id);
+                                            alert(`Customer ID copied! Go to Accounts tab to open a new account.\nCustomer ID: ${selectedCustomer.id}`);
+                                        }}
+                                        className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-white text-sm font-bold rounded-xl transition-all flex items-center gap-2"
+                                    >
+                                        <UserPlus size={16} /> Open Account
+                                    </button>
+                                )}
                             </div>
-
-                            {customerAccounts.length > 0 ? (
-                                customerAccounts.map((account) => (
-                                    <div key={account.id} className="bg-white/5 border border-white/5 rounded-2xl p-5 hover:bg-white/10 transition-colors">
-                                        <div className="flex justify-between items-start mb-3">
-                                            <div>
-                                                <div className="text-xs text-primary-300 mb-1">{account.type} Account</div>
-                                                <div className="font-mono text-white text-lg">{account.accountNumber}</div>
-                                            </div>
-                                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-bold uppercase ${account.status === 'ACTIVE' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-red-500/10 text-red-400 border border-red-500/20'}`}>
-                                                {account.status}
-                                            </span>
+                            {customerAccounts.length > 0 ? customerAccounts.map(account => (
+                                <div key={account.id} className="bg-white/5 border border-white/5 rounded-2xl p-5 hover:bg-white/10 transition-colors">
+                                    <div className="flex justify-between items-start mb-3">
+                                        <div>
+                                            <div className="text-xs text-primary-300 mb-1">{account.type} Account</div>
+                                            <div className="font-mono text-white text-lg">{account.accountNumber}</div>
                                         </div>
-                                        <div className="flex justify-between items-end">
-                                            <div className="text-2xl font-bold text-white">
-                                                {new Intl.NumberFormat('en-US', { style: 'currency', currency: account.currency }).format(account.balance)}
-                                            </div>
-                                            <div className="text-xs text-primary-400">{account.currency}</div>
-                                        </div>
+                                        <StatusBadge status={account.status} />
                                     </div>
-                                ))
-                            ) : (
+                                    <div className="flex justify-between items-end">
+                                        <div className="text-2xl font-bold text-white">
+                                            {new Intl.NumberFormat('en-US', { style: 'currency', currency: account.currency }).format(account.balance)}
+                                        </div>
+                                        <div className="text-xs text-primary-400">{account.currency}</div>
+                                    </div>
+                                </div>
+                            )) : (
                                 <div className="flex flex-col items-center justify-center py-20 text-primary-400/60">
-                                    <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mb-4">
-                                        <User size={32} />
-                                    </div>
+                                    <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mb-4"><User size={32} /></div>
                                     <p className="italic">No accounts found for this customer.</p>
                                 </div>
                             )}
