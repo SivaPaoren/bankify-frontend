@@ -160,8 +160,7 @@ export default function AuditLogs() {
       {/* ── Page Header ── */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-white tracking-tight flex items-center gap-3">
-            <FileText size={30} className="text-cyan-400" />
+          <h1 className="text-3xl font-bold text-white tracking-tight">
             Audit Logs
           </h1>
           <p className="text-primary-300 mt-1">Full audit trail of all system actions and events.</p>
