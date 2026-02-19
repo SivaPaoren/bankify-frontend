@@ -23,10 +23,9 @@ export default function CustomerManager() {
         try {
             const data = await adminService.getCustomers();
             console.log("Fetched customers:", data);
-            // Filter to show only active customers
-            const activeCustomers = Array.isArray(data) ? data.filter(c => c.status === 'ACTIVE') : [];
-            console.log("Active customers:", activeCustomers);
-            setCustomers(activeCustomers);
+            // Show ALL customers; FROZEN ones will have a visible status badge
+            const allCustomers = Array.isArray(data) ? data : [];
+            setCustomers(allCustomers);
         } catch (error) {
             console.error("Failed to fetch customers", error);
             setCustomers([]);
@@ -131,15 +130,16 @@ export default function CustomerManager() {
                                 <th className="px-6 py-4">Customer</th>
                                 <th className="px-6 py-4">Contact</th>
                                 <th className="px-6 py-4">Type</th>
+                                <th className="px-6 py-4 text-center">Status</th>
                                 <th className="px-6 py-4 text-center">Actions</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
                             {loading ? (
-                                <tr><td colSpan="4" className="px-6 py-12 text-center text-primary-300 italic">Loading customer data...</td></tr>
+                                <tr><td colSpan="5" className="px-6 py-12 text-center text-primary-300 italic">Loading customer data...</td></tr>
                             ) : filteredCustomers.length > 0 ? (
                                 filteredCustomers.map((c) => (
-                                    <tr key={c.id} onClick={() => handleViewAccounts(c)} className="hover:bg-white/5 transition-colors group cursor-pointer">
+                                    <tr key={c.id} onClick={() => handleViewAccounts(c)} className={`hover:bg-white/5 transition-colors group cursor-pointer ${c.status === 'FROZEN' ? 'opacity-70' : ''}`}>
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-600 to-primary-800 flex items-center justify-center text-white border border-white/10 shadow-inner">
@@ -169,6 +169,15 @@ export default function CustomerManager() {
                                                 {c.type}
                                             </span>
                                         </td>
+                                        {/* STATUS BADGE — shows FROZEN visually so admin can see disabled customers */}
+                                        <td className="px-6 py-4 text-center">
+                                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide ${c.status === 'ACTIVE'
+                                                ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'
+                                                : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                                                }`}>
+                                                {c.status}
+                                            </span>
+                                        </td>
                                         <td className="px-6 py-4 text-center">
                                             <button
                                                 onClick={(e) => {
@@ -185,7 +194,7 @@ export default function CustomerManager() {
                                     </tr>
                                 ))
                             ) : (
-                                <tr><td colSpan="4" className="px-6 py-12 text-center text-primary-300 italic">No customers found.</td></tr>
+                                <tr><td colSpan="5" className="px-6 py-12 text-center text-primary-300 italic">No customers found.</td></tr>
                             )}
                         </tbody>
                     </table>
