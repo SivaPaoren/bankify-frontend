@@ -160,7 +160,7 @@ export const authService = {
     }
 };
 
-import { initialClients, initialCustomers, initialAccounts, initialAuditLogs, initialTransactions, initialSystemSettings } from './mockData';
+import { initialClients, initialCustomers, initialAuditLogs, initialTransactions, initialSystemSettings } from './mockData';
 
 // Helper to get data from LocalStorage or initialize it
 const getStorageData = (key, initialData) => {
@@ -198,7 +198,7 @@ export const adminService = {
         try {
             const response = await adminApi.get('/admin/partner-apps');
             return response.data;
-        } catch (e) {
+        } catch (_e) {
             console.warn("Backend unavailable, loading clients from LocalStorage");
             return getStorageData('bankify_clients', initialClients);
         }
@@ -209,7 +209,7 @@ export const adminService = {
             // Partners self-signup; admin then approves via PATCH /admin/partner-apps/{id}/approve
             // There is no POST /admin/partner-apps, so creation is mocked here
             return { id: Date.now(), name, apiKey: 'mock-key', status: 'PENDING' };
-        } catch (e) {
+        } catch (_e) {
             const clients = getStorageData('bankify_clients', initialClients);
             const newClient = { id: Date.now(), name, apiKey: `test_${Date.now()}`, status: 'ACTIVE' };
             clients.push(newClient);
@@ -222,10 +222,28 @@ export const adminService = {
         try {
             const response = await adminApi.patch(`/admin/partner-apps/${clientId}/disable`);
             return response.data;
-        } catch (e) {
+        } catch (_e) {
             console.warn("Mocking disable client");
             return { success: true };
         }
+    },
+    // 1.5 Key Rotation Approvals
+    listRotationRequests: async () => {
+        try {
+            const response = await adminApi.get('/admin/security/key-rotations');
+            return response.data;
+        } catch (_e) {
+            console.warn("Mocking list rotation requests", e);
+            return []; // Return empty if failing, or mock data
+        }
+    },
+    approveKeyRotation: async (partnerId) => {
+        const response = await adminApi.post(`/admin/partner-apps/${partnerId}/rotate-key/approve`);
+        return response.data;
+    },
+    rejectKeyRotation: async (partnerId) => {
+        const response = await adminApi.post(`/admin/partner-apps/${partnerId}/rotate-key/reject`);
+        return response.data;
     },
 
     // Customers (Admin manages these)
@@ -233,7 +251,7 @@ export const adminService = {
         try {
             const response = await adminApi.get('/admin/customers');
             return response.data;
-        } catch (e) {
+        } catch (_e) {
             console.warn("Backend unavailable, loading customers from LocalStorage");
             return getStorageData('bankify_customers', initialCustomers);
         }
@@ -275,7 +293,7 @@ export const adminService = {
     freezeAccount: async (accountId) => {
         try {
             await adminApi.patch(`/admin/accounts/${accountId}/disable`);
-        } catch (e) {
+        } catch (_e) {
             console.warn("Mocking freeze account");
         }
     },
@@ -292,7 +310,7 @@ export const adminService = {
         try {
             const response = await adminApi.get('/admin/transactions', { params: { accountId } });
             return response.data;
-        } catch (e) {
+        } catch (_e) {
             console.warn("Falling back to local transactions");
             let transactions = getStorageData('bankify_transactions', initialTransactions);
             const filtered = transactions.filter(t =>
@@ -354,7 +372,7 @@ export const adminService = {
         try {
             const response = await adminApi.get('/admin/audit-logs', { params });
             return response.data;
-        } catch (e) {
+        } catch (_e) {
             return getStorageData('bankify_audit_logs', initialAuditLogs);
         }
     },
@@ -363,7 +381,7 @@ export const adminService = {
         try {
             const response = await adminApi.get('/admin/transactions', { params });
             return response.data;
-        } catch (e) {
+        } catch (_e) {
             console.warn("Backend unavailable, loading transactions from LocalStorage");
             let transactions = getStorageData('bankify_transactions', initialTransactions);
             // ... (mock filter logic matches perfectly) ...
@@ -397,7 +415,7 @@ export const clientService = {
             // Guide: GET /api/v1/partner/portal/me
             const response = await partnerApi.get('/partner/portal/me');
             return response.data;
-        } catch (e) {
+        } catch (_e) {
             console.warn("Mocking client profile");
             return {
                 clientId: 'cl_test_123456789',
@@ -409,7 +427,7 @@ export const clientService = {
         }
     },
     // Update webhook URL
-    updateWebhook: async (url) => {
+    updateWebhook: async (_url) => {
         // Guide doesn't specify, assuming similar endpoint
         return { success: true };
     }
@@ -427,7 +445,7 @@ export const atmService = {
                 headers: { 'Idempotency-Key': idempotencyKey }
             });
             return response.data;
-        } catch (e) {
+        } catch (_e) {
             console.warn("Mocking ATM deposit");
             return { id: 'tx_mock_dep', status: 'SUCCESS', amount, type: 'DEPOSIT', currency: 'THB' };
         }
@@ -444,7 +462,7 @@ export const atmService = {
                 headers: { 'Idempotency-Key': idempotencyKey }
             });
             return response.data;
-        } catch (e) {
+        } catch (_e) {
             console.warn("Mocking ATM withdraw");
             return { id: 'tx_mock_wdr', status: 'SUCCESS', amount, type: 'WITHDRAWAL', currency: 'THB' };
         }
@@ -462,7 +480,7 @@ export const atmService = {
                 headers: { 'Idempotency-Key': idempotencyKey }
             });
             return response.data;
-        } catch (e) {
+        } catch (_e) {
             console.warn("Mocking ATM transfer");
             return { id: 'tx_mock_trf', status: 'PENDING', amount, type: 'TRANSFER', currency: 'THB' };
         }
@@ -473,14 +491,14 @@ export const atmService = {
         try {
             const response = await atmApi.get('/atm/me/transactions');
             return response.data;
-        } catch (e) {
+        } catch (_e) {
             console.warn("Mocking ATM transactions");
             return { content: initialTransactions || [] };
         }
     },
 
     // Legacy support for older components using getTransactionsByAccount(id)
-    getTransactionsByAccount: async (accountId) => {
+    getTransactionsByAccount: async (_accountId) => {
         // If called with ID, warn but try to use "me" logic if it matches? 
         // Or just redirect to getTransactions()
         return atmService.getTransactions();
@@ -490,7 +508,7 @@ export const atmService = {
     changePin: async (oldPin, newPin) => {
         try {
             await atmApi.post('/atm/me/change-pin', { oldPin, newPin });
-        } catch (e) {
+        } catch (_e) {
             console.warn("Mocking change PIN");
         }
     }
@@ -509,7 +527,7 @@ export const partnerService = {
                 headers: { 'Idempotency-Key': idempotencyKey }
             });
             return response.data;
-        } catch (e) {
+        } catch (_e) {
             console.warn("Mocking Partner deposit");
             return { id: 'tx_mock_dep_p', status: 'SUCCESS', amount, type: 'DEPOSIT', currency: 'THB' };
         }
@@ -525,7 +543,7 @@ export const partnerService = {
                 headers: { 'Idempotency-Key': idempotencyKey }
             });
             return response.data;
-        } catch (e) {
+        } catch (_e) {
             console.warn("Mocking Partner withdraw");
             return { id: 'tx_mock_wdr_p', status: 'SUCCESS', amount, type: 'WITHDRAWAL', currency: 'THB' };
         }
@@ -542,7 +560,7 @@ export const partnerService = {
                 headers: { 'Idempotency-Key': idempotencyKey }
             });
             return response.data;
-        } catch (e) {
+        } catch (_e) {
             console.warn("Mocking Partner transfer");
             return { id: 'tx_mock_trf_p', status: 'PENDING', amount, type: 'TRANSFER', currency: 'THB' };
         }
@@ -552,7 +570,7 @@ export const partnerService = {
         try {
             const response = await partnerApi.get('/partner/me/transactions');
             return response.data;
-        } catch (e) {
+        } catch (_e) {
             return { content: initialTransactions || [] };
         }
     },

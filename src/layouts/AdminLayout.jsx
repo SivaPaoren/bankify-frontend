@@ -15,7 +15,8 @@ import {
     Wallet,
     History,
     Settings,
-    ChevronRight
+    ChevronRight,
+    Key
 } from 'lucide-react';
 
 export default function AdminLayout() {
@@ -38,6 +39,7 @@ export default function AdminLayout() {
     const navItems = [
         { to: '/admin', end: true, label: 'Dashboard', icon: LayoutDashboard },
         { to: '/admin/clients', label: 'API Clients', icon: Shield },
+        { to: '/admin/approvals', label: 'Security Approvals', icon: Key },
         { to: '/admin/audit-logs', label: 'Audit Logs', icon: FileText },
         { to: '/admin/transactions', label: 'Transactions', icon: History },
         { to: '/admin/accounts', label: 'Accounts', icon: Wallet },
