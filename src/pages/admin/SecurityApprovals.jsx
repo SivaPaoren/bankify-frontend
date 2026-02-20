@@ -23,8 +23,8 @@ export default function SecurityApprovals() {
             // Assuming data is an array of requests. Filter for pending if needed.
             setRequests(Array.isArray(data) ? data : []);
             setError('');
-        } catch (err) {
-            console.error("Failed to fetch rotation requests", err);
+        } catch (e) {
+            console.error("Failed to fetch rotation requests", e);
             setError("Failed to load security approval requests. Please try again later.");
         } finally {
             setLoading(false);
@@ -41,8 +41,8 @@ export default function SecurityApprovals() {
             await adminService.approveKeyRotation(partnerId);
             // Re-fetch or filter out
             setRequests(prev => prev.filter(r => (r.id !== requestId && r.partnerId !== partnerId)));
-        } catch (err) {
-            console.error("Failed to approve rotation", err);
+        } catch (e) {
+            console.error("Failed to approve rotation", e);
             setError("Failed to approve the key rotation request.");
         } finally {
             setProcessingId(null);
@@ -55,8 +55,8 @@ export default function SecurityApprovals() {
             await adminService.rejectKeyRotation(partnerId);
             // Re-fetch or filter out
             setRequests(prev => prev.filter(r => (r.id !== requestId && r.partnerId !== partnerId)));
-        } catch (err) {
-            console.error("Failed to reject rotation", err);
+        } catch (e) {
+            console.error("Failed to reject rotation", e);
             setError("Failed to reject the key rotation request.");
         } finally {
             setProcessingId(null);

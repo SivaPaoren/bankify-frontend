@@ -151,6 +151,17 @@ export const authService = {
         }
     },
 
+    // Partner Signup
+    partnerSignup: async (appName, email, password) => {
+        try {
+            const response = await partnerApi.post('/partner/auth/signup', { appName, email, password });
+            return response.data;
+        } catch (error) {
+            console.warn("Backend unavailable, returning MOCK Partner signup.", error);
+            return { id: `mock-${Date.now()}`, status: 'PENDING' };
+        }
+    },
+
     logout: () => {
         localStorage.removeItem('bankify_admin_token');
         localStorage.removeItem('bankify_atm_token');

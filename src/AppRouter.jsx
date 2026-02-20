@@ -28,6 +28,7 @@ import ATMLogin from "./pages/auth/ATMLogin";
 
 // Auth
 import LoginPage from "./pages/auth/LoginPage";
+import ClientSignupPage from "./pages/auth/ClientSignupPage";
 
 export default function AppRouter() {
   const { role, isAuthenticated, loading } = useAuth();
@@ -63,6 +64,7 @@ export default function AppRouter() {
     <Routes>
       {/* Public Routes */}
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/client-signup" element={<ClientSignupPage />} />
       <Route path="/atm-login" element={<ATMLogin />} />
 
       {/* Admin Routes */}

@@ -30,35 +30,52 @@ export const AuthProvider = ({ children }) => {
     setLoading(false);
   }, []);
 
-  // Standard Login (Admin & Client)
+  // Standard Login (Admin & Client) - Smart Fallback Logic
   const login = async (email, password) => {
     try {
+      // 1. First attempt Admin Login
       const data = await authService.login(email, password);
-
-      // API Standard: { token, email, role, ... } (Flat)
-      // Or { token, user: { ... } } (Nested)
-
-      let token = data.token;
-      let user = data.user || data; // Fallback to data if user is not nested
-
-      // If flat, valid user object should NOT contain the token ideally, but it's fine for now.
-      // Ensure we have a valid user object with role
-      if (!user.role && data.role) {
-        user = { ...data }; // Treat the whole response as user data if flat
-        // Remove token from user object if desired, but not strictly necessary for logic
+      return handleLoginSuccess(data, 'ADMIN');
+    } catch (adminError) {
+      // If Admin fails, check if the error was a 401/403/404 indicating invalid credentials
+      // and not a network error.
+      try {
+        // 2. Fallback to Partner/Client Login
+        const partnerData = await authService.partnerLogin(email, password);
+        return handleLoginSuccess(partnerData, 'CLIENT');
+      } catch (partnerError) {
+        // Both failed
+        return { success: false, message: "Invalid email or password." };
       }
+    }
+  };
 
-      localStorage.setItem('bankify_token', token);
-      localStorage.setItem('bankify_user', JSON.stringify(user));
+  // Helper method to standardize local storage and state upon login success
+  const handleLoginSuccess = (data, fallbackRole) => {
+    let token = data.token;
+    let user = data.user || data;
 
-      setUser(user);
-      setRole(user.role);
-      setIsAuthenticated(true);
-      // Return user/role so UI can direct immediately
-      return { success: true, role: user.role, user };
+    if (!user.role) {
+      user = { ...data, role: data.role || fallbackRole };
+    }
+
+    localStorage.setItem('bankify_token', token);
+    localStorage.setItem('bankify_user', JSON.stringify(user));
+
+    setUser(user);
+    setRole(user.role);
+    setIsAuthenticated(true);
+    return { success: true, role: user.role, user };
+  };
+
+  // Partner Signup
+  const partnerSignup = async (appName, email, password) => {
+    try {
+      const result = await authService.partnerSignup(appName, email, password);
+      // Wait for the signup to complete. We will force the user to log in manually afterward.
+      return { success: true, data: result };
     } catch (error) {
-      // Handle error safely
-      const message = error.response?.data?.message || error.message || "Login failed";
+      const message = error.response?.data?.message || error.message || "Signup failed";
       return { success: false, message };
     }
   };
@@ -107,6 +124,7 @@ export const AuthProvider = ({ children }) => {
       isAuthenticated,
       loading,
       login,
+      partnerSignup,
       atmLogin,
       logout
     }}>

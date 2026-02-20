@@ -155,6 +155,18 @@ export default function LoginPage() {
           <p className="text-center text-slate-400 text-sm mt-8">
             &copy; 2026 Bankify Corp. Secure System.
           </p>
+
+          <div className="mt-8 pt-6 border-t border-slate-100 text-center">
+            <p className="text-sm text-slate-500">
+              Building the future of finance?{' '}
+              <button
+                onClick={() => navigate('/client-signup')}
+                className="font-bold text-indigo-600 hover:text-indigo-500 transition-colors"
+              >
+                Create a Partner Account
+              </button>
+            </p>
+          </div>
         </div>
       </div>
     </div>
