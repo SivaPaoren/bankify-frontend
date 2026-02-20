@@ -2,7 +2,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { adminService } from '../../api';
 import {
   Clock, User, Shield, Cpu, Database,
-  ChevronLeft, ChevronRight, FileText, AlertCircle, Calendar
+  ChevronLeft, ChevronRight, FileText, AlertCircle, Calendar,
+  ChevronUp, ChevronDown, ChevronsUpDown
 } from 'lucide-react';
 import FilterDropdown from '../../components/common/FilterDropdown';
 
@@ -93,11 +94,17 @@ export default function AuditLogs() {
   const [loading, setLoading] = useState(true);
   const [pageSize, setPageSize] = useState(25);
   const [currentPage, setCurrentPage] = useState(1);
+  const [sortConfig, setSortConfig] = useState({ key: 'createdAt', direction: 'desc' });
 
   useEffect(() => {
     const fetchLogs = async () => {
+      setLoading(true);
       try {
-        const data = await adminService.getAuditLogs();
+        const params = {};
+        if (actorFilter !== 'ALL') params.actorType = actorFilter;
+        if (actionFilter !== 'ALL') params.action = actionFilter;
+
+        const data = await adminService.getAuditLogs(params);
         setLogs(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error('Failed to fetch logs', err);
@@ -106,18 +113,38 @@ export default function AuditLogs() {
       }
     };
     fetchLogs();
-  }, []);
+  }, [actorFilter, actionFilter]);
 
   // Reset to page 1 when any filter changes
-  useEffect(() => { setCurrentPage(1); }, [actorFilter, actionFilter, dateFrom, dateTo, pageSize]);
+  useEffect(() => { setCurrentPage(1); }, [actorFilter, actionFilter, dateFrom, dateTo, pageSize, sortConfig]);
 
-  const filteredLogs = useMemo(() => logs.filter(log => {
-    if (actorFilter !== 'ALL' && log.actorType !== actorFilter) return false;
-    if (actionFilter !== 'ALL' && log.action !== actionFilter) return false;
-    if (dateFrom && log.createdAt && log.createdAt < dateFrom) return false;
-    if (dateTo && log.createdAt && log.createdAt.slice(0, 10) > dateTo) return false;
-    return true;
-  }), [logs, actorFilter, actionFilter, dateFrom, dateTo]);
+  const filteredLogs = useMemo(() => {
+    let result = logs.filter(log => {
+      // Actor and Action are now filtered by the backend
+      if (dateFrom && log.createdAt && log.createdAt < dateFrom) return false;
+      if (dateTo && log.createdAt && log.createdAt.slice(0, 10) > dateTo) return false;
+      return true;
+    });
+
+    result.sort((a, b) => {
+      let valA = a[sortConfig.key];
+      let valB = b[sortConfig.key];
+
+      if (sortConfig.key === 'createdAt') {
+        valA = new Date(valA || 0).getTime();
+        valB = new Date(valB || 0).getTime();
+      } else {
+        valA = String(valA || '').toLowerCase();
+        valB = String(valB || '').toLowerCase();
+      }
+
+      if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    return result;
+  }, [logs, dateFrom, dateTo, sortConfig]);
 
   // Pagination
   const totalPages = Math.max(1, Math.ceil(filteredLogs.length / pageSize));
@@ -144,15 +171,21 @@ export default function AuditLogs() {
     setDateFrom('');
     setDateTo('');
     setCurrentPage(1);
+    setSortConfig({ key: 'createdAt', direction: 'desc' });
   };
 
-  const actionCounts = useMemo(() => {
-    const counts = {};
-    ACTION_FLAT_OPTIONS.forEach(opt => {
-      if (opt.key !== 'ALL') counts[opt.key] = logs.filter(l => l.action === opt.key).length;
-    });
-    return counts;
-  }, [logs]);
+  const requestSort = (key) => {
+    let direction = 'desc';
+    if (sortConfig.key === key && sortConfig.direction === 'desc') {
+      direction = 'asc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const getSortIcon = (columnKey) => {
+    if (sortConfig.key !== columnKey) return <ChevronsUpDown size={14} className="opacity-30 group-hover:opacity-100 transition-opacity" />;
+    return sortConfig.direction === 'asc' ? <ChevronUp size={14} className="text-cyan-400" /> : <ChevronDown size={14} className="text-cyan-400" />;
+  };
 
   return (
     <div className="space-y-6">
@@ -245,18 +278,12 @@ export default function AuditLogs() {
             options={ACTOR_OPTIONS}
             value={actorFilter}
             onChange={setActorFilter}
-            counts={{
-              USER: logs.filter(l => l.actorType === 'USER').length,
-              ATM: logs.filter(l => l.actorType === 'ATM').length,
-              PARTNER: logs.filter(l => l.actorType === 'PARTNER').length,
-            }}
           />
           <FilterDropdown
             label="Action"
             options={ACTION_FLAT_OPTIONS}
             value={actionFilter}
             onChange={setActionFilter}
-            counts={actionCounts}
           />
           <FilterDropdown
             label="Rows"
@@ -265,7 +292,7 @@ export default function AuditLogs() {
             onChange={v => setPageSize(Number(v))}
           />
 
-          {(actorFilter !== 'ALL' || actionFilter !== 'ALL' || dateFrom || dateTo) && (
+          {(actorFilter !== 'ALL' || actionFilter !== 'ALL' || dateFrom || dateTo || sortConfig.key !== 'createdAt' || sortConfig.direction !== 'desc') && (
             <button
               onClick={clearFilters}
               className="text-xs text-primary-400 hover:text-red-400 border border-white/10 hover:border-red-500/30 px-3 py-2.5 rounded-xl transition-all hover:bg-red-500/5 font-medium"
@@ -280,11 +307,19 @@ export default function AuditLogs() {
       <div className="bg-white/5 backdrop-blur-md rounded-3xl shadow-xl border border-white/10 overflow-hidden">
         <table className="w-full text-left border-collapse">
           <thead>
-            <tr className="bg-white/5 border-b border-white/5 text-xs uppercase tracking-widest text-primary-200 font-bold">
-              <th className="px-6 py-4 w-44">Timestamp</th>
-              <th className="px-6 py-4 w-48">Actor</th>
-              <th className="px-6 py-4">Action</th>
-              <th className="px-6 py-4">Target</th>
+            <tr className="bg-white/5 border-b border-white/5 text-xs uppercase tracking-widest text-primary-200 font-bold select-none">
+              <th className="px-6 py-4 w-44 cursor-pointer hover:bg-white/10 transition-colors group" onClick={() => requestSort('createdAt')}>
+                <div className="flex items-center gap-2">Timestamp {getSortIcon('createdAt')}</div>
+              </th>
+              <th className="px-6 py-4 w-48 cursor-pointer hover:bg-white/10 transition-colors group" onClick={() => requestSort('actorType')}>
+                <div className="flex items-center gap-2">Actor {getSortIcon('actorType')}</div>
+              </th>
+              <th className="px-6 py-4 cursor-pointer hover:bg-white/10 transition-colors group" onClick={() => requestSort('action')}>
+                <div className="flex items-center gap-2">Action {getSortIcon('action')}</div>
+              </th>
+              <th className="px-6 py-4 cursor-pointer hover:bg-white/10 transition-colors group" onClick={() => requestSort('entityType')}>
+                <div className="flex items-center gap-2">Target {getSortIcon('entityType')}</div>
+              </th>
               <th className="px-6 py-4">Details</th>
             </tr>
           </thead>

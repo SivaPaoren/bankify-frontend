@@ -11,11 +11,13 @@ export default function AccountManager() {
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showTransactionsDrawer, setShowTransactionsDrawer] = useState(false);
     const [accountTransactions, setAccountTransactions] = useState([]);
+    const [accountLedger, setAccountLedger] = useState([]);
+    const [activeTab, setActiveTab] = useState('transactions');
     const [confirmDialog, setConfirmDialog] = useState({
         open: false, accountId: null, accountNumber: null, customerName: null, newStatus: null
     });
     const [resetPinDialog, setResetPinDialog] = useState({
-        open: false, accountId: null, accountNumber: null, newPin: ''
+        open: false, accountId: null, accountNumber: null, newPin: '', loading: false, error: null, success: false
     });
     const [newAccount, setNewAccount] = useState({
         customerId: '', accountType: 'SAVINGS', currency: 'THB', pin: '123456'
@@ -86,13 +88,20 @@ export default function AccountManager() {
 
     const handleResetPin = async (e) => {
         e.preventDefault();
+        setResetPinDialog(prev => ({ ...prev, loading: true, error: null, success: false }));
         try {
             await adminService.resetAtmPin(resetPinDialog.accountId, resetPinDialog.newPin);
-            setResetPinDialog({ open: false, accountId: null, accountNumber: null, newPin: '' });
-            alert("ATM PIN reset successfully.");
+            setResetPinDialog(prev => ({ ...prev, loading: false, success: true }));
+            setTimeout(() => {
+                setResetPinDialog({ open: false, accountId: null, accountNumber: null, newPin: '', loading: false, error: null, success: false });
+            }, 2000);
         } catch (error) {
             console.error("Reset PIN failed", error);
-            alert("Failed to reset ATM PIN.");
+            setResetPinDialog(prev => ({
+                ...prev,
+                loading: false,
+                error: error.response?.data?.message || "Failed to reset ATM PIN. Please verify backend connection."
+            }));
         }
     };
 
@@ -105,11 +114,16 @@ export default function AccountManager() {
     const openTransactions = async (account) => {
         setSelectedAccount(account);
         setShowTransactionsDrawer(true);
+        setActiveTab('transactions');
         try {
-            const txs = await adminService.getAccountTransactions(account.id);
-            setAccountTransactions(txs);
+            const [txs, ledger] = await Promise.all([
+                adminService.getAccountTransactions(account.id),
+                adminService.getAccountLedger(account.id)
+            ]);
+            setAccountTransactions(txs.content || txs || []);
+            setAccountLedger(ledger || []);
         } catch (error) {
-            console.error("Failed to fetch transactions", error);
+            console.error("Failed to fetch transactions/ledger", error);
         }
     };
 
@@ -455,46 +469,96 @@ export default function AccountManager() {
                             </div>
                         </div>
 
-                        <div className="flex-1 overflow-y-auto p-6 md:p-8 custom-scrollbar relative bg-black/20">
-                            <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
-                                <FileText size={20} className="text-primary-400" />
-                                Transaction History
-                            </h3>
+                        <div className="flex-1 overflow-y-auto p-6 md:p-8 custom-scrollbar relative bg-black/20 flex flex-col">
+                            {/* Tabs */}
+                            <div className="flex gap-4 mb-6 border-b border-white/5 pb-4">
+                                <button
+                                    onClick={() => setActiveTab('transactions')}
+                                    className={`text-lg font-bold flex items-center gap-2 transition-colors ${activeTab === 'transactions' ? 'text-white' : 'text-primary-400 hover:text-primary-300'}`}
+                                >
+                                    <FileText size={20} className={activeTab === 'transactions' ? 'text-primary-400' : ''} />
+                                    Transaction History
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('ledger')}
+                                    className={`text-lg font-bold flex items-center gap-2 transition-colors ${activeTab === 'ledger' ? 'text-white' : 'text-primary-400 hover:text-primary-300'}`}
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={activeTab === 'ledger' ? 'text-primary-400' : ''}><rect width="18" height="18" x="3" y="3" rx="2" ry="2" /><line x1="3" x2="21" y1="9" y2="9" /><line x1="9" x2="9" y1="9" y2="21" /></svg>
+                                    Ledger Entries
+                                </button>
+                            </div>
 
-                            <div className="space-y-4">
-                                {accountTransactions.length > 0 ? accountTransactions.map((tx) => (
-                                    <div key={tx.id} className="bg-white/5 border border-white/5 rounded-2xl p-5 flex items-center justify-between hover:bg-white/10 transition-colors group">
-                                        <div className="flex items-center gap-4">
-                                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center border ${tx.type === 'DEPOSIT' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' :
-                                                tx.type === 'WITHDRAWAL' ? 'bg-red-500/10 border-red-500/20 text-red-400' :
-                                                    'bg-blue-500/10 border-blue-500/20 text-blue-400'
-                                                }`}>
-                                                {tx.type === 'DEPOSIT' && <ArrowDownLeft size={24} />}
-                                                {tx.type === 'WITHDRAWAL' && <ArrowUpRight size={24} />}
-                                                {tx.type === 'TRANSFER' && <ArrowRight size={24} />}
-                                            </div>
-                                            <div>
-                                                <div className="font-bold text-white mb-0.5">{tx.description || tx.type}</div>
-                                                <div className="text-xs text-primary-300 flex items-center gap-2">
-                                                    <Calendar size={12} />
-                                                    {new Date(tx.createdAt).toLocaleString()}
+                            {activeTab === 'transactions' ? (
+                                <div className="space-y-4">
+                                    {accountTransactions.length > 0 ? accountTransactions.map((tx) => (
+                                        <div key={tx.id} className="bg-white/5 border border-white/5 rounded-2xl p-5 flex items-center justify-between hover:bg-white/10 transition-colors group">
+                                            <div className="flex items-center gap-4">
+                                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center border ${tx.type === 'DEPOSIT' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' :
+                                                    tx.type === 'WITHDRAWAL' ? 'bg-red-500/10 border-red-500/20 text-red-400' :
+                                                        'bg-blue-500/10 border-blue-500/20 text-blue-400'
+                                                    }`}>
+                                                    {tx.type === 'DEPOSIT' && <ArrowDownLeft size={24} />}
+                                                    {tx.type === 'WITHDRAWAL' && <ArrowUpRight size={24} />}
+                                                    {tx.type === 'TRANSFER' && <ArrowRight size={24} />}
+                                                </div>
+                                                <div>
+                                                    <div className="font-bold text-white mb-0.5">{tx.description || tx.type}</div>
+                                                    <div className="text-xs text-primary-300 flex items-center gap-2">
+                                                        <Calendar size={12} />
+                                                        {new Date(tx.createdAt).toLocaleString()}
+                                                    </div>
                                                 </div>
                                             </div>
+                                            <div className={`text-right font-bold text-lg ${tx.type === 'DEPOSIT' ? 'text-emerald-400' : 'text-white'
+                                                }`}>
+                                                {tx.type === 'DEPOSIT' ? '+' : '-'}{new Intl.NumberFormat('en-US', { style: 'currency', currency: selectedAccount.currency }).format(tx.amount)}
+                                            </div>
                                         </div>
-                                        <div className={`text-right font-bold text-lg ${tx.type === 'DEPOSIT' ? 'text-emerald-400' : 'text-white'
-                                            }`}>
-                                            {tx.type === 'DEPOSIT' ? '+' : '-'}{new Intl.NumberFormat('en-US', { style: 'currency', currency: selectedAccount.currency }).format(tx.amount)}
+                                    )) : (
+                                        <div className="flex flex-col items-center justify-center py-20 text-primary-400/60">
+                                            <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mb-4">
+                                                <AlertCircle size={32} />
+                                            </div>
+                                            <p className="italic">No transactions found for this account.</p>
                                         </div>
-                                    </div>
-                                )) : (
-                                    <div className="flex flex-col items-center justify-center py-20 text-primary-400/60">
-                                        <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mb-4">
-                                            <AlertCircle size={32} />
-                                        </div>
-                                        <p className="italic">No transactions found for this account.</p>
-                                    </div>
-                                )}
-                            </div>
+                                    )}
+                                </div>
+                            ) : (
+                                <div className="overflow-x-auto">
+                                    <table className="w-full text-left text-sm border-collapse">
+                                        <thead>
+                                            <tr className="border-b border-white/10 text-primary-300">
+                                                <th className="py-3 px-4 font-semibold uppercase tracking-wider text-xs">Date</th>
+                                                <th className="py-3 px-4 font-semibold uppercase tracking-wider text-xs">Entry Type</th>
+                                                <th className="py-3 px-4 text-right font-semibold uppercase tracking-wider text-xs">Amount</th>
+                                                <th className="py-3 px-4 text-right font-semibold uppercase tracking-wider text-xs">Balance After</th>
+                                                <th className="py-3 px-4 font-semibold uppercase tracking-wider text-xs text-right">Entry ID</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody className="divide-y divide-white/5 font-mono">
+                                            {accountLedger.length > 0 ? accountLedger.map((entry) => (
+                                                <tr key={entry.id} className="hover:bg-white/5 transition-colors">
+                                                    <td className="py-4 px-4 text-primary-200">{new Date(entry.createdAt).toLocaleString()}</td>
+                                                    <td className="py-4 px-4 flex gap-2">
+                                                        <span className={`px-2 py-1 rounded text-xs font-bold ${entry.type === 'DEBIT' ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}`}>{entry.type}</span>
+                                                    </td>
+                                                    <td className={`py-4 px-4 text-right ${entry.type === 'DEBIT' ? 'text-red-400' : 'text-emerald-400'}`}>
+                                                        {entry.type === 'DEBIT' ? '-' : '+'}{new Intl.NumberFormat('en-US', { minimumFractionDigits: 2 }).format(entry.amount)}
+                                                    </td>
+                                                    <td className="py-4 px-4 text-right text-white font-bold">{new Intl.NumberFormat('en-US', { minimumFractionDigits: 2 }).format(entry.balanceAfter)}</td>
+                                                    <td className="py-4 px-4 text-primary-500 text-xs text-right" title={entry.id}>{entry.id.substring(0, 8)}...</td>
+                                                </tr>
+                                            )) : (
+                                                <tr>
+                                                    <td colSpan="5" className="py-12 text-center">
+                                                        <div className="text-primary-400/60 mb-2">No ledger entries generated yet.</div>
+                                                    </td>
+                                                </tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
                         </div>
                     </>
                 )}
@@ -560,6 +624,20 @@ export default function AccountManager() {
                         <p className="text-primary-300 text-center text-sm mb-6">
                             Enter the new 6-digit ATM PIN for account <span className="font-mono text-primary-100">{resetPinDialog.accountNumber}</span>.
                         </p>
+
+                        {resetPinDialog.error && (
+                            <div className="mb-6 p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-start gap-2 text-red-400 text-sm">
+                                <AlertCircle size={16} className="shrink-0 mt-0.5" />
+                                <span>{resetPinDialog.error}</span>
+                            </div>
+                        )}
+                        {resetPinDialog.success && (
+                            <div className="mb-6 p-3 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-start gap-2 text-emerald-400 text-sm">
+                                <CheckCircle size={16} className="shrink-0 mt-0.5" />
+                                <span>PIN reset successfully! Closing...</span>
+                            </div>
+                        )}
+
                         <form onSubmit={handleResetPin} className="space-y-6">
                             <div className="space-y-1.5">
                                 <label className="text-xs font-bold uppercase text-primary-300 tracking-wider">New PIN</label>
@@ -583,9 +661,10 @@ export default function AccountManager() {
                                 </button>
                                 <button
                                     type="submit"
-                                    className="flex-1 py-3 rounded-xl text-white font-bold shadow-lg transition-all active:scale-[0.98] bg-purple-600 hover:bg-purple-500 shadow-purple-500/30"
+                                    disabled={resetPinDialog.loading || resetPinDialog.success || resetPinDialog.newPin.length !== 6}
+                                    className="flex-1 py-3 rounded-xl text-white font-bold shadow-lg transition-all active:scale-[0.98] bg-purple-600 hover:bg-purple-500 shadow-purple-500/30 disabled:opacity-50 flex items-center justify-center gap-2"
                                 >
-                                    Reset PIN
+                                    {resetPinDialog.loading ? 'Resetting...' : 'Reset PIN'}
                                 </button>
                             </div>
                         </form>
