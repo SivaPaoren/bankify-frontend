@@ -109,57 +109,24 @@ export const authService = {
 
     // 2. ATM Auth
     atmLogin: async (accountNumber, pin) => {
-        try {
-            const response = await atmApi.post('/atm/auth/login', { accountNumber, pin });
-            const { token } = response.data;
-
-            localStorage.setItem('bankify_atm_token', token);
-            return response.data;
-        } catch (error) {
-            console.warn("Backend unavailable or Network Error, using MOCK ATM login.", error);
-
-            // Mock ATM Login
-            const mockToken = 'mock-atm-token';
-            const mockUser = {
-                id: 999,
-                email: 'atm-user@bankify.local',
-                accountNumber: accountNumber,
-                role: 'USER',
-                name: 'ATM User',
-                currency: 'THB'
-            };
-            localStorage.setItem('bankify_atm_token', mockToken);
-            // localStorage.setItem('bankify_user', JSON.stringify(mockUser)); // ATM usually doesn't need full user obj in storage
-
-            return { token: mockToken, ...mockUser };
-        }
+        const response = await atmApi.post('/atm/auth/login', { accountNumber, pin });
+        const { token } = response.data;
+        localStorage.setItem('bankify_atm_token', token);
+        return response.data;
     },
 
     // 3. Partner Auth (Portal)
     partnerLogin: async (email, password) => {
-        try {
-            const response = await partnerApi.post('/partner/auth/login', { email, password });
-            const { token } = response.data;
-            localStorage.setItem('bankify_partner_token', token);
-            return response.data;
-        } catch (error) {
-            console.warn("Backend unavailable, using MOCK Partner login.", error);
-            // Mock
-            const mockToken = 'mock-partner-token';
-            localStorage.setItem('bankify_partner_token', mockToken);
-            return { token: mockToken, role: 'CLIENT' };
-        }
+        const response = await partnerApi.post('/partner/auth/login', { email, password });
+        const { token } = response.data;
+        localStorage.setItem('bankify_partner_token', token);
+        return response.data;
     },
 
     // Partner Signup
     partnerSignup: async (appName, email, password) => {
-        try {
-            const response = await partnerApi.post('/partner/auth/signup', { appName, email, password });
-            return response.data;
-        } catch (error) {
-            console.warn("Backend unavailable, returning MOCK Partner signup.", error);
-            return { id: `mock-${Date.now()}`, status: 'PENDING' };
-        }
+        const response = await partnerApi.post('/partner/auth/signup', { appName, email, password });
+        return response.data;
     },
 
     logout: () => {
@@ -171,88 +138,32 @@ export const authService = {
     }
 };
 
-import { initialClients, initialCustomers, initialAuditLogs, initialTransactions, initialSystemSettings } from './mockData';
-
-// Helper to get data from LocalStorage or initialize it
-const getStorageData = (key, initialData) => {
-    const stored = localStorage.getItem(key);
-    if (!stored) {
-        localStorage.setItem(key, JSON.stringify(initialData));
-        return initialData;
-    }
-    return JSON.parse(stored);
-};
-
-// Helper to save data to LocalStorage
-const setStorageData = (key, data) => {
-    localStorage.setItem(key, JSON.stringify(data));
-};
-
-// Helper to log audit actions
-const logAudit = (action, details, user = 'admin@bankify.local') => {
-    const logs = getStorageData('bankify_audit_logs', initialAuditLogs);
-    const newLog = {
-        id: Date.now(),
-        action,
-        user,
-        details,
-        timestamp: new Date().toISOString()
-    };
-    logs.unshift(newLog); // Add to beginning
-    setStorageData('bankify_audit_logs', logs);
-};
-
-
+// Mock data helpers removed to enforce true backend sync
 export const adminService = {
     // 1.2 View all API clients
     getClients: async () => {
-        try {
-            const response = await adminApi.get('/admin/partner-apps');
-            return response.data;
-        } catch (_e) {
-            console.warn("Backend unavailable, loading clients from LocalStorage");
-            return getStorageData('bankify_clients', initialClients);
-        }
+        const response = await adminApi.get('/admin/partner-apps');
+        return response.data;
     },
     // 1.3 Approve a client
     approveClient: async (clientId) => {
-        try {
-            const response = await adminApi.patch(`/admin/partner-apps/${clientId}/approve`);
-            return response.data;
-        } catch (_e) {
-            console.warn("Mocking approve client");
-            return { success: true };
-        }
+        const response = await adminApi.patch(`/admin/partner-apps/${clientId}/approve`);
+        return response.data;
     },
     // 1.3.1 Activate a client
     activateClient: async (clientId) => {
-        try {
-            const response = await adminApi.patch(`/admin/partner-apps/${clientId}/activate`);
-            return response.data;
-        } catch (_e) {
-            console.warn("Mocking activate client");
-            return { success: true };
-        }
+        const response = await adminApi.patch(`/admin/partner-apps/${clientId}/activate`);
+        return response.data;
     },
     // 1.4 Disable a client
     disableClient: async (clientId) => {
-        try {
-            const response = await adminApi.patch(`/admin/partner-apps/${clientId}/disable`);
-            return response.data;
-        } catch (_e) {
-            console.warn("Mocking disable client");
-            return { success: true };
-        }
+        const response = await adminApi.patch(`/admin/partner-apps/${clientId}/disable`);
+        return response.data;
     },
     // 1.5 Key Rotation Approvals
     listRotationRequests: async () => {
-        try {
-            const response = await adminApi.get('/admin/partner-apps/rotation-requests');
-            return response.data;
-        } catch (_e) {
-            console.warn("Mocking list rotation requests", _e);
-            return []; // Return empty if failing, or mock data
-        }
+        const response = await adminApi.get('/admin/partner-apps/rotation-requests');
+        return response.data;
     },
     approveKeyRotation: async (requestId) => {
         const response = await adminApi.patch(`/admin/partner-apps/rotation-requests/${requestId}/approve`);
@@ -265,13 +176,8 @@ export const adminService = {
 
     // Customers (Admin manages these)
     getCustomers: async () => {
-        try {
-            const response = await adminApi.get('/admin/customers');
-            return response.data;
-        } catch (_e) {
-            console.warn("Backend unavailable, loading customers from LocalStorage");
-            return getStorageData('bankify_customers', initialCustomers);
-        }
+        const response = await adminApi.get('/admin/customers');
+        return response.data;
     },
     getCustomer: async (customerId) => {
         const response = await adminApi.get(`/admin/customers/${customerId}`);
@@ -279,7 +185,6 @@ export const adminService = {
     },
     createCustomer: async (customerData) => {
         const response = await adminApi.post('/admin/customers', customerData);
-        logAudit('CREATE_CUSTOMER', `Created Customer: ${customerData.firstName} ${customerData.lastName}`);
         return response.data;
     },
     updateCustomer: async (customerId, updateData) => {
@@ -296,7 +201,6 @@ export const adminService = {
         // Spec: { customerId, type, currency }
         // Note: Initial deposit is NOT part of this endpoint.
         const response = await adminApi.post('/admin/accounts', accountData);
-        logAudit('CREATE_ACCOUNT', `Created Account for Customer ID: ${accountData.customerId}`);
         return response.data;
     },
     getAccount: async (accountId) => {
@@ -308,11 +212,7 @@ export const adminService = {
         return response.data;
     },
     freezeAccount: async (accountId) => {
-        try {
-            await adminApi.patch(`/admin/accounts/${accountId}/disable`);
-        } catch (_e) {
-            console.warn("Mocking freeze account");
-        }
+        await adminApi.patch(`/admin/accounts/${accountId}/disable`);
     },
     // Close Account — uses PATCH with status=CLOSED (no DELETE endpoint in backend)
     closeAccount: async (accountId) => {
@@ -324,18 +224,8 @@ export const adminService = {
         return response.data;
     },
     getAccountTransactions: async (accountId) => {
-        try {
-            const response = await adminApi.get('/admin/transactions', { params: { accountId } });
-            return response.data;
-        } catch (_e) {
-            console.warn("Falling back to local transactions");
-            let transactions = getStorageData('bankify_transactions', initialTransactions);
-            const filtered = transactions.filter(t =>
-                String(t.source) === String(accountId) ||
-                String(t.destination) === String(accountId)
-            );
-            return { content: filtered };
-        }
+        const response = await adminApi.get('/admin/transactions', { params: { accountId } });
+        return response.data;
     },
 
     // 1.4 Admin Operations
@@ -386,65 +276,26 @@ export const adminService = {
 
     // Audit Logs
     getAuditLogs: async (params = {}) => {
-        try {
-            const response = await adminApi.get('/admin/audit-logs', { params });
-            return response.data;
-        } catch (_e) {
-            return getStorageData('bankify_audit_logs', initialAuditLogs);
-        }
+        const response = await adminApi.get('/admin/audit-logs', { params });
+        return response.data;
     },
     // Transactions (Admin View)
     getTransactions: async (params = {}) => {
-        try {
-            const response = await adminApi.get('/admin/transactions', { params });
-            return response.data;
-        } catch (_e) {
-            console.warn("Backend unavailable, loading transactions from LocalStorage");
-            let transactions = getStorageData('bankify_transactions', initialTransactions);
-            // ... (mock filter logic matches perfectly) ...
-            if (params.type && params.type !== 'ALL') {
-                transactions = transactions.filter(t => t.type === params.type);
-            }
-            if (params.status && params.status !== 'ALL') {
-                transactions = transactions.filter(t => t.status === params.status);
-            }
-            if (params.search) {
-                const search = params.search.toLowerCase();
-                transactions = transactions.filter(t => t.id.toLowerCase().includes(search));
-            }
-            return transactions;
-        }
+        const response = await adminApi.get('/admin/transactions', { params });
+        return response.data;
     },
-    // System Settings
-    getSystemSettings: async () => {
-        return getStorageData('bankify_settings', initialSystemSettings);
-    },
-    updateSystemSettings: async (settings) => {
-        setStorageData('bankify_settings', settings);
-        return settings;
-    }
+
 };
 
 export const clientService = {
     // Get current client profile (keys, webhooks)
     getProfile: async () => {
-        try {
-            // Guide: GET /api/v1/partner/portal/me
-            const response = await partnerApi.get('/partner/portal/me');
-            return response.data;
-        } catch (_e) {
-            console.warn("Mocking client profile");
-            return {
-                clientId: 'cl_test_123456789',
-                clientSecret: 'sk_test_987654321_do_not_share',
-                status: 'ACTIVE',
-                webhookUrl: 'https://api.example.com/webhooks',
-                environment: 'TEST'
-            };
-        }
+        // Guide: GET /api/v1/partner/portal/me
+        const response = await partnerApi.get('/partner/portal/me');
+        return response.data;
     },
     // Update webhook URL
-    updateWebhook: async (_url) => {
+    updateWebhook: async () => {
         // Guide doesn't specify, assuming similar endpoint
         return { success: true };
     }
@@ -453,69 +304,49 @@ export const clientService = {
 export const atmService = {
     // 2.2 Deposit
     deposit: async (amount, note) => {
-        try {
-            const idempotencyKey = generateIdempotencyKey('DEP');
-            const response = await atmApi.post('/atm/me/deposit', {
-                amount: Number(amount),
-                note
-            }, {
-                headers: { 'Idempotency-Key': idempotencyKey }
-            });
-            return response.data;
-        } catch (_e) {
-            console.warn("Mocking ATM deposit");
-            return { id: 'tx_mock_dep', status: 'SUCCESS', amount, type: 'DEPOSIT', currency: 'THB' };
-        }
+        const idempotencyKey = generateIdempotencyKey('DEP');
+        const response = await atmApi.post('/atm/me/deposit', {
+            amount: Number(amount),
+            note
+        }, {
+            headers: { 'Idempotency-Key': idempotencyKey }
+        });
+        return response.data;
     },
 
     // 2.3 Withdraw
     withdraw: async (amount, note) => {
-        try {
-            const idempotencyKey = generateIdempotencyKey('WDR');
-            const response = await atmApi.post('/atm/me/withdraw', {
-                amount: Number(amount),
-                note
-            }, {
-                headers: { 'Idempotency-Key': idempotencyKey }
-            });
-            return response.data;
-        } catch (_e) {
-            console.warn("Mocking ATM withdraw");
-            return { id: 'tx_mock_wdr', status: 'SUCCESS', amount, type: 'WITHDRAWAL', currency: 'THB' };
-        }
+        const idempotencyKey = generateIdempotencyKey('WDR');
+        const response = await atmApi.post('/atm/me/withdraw', {
+            amount: Number(amount),
+            note
+        }, {
+            headers: { 'Idempotency-Key': idempotencyKey }
+        });
+        return response.data;
     },
 
     // 2.4 Transfer
     transfer: async (toAccountNumber, amount, note) => {
-        try {
-            const idempotencyKey = generateIdempotencyKey('TRF');
-            const response = await atmApi.post('/atm/me/transfer', {
-                toAccountNumber,
-                amount: Number(amount),
-                note
-            }, {
-                headers: { 'Idempotency-Key': idempotencyKey }
-            });
-            return response.data;
-        } catch (_e) {
-            console.warn("Mocking ATM transfer");
-            return { id: 'tx_mock_trf', status: 'PENDING', amount, type: 'TRANSFER', currency: 'THB' };
-        }
+        const idempotencyKey = generateIdempotencyKey('TRF');
+        const response = await atmApi.post('/atm/me/transfer', {
+            toAccountNumber,
+            amount: Number(amount),
+            note
+        }, {
+            headers: { 'Idempotency-Key': idempotencyKey }
+        });
+        return response.data;
     },
 
     // 2.5 Transaction history (ATM View)
     getTransactions: async () => {
-        try {
-            const response = await atmApi.get('/atm/me/transactions');
-            return response.data;
-        } catch (_e) {
-            console.warn("Mocking ATM transactions");
-            return { content: initialTransactions || [] };
-        }
+        const response = await atmApi.get('/atm/me/transactions');
+        return response.data;
     },
 
     // Legacy support for older components using getTransactionsByAccount(id)
-    getTransactionsByAccount: async (_accountId) => {
+    getTransactionsByAccount: async () => {
         // If called with ID, warn but try to use "me" logic if it matches? 
         // Or just redirect to getTransactions()
         return atmService.getTransactions();
@@ -523,73 +354,50 @@ export const atmService = {
 
     // 2.6 Change PIN
     changePin: async (oldPin, newPin) => {
-        try {
-            await atmApi.post('/atm/me/change-pin', { oldPin, newPin });
-        } catch (_e) {
-            console.warn("Mocking change PIN");
-        }
+        await atmApi.post('/atm/me/change-pin', { oldPin, newPin });
     }
 };
 
 export const partnerService = {
     // Partner Money Ops
     deposit: async (amount, note) => {
-        try {
-            const idempotencyKey = generateIdempotencyKey('DEP');
-            // Guide: POST /api/v1/partner/me/deposit
-            const response = await partnerApi.post('/partner/me/deposit', {
-                amount: Number(amount),
-                note
-            }, {
-                headers: { 'Idempotency-Key': idempotencyKey }
-            });
-            return response.data;
-        } catch (_e) {
-            console.warn("Mocking Partner deposit");
-            return { id: 'tx_mock_dep_p', status: 'SUCCESS', amount, type: 'DEPOSIT', currency: 'THB' };
-        }
+        const idempotencyKey = generateIdempotencyKey('DEP');
+        // Guide: POST /api/v1/partner/me/deposit
+        const response = await partnerApi.post('/partner/me/deposit', {
+            amount: Number(amount),
+            note
+        }, {
+            headers: { 'Idempotency-Key': idempotencyKey }
+        });
+        return response.data;
     },
 
     withdraw: async (amount, note) => {
-        try {
-            const idempotencyKey = generateIdempotencyKey('WDR');
-            const response = await partnerApi.post('/partner/me/withdraw', {
-                amount: Number(amount),
-                note
-            }, {
-                headers: { 'Idempotency-Key': idempotencyKey }
-            });
-            return response.data;
-        } catch (_e) {
-            console.warn("Mocking Partner withdraw");
-            return { id: 'tx_mock_wdr_p', status: 'SUCCESS', amount, type: 'WITHDRAWAL', currency: 'THB' };
-        }
+        const idempotencyKey = generateIdempotencyKey('WDR');
+        const response = await partnerApi.post('/partner/me/withdraw', {
+            amount: Number(amount),
+            note
+        }, {
+            headers: { 'Idempotency-Key': idempotencyKey }
+        });
+        return response.data;
     },
 
     transfer: async (toAccountNumber, amount, note) => {
-        try {
-            const idempotencyKey = generateIdempotencyKey('TRF');
-            const response = await partnerApi.post('/partner/me/transfer', {
-                accountNumber: toAccountNumber, // Guide says "accountNumber"
-                amount: Number(amount),
-                note
-            }, {
-                headers: { 'Idempotency-Key': idempotencyKey }
-            });
-            return response.data;
-        } catch (_e) {
-            console.warn("Mocking Partner transfer");
-            return { id: 'tx_mock_trf_p', status: 'PENDING', amount, type: 'TRANSFER', currency: 'THB' };
-        }
+        const idempotencyKey = generateIdempotencyKey('TRF');
+        const response = await partnerApi.post('/partner/me/transfer', {
+            accountNumber: toAccountNumber, // Guide says "accountNumber"
+            amount: Number(amount),
+            note
+        }, {
+            headers: { 'Idempotency-Key': idempotencyKey }
+        });
+        return response.data;
     },
 
     getTransactions: async () => {
-        try {
-            const response = await partnerApi.get('/partner/me/transactions');
-            return response.data;
-        } catch (_e) {
-            return { content: initialTransactions || [] };
-        }
+        const response = await partnerApi.get('/partner/me/transactions');
+        return response.data;
     },
 
     // Alias for compatibility

@@ -5,6 +5,7 @@ import { Shield, Power, CheckCircle, XCircle, Clock } from 'lucide-react';
 export default function ClientManager() {
     const [clients, setClients] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [newKeyDialog, setNewKeyDialog] = useState({ open: false, key: '' });
 
     const fetchClients = async () => {
         setLoading(true);
@@ -25,7 +26,10 @@ export default function ClientManager() {
     const handleAction = async (clientId, currentStatus) => {
         try {
             if (currentStatus === 'PENDING') {
-                await adminService.approveClient(clientId);
+                const response = await adminService.approveClient(clientId);
+                if (response?.apiKey) {
+                    setNewKeyDialog({ open: true, key: response.apiKey });
+                }
             } else if (currentStatus === 'ACTIVE') {
                 await adminService.disableClient(clientId);
             } else {
@@ -33,7 +37,8 @@ export default function ClientManager() {
             }
             fetchClients();
         } catch (e) {
-            alert(`Failed to update status for client ${clientId}`);
+            const errorMsg = e.response?.data?.message || e.message;
+            alert(`Failed: ${errorMsg}`);
         }
     };
 
@@ -52,7 +57,7 @@ export default function ClientManager() {
                         <thead>
                             <tr className="bg-white/5 border-b border-white/5 text-xs uppercase tracking-widest text-primary-200 font-bold">
                                 <th className="px-6 py-4">Client Name</th>
-                                <th className="px-6 py-4">API Key Prefix</th>
+                                <th className="px-6 py-4">App ID</th>
                                 <th className="px-6 py-4">Status</th>
                                 <th className="px-6 py-4">Actions</th>
                             </tr>
@@ -70,7 +75,7 @@ export default function ClientManager() {
                                     </td>
                                     <td className="px-6 py-4">
                                         <code className="bg-black/30 px-2.5 py-1 rounded-lg text-xs font-mono text-primary-100 border border-white/5">
-                                            {row.apiKey ? row.apiKey.substring(0, 8) + '...' : 'N/A'}
+                                            {row.id ? row.id.substring(0, 8).toUpperCase() : 'N/A'}
                                         </code>
                                     </td>
                                     <td className="px-6 py-4">
@@ -112,6 +117,53 @@ export default function ClientManager() {
                     </table>
                 </div>
             </div>
+
+            {/* ONE-TIME RECORD API KEY MODAL */}
+            {newKeyDialog.open && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+                    <div className="relative bg-primary-900 border border-emerald-500/30 rounded-2xl shadow-2xl w-full max-w-lg p-8 animate-fade-in relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
+
+                        <div className="flex justify-center mb-5 relative z-10">
+                            <div className="w-16 h-16 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center">
+                                <Shield size={32} className="text-emerald-400" />
+                            </div>
+                        </div>
+
+                        <h2 className="text-2xl font-bold text-white text-center mb-2 relative z-10">Client Approved!</h2>
+                        <p className="text-primary-300 text-center text-sm mb-6 relative z-10">
+                            The Client App has been approved. The following API Key was generated. <br />
+                            <span className="text-amber-400 font-bold">This is the ONLY time it will be shown.</span> Please copy and securely forward it to the partner.
+                        </p>
+
+                        <div className="bg-black/40 border border-white/10 rounded-xl p-4 mb-8 flex flex-col items-center justify-center relative z-10">
+                            <code className="text-emerald-400 font-mono text-lg tracking-wider break-all text-center selection:bg-emerald-500/30">
+                                {newKeyDialog.key}
+                            </code>
+                            <button
+                                onClick={() => {
+                                    navigator.clipboard.writeText(newKeyDialog.key);
+                                    alert("API Key copied to clipboard!");
+                                }}
+                                className="mt-4 px-4 py-2 bg-white/5 hover:bg-white/10 text-primary-200 text-xs font-bold uppercase tracking-wider rounded-lg border border-white/10 transition-colors"
+                            >
+                                Copy to Clipboard
+                            </button>
+                        </div>
+
+                        <div className="flex justify-center relative z-10">
+                            <button
+                                onClick={() => setNewKeyDialog({ open: false, key: '' })}
+                                className="px-8 py-3 rounded-xl border border-white/10 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white font-bold shadow-lg shadow-emerald-500/20 transition-all active:scale-[0.98]"
+                            >
+                                I have copied the Key safely
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
         </div>
     );
 }
