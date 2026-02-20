@@ -38,7 +38,7 @@ export default function SecurityApprovals() {
     const handleApprove = async (partnerId, requestId) => {
         try {
             setProcessingId(requestId || partnerId);
-            await adminService.approveKeyRotation(partnerId);
+            await adminService.approveKeyRotation(requestId);
             // Re-fetch or filter out
             setRequests(prev => prev.filter(r => (r.id !== requestId && r.partnerId !== partnerId)));
         } catch (e) {
@@ -52,7 +52,7 @@ export default function SecurityApprovals() {
     const handleReject = async (partnerId, requestId) => {
         try {
             setProcessingId(requestId || partnerId);
-            await adminService.rejectKeyRotation(partnerId);
+            await adminService.rejectKeyRotation(requestId);
             // Re-fetch or filter out
             setRequests(prev => prev.filter(r => (r.id !== requestId && r.partnerId !== partnerId)));
         } catch (e) {

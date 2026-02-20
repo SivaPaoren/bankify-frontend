@@ -247,19 +247,19 @@ export const adminService = {
     // 1.5 Key Rotation Approvals
     listRotationRequests: async () => {
         try {
-            const response = await adminApi.get('/admin/security/key-rotations');
+            const response = await adminApi.get('/admin/partner-apps/rotation-requests');
             return response.data;
         } catch (_e) {
             console.warn("Mocking list rotation requests", _e);
             return []; // Return empty if failing, or mock data
         }
     },
-    approveKeyRotation: async (partnerId) => {
-        const response = await adminApi.post(`/admin/partner-apps/${partnerId}/rotate-key/approve`);
+    approveKeyRotation: async (requestId) => {
+        const response = await adminApi.patch(`/admin/partner-apps/rotation-requests/${requestId}/approve`);
         return response.data;
     },
-    rejectKeyRotation: async (partnerId) => {
-        const response = await adminApi.post(`/admin/partner-apps/${partnerId}/rotate-key/reject`);
+    rejectKeyRotation: async (requestId) => {
+        const response = await adminApi.patch(`/admin/partner-apps/rotation-requests/${requestId}/reject`);
         return response.data;
     },
 
