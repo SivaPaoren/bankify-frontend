@@ -19,7 +19,7 @@ const BezelButton = ({ onClick, disabled, side }) => (
   >
     <div className={`
       h-full w-full rounded shadow-md border-b-4 border-r-2 border-gray-600
-      bg-gradient-to-br from-gray-200 via-gray-300 to-gray-400
+      bg-linear-to-br from-gray-200 via-gray-300 to-gray-400
       ${disabled ? "bg-gray-400" : ""}
     `}></div>
 
@@ -58,13 +58,13 @@ const KeyButton = ({ label, color, span = 1, onClick }) => {
 
   return (
     <div
-      className={`col-span-${span} relative active:top-[2px] transition-all`}
+      className={`col-span-${span} relative active:top-0.5 transition-all`}
       onClick={onClick}
     >
       <div
         className={`
           h-12 rounded-md border-b-4 border-r-2 ${borderColor}
-          bg-gradient-to-br ${bgGradient} ${hoverColor} shadow-sm
+          bg-linear-to-br ${bgGradient} ${hoverColor} shadow-sm
           flex items-center justify-center ${fontSize} ${textColor}
           cursor-pointer select-none
         `}
@@ -224,7 +224,7 @@ export default function ATMLogin() {
       </div>
 
       {/* MACHINE BODY */}
-      <div className="bg-gradient-to-b from-gray-300 to-gray-400 w-full max-w-5xl p-6 rounded-b-2xl shadow-2xl border-x-8 border-b-8 border-gray-500">
+      <div className="bg-linear-to-b from-gray-300 to-gray-400 w-full max-w-5xl p-6 rounded-b-2xl shadow-2xl border-x-8 border-b-8 border-gray-500">
 
         <div className="flex flex-col lg:flex-row gap-8 items-start justify-center">
 
@@ -283,7 +283,7 @@ export default function ATMLogin() {
             </div>
 
             <div className="bg-gray-200 p-6 rounded-xl border border-gray-400 shadow-inner flex flex-col items-center">
-              <div className="w-full max-w-[400px] h-14 bg-gradient-to-b from-gray-900 to-gray-800 rounded-md border-b-2 border-gray-600 flex items-center justify-center relative overflow-hidden shadow-2xl">
+              <div className="w-full max-w-[400px] h-14 bg-linear-to-b from-gray-900 to-gray-800 rounded-md border-b-2 border-gray-600 flex items-center justify-center relative overflow-hidden shadow-2xl">
                 <div className="w-[85%] h-3 bg-black rounded-full shadow-[inset_0_4px_8px_rgba(0,0,0,0.8)]" />
                 <div className="absolute top-0 left-0 w-full h-px bg-white/10" />
               </div>
@@ -310,13 +310,13 @@ export default function ATMLogin() {
                 className={`
                   absolute left-1/2 -translate-x-1/2 z-20
                   w-28 h-[70px] rounded-lg shadow-xl cursor-pointer
-                  bg-gradient-to-br from-slate-800 via-slate-700 to-slate-900
+                  bg-linear-to-br from-slate-800 via-slate-700 to-slate-900
                   border border-white/10 ring-1 ring-black/20
                   transition-all duration-700 ease-in-out
                   ${cardInserted ? "top-[18px] translate-y-8 opacity-0 scale-95" : "-top-10 hover:-translate-y-2"}
                 `}
               >
-                <div className="absolute top-3 left-3 w-5 h-4 bg-gradient-to-br from-yellow-200 to-yellow-600 rounded-sm" />
+                <div className="absolute top-3 left-3 w-5 h-4 bg-linear-to-br from-yellow-200 to-yellow-600 rounded-sm" />
                 <div className="absolute bottom-2 right-3 text-[8px] font-bold text-cyan-400 italic">BANKIFY</div>
               </div>
 

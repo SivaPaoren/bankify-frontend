@@ -211,7 +211,7 @@ export default function AuditLogs() {
       </div>
 
       {/* ── Toolbar — date left, filters right ── */}
-      <div className="flex flex-col md:flex-row gap-3 items-start md:items-center bg-white/[0.03] border border-white/10 rounded-2xl px-4 py-3">
+      <div className="flex flex-col md:flex-row gap-3 items-start md:items-center bg-white/3 border border-white/10 rounded-2xl px-4 py-3">
 
         {/* Left: Date Range */}
         <div className="flex items-center gap-2 shrink-0">
@@ -342,7 +342,7 @@ export default function AuditLogs() {
                       {log.entityType ? (
                         <div className="flex flex-col">
                           <span className="text-xs font-bold text-primary-300 uppercase tracking-wider">{log.entityType}</span>
-                          <span className="text-xs font-mono text-primary-400 truncate max-w-[160px]" title={log.entityId}>
+                          <span className="text-xs font-mono text-primary-400 truncate max-w-40" title={log.entityId}>
                             {log.entityId ? `${String(log.entityId).substring(0, 16)}…` : '—'}
                           </span>
                         </div>

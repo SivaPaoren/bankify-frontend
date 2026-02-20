@@ -19,7 +19,7 @@ const BezelButton = ({ onClick, disabled, side }) => (
   >
     <div className={`
       h-full w-full rounded shadow-md border-b-4 border-r-2 border-gray-600
-      bg-gradient-to-br from-gray-200 via-gray-300 to-gray-400
+      bg-linear-to-br from-gray-200 via-gray-300 to-gray-400
       ${disabled ? "bg-gray-400" : ""}
     `}></div>
     <div className={`
@@ -52,10 +52,10 @@ const KeyButton = ({ label, color, onClick }) => {
   const labelStyle = label.length > 1 ? "text-[10px] tracking-tighter" : "text-xl";
 
   return (
-    <div className="relative active:translate-y-[2px] transition-all" onClick={onClick}>
+    <div className="relative active:translate-y-0.5 transition-all" onClick={onClick}>
       <div className={`
         h-12 w-full rounded-md border-b-4 border-r-2 ${borderColor} 
-        bg-gradient-to-br ${bgGradient} shadow-md 
+        bg-linear-to-br ${bgGradient} shadow-md 
         flex items-center justify-center font-extrabold cursor-pointer select-none 
         ${textColor} ${labelStyle}
       `}>
@@ -124,7 +124,7 @@ export default function ATMTransfer() {
       </div>
 
       {/* MACHINE BODY */}
-      <div className="bg-gradient-to-b from-gray-300 to-gray-400 w-full max-w-5xl p-6 rounded-b-2xl shadow-2xl border-x-8 border-b-8 border-gray-500">
+      <div className="bg-linear-to-b from-gray-300 to-gray-400 w-full max-w-5xl p-6 rounded-b-2xl shadow-2xl border-x-8 border-b-8 border-gray-500">
         <div className="flex flex-col lg:flex-row gap-8 items-start justify-center">
 
           {/* LEFT UNIT: SCREEN + DISPENSER */}
@@ -157,7 +157,7 @@ export default function ATMTransfer() {
                     {step === "ACCOUNT" && (
                       <div className="text-center">
                         <h2 className="text-cyan-500 text-xs font-bold uppercase mb-2 tracking-widest">Target Account</h2>
-                        <div className="bg-black/40 p-4 rounded border border-slate-700 text-white text-2xl tracking-widest min-w-[240px]">
+                        <div className="bg-black/40 p-4 rounded border border-slate-700 text-white text-2xl tracking-widest min-w-60">
                           {targetAccount || "________"}
                         </div>
                         {error && <p className="text-red-500 text-[10px] mt-2 uppercase">{error}</p>}
@@ -197,7 +197,7 @@ export default function ATMTransfer() {
 
             {/* CASH DISPENSER */}
             <div className="bg-gray-200 p-6 rounded-xl border border-gray-400 shadow-inner flex flex-col items-center">
-              <div className="w-full max-w-[400px] h-14 bg-gradient-to-b from-gray-900 to-gray-800 rounded-md border-b-2 border-gray-600 flex items-center justify-center relative overflow-hidden shadow-2xl">
+              <div className="w-full max-w-[400px] h-14 bg-linear-to-b from-gray-900 to-gray-800 rounded-md border-b-2 border-gray-600 flex items-center justify-center relative overflow-hidden shadow-2xl">
                 <div className="w-[85%] h-3 bg-black rounded-full shadow-[inset_0_4px_8px_rgba(0,0,0,0.8)]" />
               </div>
               <div className="text-[12px] text-gray-500 font-extrabold uppercase mt-3 tracking-widest">Cash Dispenser</div>

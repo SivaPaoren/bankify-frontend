@@ -17,7 +17,7 @@ const BezelButton = ({ onClick, disabled, side }) => (
   >
     <div className={`
       h-full w-full rounded shadow-md border-b-4 border-r-2 border-gray-600
-      bg-gradient-to-br from-gray-200 via-gray-300 to-gray-400
+      bg-linear-to-br from-gray-200 via-gray-300 to-gray-400
       ${disabled ? "bg-gray-400" : ""}
     `}></div>
 
@@ -55,11 +55,11 @@ const KeyButton = ({ label, color, span = 1 }) => {
       : "text-xl font-bold";
 
   return (
-    <div className={`col-span-${span} relative active:top-[2px] transition-all`}>
+    <div className={`col-span-${span} relative active:top-0.5 transition-all`}>
       <div
         className={`
           h-12 rounded-md border-b-4 border-r-2 ${borderColor}
-          bg-gradient-to-br ${bgGradient} ${hoverColor} shadow-sm
+          bg-linear-to-br ${bgGradient} ${hoverColor} shadow-sm
           flex items-center justify-center ${fontSize} ${textColor}
           cursor-pointer select-none
         `}
@@ -121,7 +121,7 @@ export default function ATMHome() {
       </div>
 
       {/* MACHINE BODY */}
-      <div className="bg-gradient-to-b from-gray-300 to-gray-400 w-full max-w-5xl p-6 rounded-b-2xl shadow-2xl border-x-8 border-b-8 border-gray-500">
+      <div className="bg-linear-to-b from-gray-300 to-gray-400 w-full max-w-5xl p-6 rounded-b-2xl shadow-2xl border-x-8 border-b-8 border-gray-500">
 
         <div className="flex flex-col lg:flex-row gap-8 items-start justify-center">
 
@@ -144,7 +144,7 @@ export default function ATMHome() {
                         {label && (
                           <div className="flex items-center gap-1">
                             <span className="text-cyan-400 font-bold">&lt;</span>
-                            <span className="bg-slate-800/90 text-white text-xs px-2 py-1.5 rounded border-l-2 border-cyan-500 shadow-lg min-w-[80px]">
+                            <span className="bg-slate-800/90 text-white text-xs px-2 py-1.5 rounded border-l-2 border-cyan-500 shadow-lg min-w-20">
                               {label}
                             </span>
                           </div>
@@ -158,7 +158,7 @@ export default function ATMHome() {
                       <div key={i} className="h-10 flex items-center justify-end">
                         {label && (
                           <div className="flex items-center gap-1">
-                            <span className="bg-slate-800/90 text-white text-xs px-2 py-1.5 rounded border-r-2 border-cyan-500 shadow-lg text-right min-w-[80px]">
+                            <span className="bg-slate-800/90 text-white text-xs px-2 py-1.5 rounded border-r-2 border-cyan-500 shadow-lg text-right min-w-20">
                               {label}
                             </span>
                             <span className="text-cyan-400 font-bold">&gt;</span>
@@ -184,7 +184,7 @@ export default function ATMHome() {
 
             {/* CASH DISPENSER */}
             <div className="bg-gray-200 p-6 rounded-xl border border-gray-400 shadow-inner flex flex-col items-center">
-              <div className="w-full max-w-[400px] h-14 bg-gradient-to-b from-gray-900 to-gray-800 rounded-md border-b-2 border-gray-600 flex items-center justify-center relative overflow-hidden shadow-2xl">
+              <div className="w-full max-w-[400px] h-14 bg-linear-to-b from-gray-900 to-gray-800 rounded-md border-b-2 border-gray-600 flex items-center justify-center relative overflow-hidden shadow-2xl">
                 <div className="w-[85%] h-3 bg-black rounded-full shadow-[inset_0_4px_8px_rgba(0,0,0,0.8)]" />
                 <div className="absolute top-0 left-0 w-full h-px bg-white/10" />
               </div>

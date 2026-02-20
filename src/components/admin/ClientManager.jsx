@@ -67,7 +67,7 @@ export default function ClientManager() {
                                 <tr key={row.id} className="hover:bg-white/5 transition-colors group">
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-500/20 to-amber-500/20 text-orange-400 border border-orange-500/10 flex items-center justify-center font-bold shadow-inner">
+                                            <div className="w-9 h-9 rounded-xl bg-linear-to-br from-orange-500/20 to-amber-500/20 text-orange-400 border border-orange-500/10 flex items-center justify-center font-bold shadow-inner">
                                                 {row.name.charAt(0)}
                                             </div>
                                             <span className="font-bold text-white group-hover:text-cyan-300 transition-colors">{row.name}</span>
@@ -122,7 +122,7 @@ export default function ClientManager() {
             {newKeyDialog.open && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
-                    <div className="relative bg-primary-900 border border-emerald-500/30 rounded-2xl shadow-2xl w-full max-w-lg p-8 animate-fade-in relative overflow-hidden">
+                    <div className="bg-primary-900 border border-emerald-500/30 rounded-2xl shadow-2xl w-full max-w-lg p-8 animate-fade-in relative overflow-hidden">
                         <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
 
                         <div className="flex justify-center mb-5 relative z-10">
@@ -155,7 +155,7 @@ export default function ClientManager() {
                         <div className="flex justify-center relative z-10">
                             <button
                                 onClick={() => setNewKeyDialog({ open: false, key: '' })}
-                                className="px-8 py-3 rounded-xl border border-white/10 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white font-bold shadow-lg shadow-emerald-500/20 transition-all active:scale-[0.98]"
+                                className="px-8 py-3 rounded-xl border border-white/10 bg-linear-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white font-bold shadow-lg shadow-emerald-500/20 transition-all active:scale-[0.98]"
                             >
                                 I have copied the Key safely
                             </button>

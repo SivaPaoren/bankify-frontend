@@ -56,7 +56,7 @@ export default function ClientSignupPage() {
                     </p>
                     <button
                         onClick={() => navigate('/login')}
-                        className="w-full py-4 text-white font-bold rounded-xl shadow-xl shadow-indigo-200 bg-gradient-to-r from-indigo-600 to-blue-600 hover:to-blue-700 transition-all"
+                        className="w-full py-4 text-white font-bold rounded-xl shadow-xl shadow-indigo-200 bg-linear-to-r from-indigo-600 to-blue-600 hover:to-blue-700 transition-all"
                     >
                         Return to Login
                     </button>
@@ -162,7 +162,7 @@ export default function ClientSignupPage() {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full py-4 text-white font-bold rounded-xl shadow-xl shadow-indigo-200 transform transition-all active:scale-[0.98] disabled:opacity-70 disabled:scale-100 flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-600 to-blue-600 hover:to-blue-700"
+                            className="w-full py-4 text-white font-bold rounded-xl shadow-xl shadow-indigo-200 transform transition-all active:scale-[0.98] disabled:opacity-70 disabled:scale-100 flex items-center justify-center gap-2 bg-linear-to-r from-indigo-600 to-blue-600 hover:to-blue-700"
                         >
                             {loading ? 'Creating Account...' : (
                                 <>

@@ -45,7 +45,7 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex bg-slate-50 font-sans overflow-hidden">
       {/* Left Side: Branding & Visuals (Futuristic) */}
-      <div className="hidden lg:flex w-1/2 relative flex-col items-center justify-center p-12 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950">
+      <div className="hidden lg:flex w-1/2 relative flex-col items-center justify-center p-12 bg-linear-to-br from-slate-950 via-slate-900 to-indigo-950">
         <div className="absolute inset-0 opacity-10 pointer-events-none">
           <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20"></div>
           {/* Decorative circles */}
@@ -61,7 +61,7 @@ export default function LoginPage() {
           <div className="space-y-4">
             <h1 className="text-5xl font-extrabold text-white tracking-tight leading-tight">
               The Future of <br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 to-blue-300">
+              <span className="text-transparent bg-clip-text bg-linear-to-r from-indigo-300 to-blue-300">
                 Digital Banking
               </span>
             </h1>
@@ -141,7 +141,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-4 text-white font-bold rounded-xl shadow-xl shadow-indigo-200 transform transition-all active:scale-[0.98] disabled:opacity-70 disabled:scale-100 flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-600 to-blue-600 hover:to-blue-700"
+              className="w-full py-4 text-white font-bold rounded-xl shadow-xl shadow-indigo-200 transform transition-all active:scale-[0.98] disabled:opacity-70 disabled:scale-100 flex items-center justify-center gap-2 bg-linear-to-r from-indigo-600 to-blue-600 hover:to-blue-700"
             >
               {loading ? 'Authenticating...' : (
                 <>

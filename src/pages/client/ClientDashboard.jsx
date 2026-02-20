@@ -30,7 +30,7 @@ export default function ClientDashboard() {
 
             {/* Quick Stats Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl p-6 text-white shadow-lg shadow-emerald-200">
+                <div className="bg-linear-to-br from-emerald-500 to-teal-600 rounded-2xl p-6 text-white shadow-lg shadow-emerald-200">
                     <div className="flex justify-between items-start mb-4">
                         <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
                             <Wallet size={24} className="text-white" />

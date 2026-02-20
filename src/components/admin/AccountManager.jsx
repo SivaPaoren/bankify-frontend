@@ -160,7 +160,7 @@ export default function AccountManager() {
                 </div>
                 <button
                     onClick={() => setShowCreateModal(true)}
-                    className="flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-cyan-500/20 active:scale-95"
+                    className="flex items-center gap-2 bg-linear-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-cyan-500/20 active:scale-95"
                 >
                     <Plus size={20} />
                     Open Account
@@ -184,7 +184,7 @@ export default function AccountManager() {
             </div>
 
             {/* Toolbar: search + filter chips */}
-            <div className="flex flex-col md:flex-row gap-3 items-start md:items-center bg-white/[0.03] border border-white/10 rounded-2xl px-4 py-3">
+            <div className="flex flex-col md:flex-row gap-3 items-start md:items-center bg-white/3 border border-white/10 rounded-2xl px-4 py-3">
                 {/* Search */}
                 <div className="flex items-center gap-3 bg-black/20 px-4 py-2.5 rounded-xl border border-white/10 focus-within:border-cyan-500 focus-within:bg-black/30 transition-all flex-1 min-w-0 group">
                     <Search size={18} className="text-primary-400 group-focus-within:text-cyan-400 transition-colors shrink-0" />
@@ -397,7 +397,7 @@ export default function AccountManager() {
                             </div>
 
                             <div className="pt-2">
-                                <button type="submit" className="w-full bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-cyan-500/20 transition-all active:scale-[0.98]">
+                                <button type="submit" className="w-full bg-linear-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-cyan-500/20 transition-all active:scale-[0.98]">
                                     Confirm & Open Account
                                 </button>
                             </div>
@@ -410,7 +410,7 @@ export default function AccountManager() {
             <div className={`fixed inset-y-0 right-0 w-full md:w-[600px] bg-primary-950/95 backdrop-blur-xl border-l border-white/10 shadow-2xl transform transition-transform duration-500 z-50 flex flex-col ${showTransactionsDrawer ? 'translate-x-0' : 'translate-x-full'}`}>
                 {selectedAccount && (
                     <>
-                        <div className="p-6 md:p-8 border-b border-white/5 bg-gradient-to-r from-primary-900 to-primary-950 relative overflow-hidden shrink-0">
+                        <div className="p-6 md:p-8 border-b border-white/5 bg-linear-to-r from-primary-900 to-primary-950 relative overflow-hidden shrink-0">
                             {/* Decorative Blobs */}
                             <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none"></div>
 
@@ -508,7 +508,7 @@ export default function AccountManager() {
                     CLOSED: { label: 'Close Account', verb: 'close', icon: '🔒', accent: 'red', btnCls: 'bg-red-500 hover:bg-red-400 shadow-red-500/30' },
                 }[confirmDialog.newStatus] || {};
                 return (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" onClick={() => setConfirmDialog({ open: false })}>
+                    <div className="fixed inset-0 z-100 flex items-center justify-center p-4" onClick={() => setConfirmDialog({ open: false })}>
                         {/* Backdrop */}
                         <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
                         {/* Panel */}
@@ -550,7 +550,7 @@ export default function AccountManager() {
 
             {/* ── Reset PIN Dialog ────────────────────────────────── */}
             {resetPinDialog.open && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setResetPinDialog({ open: false })} />
                     <div className="relative bg-primary-900 border border-white/10 rounded-2xl shadow-2xl w-full max-w-md p-8 animate-fade-in" onClick={e => e.stopPropagation()}>
                         <div className="flex justify-center mb-5">

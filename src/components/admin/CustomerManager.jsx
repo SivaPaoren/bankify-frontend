@@ -66,7 +66,7 @@ function ConfirmDialog({ action, customer, onConfirm, onCancel, loading }) {
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-primary-950/90 backdrop-blur-md animate-fade-in">
             <div className="bg-primary-900 border border-white/10 rounded-3xl shadow-2xl w-full max-w-md p-6 text-center relative overflow-hidden">
-                <div className={`absolute top-0 left-0 w-full h-1 bg-gradient-to-r ${cfg.bar}`} />
+                <div className={`absolute top-0 left-0 w-full h-1 bg-linear-to-r ${cfg.bar}`} />
                 <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 border ${cfg.ring}`}>
                     {cfg.icon}
                 </div>
@@ -215,7 +215,7 @@ export default function CustomerManager() {
                 </div>
                 <button
                     onClick={() => setShowModal(true)}
-                    className="flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-cyan-500/20 active:scale-95"
+                    className="flex items-center gap-2 bg-linear-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-cyan-500/20 active:scale-95"
                 >
                     <UserPlus size={20} /> Add Customer
                 </button>
@@ -238,7 +238,7 @@ export default function CustomerManager() {
             </div>
 
             {/* Toolbar */}
-            <div className="flex flex-col md:flex-row gap-3 items-start md:items-center bg-white/[0.03] border border-white/10 rounded-2xl px-4 py-3">
+            <div className="flex flex-col md:flex-row gap-3 items-start md:items-center bg-white/3 border border-white/10 rounded-2xl px-4 py-3">
                 {/* Search */}
                 <div className="flex items-center gap-3 bg-black/20 px-4 py-2.5 rounded-xl border border-white/10 focus-within:border-cyan-500 focus-within:bg-black/30 transition-all flex-1 min-w-0 group">
                     <Search size={18} className="text-primary-400 group-focus-within:text-cyan-400 transition-colors shrink-0" />
@@ -302,7 +302,7 @@ export default function CustomerManager() {
                                     {/* Customer name */}
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary-600 to-primary-800 flex items-center justify-center text-white border border-white/10 shadow-inner shrink-0">
+                                            <div className="w-9 h-9 rounded-full bg-linear-to-br from-primary-600 to-primary-800 flex items-center justify-center text-white border border-white/10 shadow-inner shrink-0">
                                                 <User size={16} />
                                             </div>
                                             <div>
@@ -463,7 +463,7 @@ export default function CustomerManager() {
                                     <option value="BUSINESS">Business</option>
                                 </select>
                             </div>
-                            <button type="submit" className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-blue-500/20 transition-all active:scale-[0.98]">
+                            <button type="submit" className="w-full bg-linear-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-blue-500/20 transition-all active:scale-[0.98]">
                                 Create Customer Profile
                             </button>
                         </form>
@@ -475,7 +475,7 @@ export default function CustomerManager() {
             <div className={`fixed inset-y-0 right-0 w-full md:w-[600px] bg-primary-950/95 backdrop-blur-xl border-l border-white/10 shadow-2xl transform transition-transform duration-500 z-50 flex flex-col ${showDrawer ? 'translate-x-0' : 'translate-x-full'}`}>
                 {selectedCustomer && (
                     <>
-                        <div className="p-6 border-b border-white/5 bg-gradient-to-r from-primary-900 to-primary-950 relative overflow-hidden shrink-0">
+                        <div className="p-6 border-b border-white/5 bg-linear-to-r from-primary-900 to-primary-950 relative overflow-hidden shrink-0">
                             <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none" />
                             <div className="flex justify-between items-start mb-4 relative z-10">
                                 <button onClick={() => setShowDrawer(false)} className="p-2 text-primary-400 hover:text-white hover:bg-white/5 rounded-xl transition-all">
@@ -504,7 +504,7 @@ export default function CustomerManager() {
                                             // But keeping alert for now as it's simple feedback
                                             alert(`Customer ID copied! \n${selectedCustomer.id}`);
                                         }}
-                                        className="px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-sm font-bold rounded-xl transition-all flex items-center gap-2 shadow-lg shadow-blue-500/20"
+                                        className="px-4 py-2 bg-linear-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-sm font-bold rounded-xl transition-all flex items-center gap-2 shadow-lg shadow-blue-500/20"
                                     >
                                         <Copy size={16} /> Copy ID to Open Account
                                     </button>

@@ -114,7 +114,7 @@ export default function AdminLayout() {
                 {/* Footer User Profile */}
                 <div className="p-4 border-t border-white/5 bg-black/20 backdrop-blur-sm">
                     <div className={`flex items-center gap-3 p-3 rounded-xl transition-all border border-white/5 hover:bg-white/5 ${collapsed ? 'justify-center' : ''}`}>
-                        <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-primary-600 to-cyan-500 flex items-center justify-center text-sm font-bold text-white shrink-0 shadow-lg ring-2 ring-white/10">
+                        <div className="w-10 h-10 rounded-full bg-linear-to-tr from-primary-600 to-cyan-500 flex items-center justify-center text-sm font-bold text-white shrink-0 shadow-lg ring-2 ring-white/10">
                             {user?.email?.[0]?.toUpperCase() || 'A'}
                         </div>
                         {!collapsed && (

@@ -26,20 +26,4 @@ export const initialTransactions = [
     { id: 'tx_005', date: new Date(Date.now() - 90000000).toISOString(), type: 'DEPOSIT', amount: 10000.00, currency: 'THB', status: 'SUCCESS', source: 'BANK-COUNTER', destination: '8822-0001', customerId: 101 },
 ];
 
-export const initialSystemSettings = {
-    bankName: 'Bankify',
-    supportEmail: 'support@bankify.com',
-    maintenanceMode: false,
-    defaultCurrency: 'THB',
-    supportedCurrencies: {
-        THB: true,
-        USD: true,
-        EUR: true,
-        GBP: false,
-        CHF: false
-    },
-    transactionLimits: {
-        dailyTransferLimit: 50000,
-        dailyWithdrawLimit: 20000
-    }
-};
+

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { transactionService } from '../../api';
 import Table from '../common/Table';
 import StatusBadge from '../common/StatusBadge';
@@ -21,7 +21,7 @@ export default function FinancialActions({ title, subtitle, accountId, service =
   const [toAccountId, setToAccountId] = useState('');
   const [bankId, setBankId] = useState('');
 
-  const fetchHistory = async () => {
+  const fetchHistory = useCallback(async () => {
     // If service uses 'getTransactions' (no arg), use that. 
     // If it relies on getTransactionsByAccount(id) (legacy), use that.
     // The new service structure favors getTransactions() for "me".
@@ -32,11 +32,11 @@ export default function FinancialActions({ title, subtitle, accountId, service =
     } catch (error) {
       console.error("Failed to fetch transactions", error);
     }
-  };
+  }, [accountId, service]);
 
   useEffect(() => {
     fetchHistory();
-  }, [accountId, service]);
+  }, [fetchHistory]);
 
   const handleTransaction = async (e) => {
     e.preventDefault();
