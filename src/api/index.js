@@ -214,18 +214,24 @@ export const adminService = {
             return getStorageData('bankify_clients', initialClients);
         }
     },
-    // 1.3 Create a new API client
-    createClient: async (name) => {
+    // 1.3 Approve a client
+    approveClient: async (clientId) => {
         try {
-            // Partners self-signup; admin then approves via PATCH /admin/partner-apps/{id}/approve
-            // There is no POST /admin/partner-apps, so creation is mocked here
-            return { id: Date.now(), name, apiKey: 'mock-key', status: 'PENDING' };
+            const response = await adminApi.patch(`/admin/partner-apps/${clientId}/approve`);
+            return response.data;
         } catch (_e) {
-            const clients = getStorageData('bankify_clients', initialClients);
-            const newClient = { id: Date.now(), name, apiKey: `test_${Date.now()}`, status: 'ACTIVE' };
-            clients.push(newClient);
-            setStorageData('bankify_clients', clients);
-            return newClient;
+            console.warn("Mocking approve client");
+            return { success: true };
+        }
+    },
+    // 1.3.1 Activate a client
+    activateClient: async (clientId) => {
+        try {
+            const response = await adminApi.patch(`/admin/partner-apps/${clientId}/activate`);
+            return response.data;
+        } catch (_e) {
+            console.warn("Mocking activate client");
+            return { success: true };
         }
     },
     // 1.4 Disable a client
@@ -244,7 +250,7 @@ export const adminService = {
             const response = await adminApi.get('/admin/security/key-rotations');
             return response.data;
         } catch (_e) {
-            console.warn("Mocking list rotation requests", e);
+            console.warn("Mocking list rotation requests", _e);
             return []; // Return empty if failing, or mock data
         }
     },

@@ -1,12 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { adminService } from '../../api';
-import { Shield, Plus, Power, CheckCircle, XCircle } from 'lucide-react';
+import { Shield, Power, CheckCircle, XCircle, Clock } from 'lucide-react';
 
 export default function ClientManager() {
     const [clients, setClients] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [showCreateModal, setShowCreateModal] = useState(false);
-    const [newClientName, setNewClientName] = useState('');
 
     const fetchClients = async () => {
         setLoading(true);
@@ -24,24 +22,18 @@ export default function ClientManager() {
         fetchClients();
     }, []);
 
-    const handleToggleStatus = async (clientId, currentStatus) => {
+    const handleAction = async (clientId, currentStatus) => {
         try {
-            await adminService.disableClient(clientId);
+            if (currentStatus === 'PENDING') {
+                await adminService.approveClient(clientId);
+            } else if (currentStatus === 'ACTIVE') {
+                await adminService.disableClient(clientId);
+            } else {
+                await adminService.activateClient(clientId);
+            }
             fetchClients();
         } catch (e) {
-            alert("Failed to update status");
-        }
-    };
-
-    const handleCreateClient = async (e) => {
-        e.preventDefault();
-        try {
-            await adminService.createClient(newClientName);
-            setNewClientName('');
-            setShowCreateModal(false);
-            fetchClients();
-        } catch (e) {
-            alert("Failed to create client");
+            alert(`Failed to update status for client ${clientId}`);
         }
     };
 
@@ -50,37 +42,9 @@ export default function ClientManager() {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-bold text-white tracking-tight">API Clients</h1>
-                    <p className="text-primary-300 mt-1">Manage external access and API keys.</p>
+                    <p className="text-primary-300 mt-1">Manage external access and evaluate incoming registration requests.</p>
                 </div>
-                <button
-                    onClick={() => setShowCreateModal(!showCreateModal)}
-                    className="flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-emerald-500/20 active:scale-95"
-                >
-                    <Plus size={20} />
-                    New Client
-                </button>
             </div>
-
-            {showCreateModal && (
-                <div className="bg-white/5 backdrop-blur-xl p-6 rounded-3xl shadow-2xl border border-white/10 animate-page relative overflow-hidden">
-                    <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl -mr-10 -mt-10"></div>
-
-                    <h3 className="font-bold text-white mb-4 relative z-10">Register New Client Application</h3>
-                    <form onSubmit={handleCreateClient} className="flex gap-4 relative z-10">
-                        <input
-                            type="text"
-                            placeholder="Client Application Name"
-                            value={newClientName}
-                            onChange={(e) => setNewClientName(e.target.value)}
-                            className="flex-1 bg-black/20 border border-white/10 rounded-xl px-4 py-3 outline-none text-white placeholder:text-primary-400 focus:border-emerald-500 focus:bg-black/40 transition-all focus:ring-1 focus:ring-emerald-500/50"
-                            required
-                        />
-                        <button type="submit" className="bg-emerald-500 text-white font-bold px-6 rounded-xl hover:bg-emerald-400 transition-colors shadow-lg">
-                            Create
-                        </button>
-                    </form>
-                </div>
-            )}
 
             <div className="bg-white/5 backdrop-blur-md rounded-3xl shadow-xl border border-white/10 overflow-hidden">
                 <div className="overflow-x-auto">
@@ -112,22 +76,28 @@ export default function ClientManager() {
                                     <td className="px-6 py-4">
                                         <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide border ${row.status === 'ACTIVE'
                                             ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                                            : 'bg-red-500/10 text-red-400 border-red-500/20'
+                                            : row.status === 'PENDING'
+                                                ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                                                : 'bg-red-500/10 text-red-400 border-red-500/20'
                                             }`}>
-                                            {row.status === 'ACTIVE' ? <CheckCircle size={10} /> : <XCircle size={10} />}
+                                            {row.status === 'ACTIVE' && <CheckCircle size={10} />}
+                                            {row.status === 'PENDING' && <Clock size={10} />}
+                                            {row.status !== 'ACTIVE' && row.status !== 'PENDING' && <XCircle size={10} />}
                                             {row.status}
                                         </span>
                                     </td>
                                     <td className="px-6 py-4">
                                         <button
-                                            onClick={() => handleToggleStatus(row.id, row.status)}
+                                            onClick={() => handleAction(row.id, row.status)}
                                             className={`p-2 rounded-xl transition-all ${row.status === 'ACTIVE'
                                                 ? 'text-primary-300 hover:text-red-400 hover:bg-red-500/10'
-                                                : 'text-primary-300 hover:text-emerald-400 hover:bg-emerald-500/10'
+                                                : row.status === 'PENDING'
+                                                    ? 'text-primary-300 hover:text-emerald-400 hover:bg-emerald-500/10'
+                                                    : 'text-primary-300 hover:text-emerald-400 hover:bg-emerald-500/10'
                                                 }`}
-                                            title={row.status === 'ACTIVE' ? "Revoke Access" : "Grant Access"}
+                                            title={row.status === 'ACTIVE' ? "Revoke Access" : row.status === 'PENDING' ? "Approve Client" : "Grant Access"}
                                         >
-                                            <Power size={16} />
+                                            {row.status === 'PENDING' ? <CheckCircle size={16} /> : <Power size={16} />}
                                         </button>
                                     </td>
                                 </tr>

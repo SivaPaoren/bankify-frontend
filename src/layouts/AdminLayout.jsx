@@ -14,7 +14,6 @@ import {
     FileText,
     Wallet,
     History,
-    Settings,
     ChevronRight,
     Key
 } from 'lucide-react';
@@ -44,7 +43,6 @@ export default function AdminLayout() {
         { to: '/admin/transactions', label: 'Transactions', icon: History },
         { to: '/admin/accounts', label: 'Accounts', icon: Wallet },
         { to: '/admin/customers', label: 'Customers', icon: Users },
-        { to: '/admin/settings', label: 'System Settings', icon: Settings },
     ];
 
     const navLinkClass = ({ isActive }) =>

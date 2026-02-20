@@ -9,7 +9,6 @@ import CustomerManager from "./components/admin/CustomerManager";
 import AccountManager from "./components/admin/AccountManager";
 import TransactionManager from "./components/admin/TransactionManager";
 import AuditLogs from "./pages/admin/AuditLogs";
-import SystemSettings from "./pages/admin/SystemSettings";
 import SecurityApprovals from "./pages/admin/SecurityApprovals";
 
 // Client Components
@@ -82,7 +81,6 @@ export default function AppRouter() {
         <Route path="accounts" element={<AccountManager />} />
         <Route path="transactions" element={<TransactionManager />} />
         <Route path="audit-logs" element={<AuditLogs />} />
-        <Route path="settings" element={<SystemSettings />} />
         <Route path="approvals" element={<SecurityApprovals />} />
       </Route>
 

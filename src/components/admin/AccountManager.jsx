@@ -14,6 +14,9 @@ export default function AccountManager() {
     const [confirmDialog, setConfirmDialog] = useState({
         open: false, accountId: null, accountNumber: null, customerName: null, newStatus: null
     });
+    const [resetPinDialog, setResetPinDialog] = useState({
+        open: false, accountId: null, accountNumber: null, newPin: ''
+    });
     const [newAccount, setNewAccount] = useState({
         customerId: '', accountType: 'SAVINGS', currency: 'THB', pin: '123456'
     });
@@ -78,6 +81,18 @@ export default function AccountManager() {
         } catch (error) {
             console.error("Status update failed", error);
             alert("Failed to update account status.");
+        }
+    };
+
+    const handleResetPin = async (e) => {
+        e.preventDefault();
+        try {
+            await adminService.resetAtmPin(resetPinDialog.accountId, resetPinDialog.newPin);
+            setResetPinDialog({ open: false, accountId: null, accountNumber: null, newPin: '' });
+            alert("ATM PIN reset successfully.");
+        } catch (error) {
+            console.error("Reset PIN failed", error);
+            alert("Failed to reset ATM PIN.");
         }
     };
 
@@ -404,6 +419,12 @@ export default function AccountManager() {
                                     <ArrowRight size={24} />
                                 </button>
                                 <div className="flex gap-2">
+                                    <button
+                                        onClick={() => setResetPinDialog({ open: true, accountId: selectedAccount.id, accountNumber: selectedAccount.accountNumber, newPin: '123456' })}
+                                        className="flex items-center gap-2 px-4 py-2 bg-purple-500/10 text-purple-400 border border-purple-500/20 rounded-xl font-bold text-sm hover:bg-purple-500/20 transition-colors"
+                                    >
+                                        <AlertCircle size={16} /> Reset PIN
+                                    </button>
                                     {selectedAccount.status === 'ACTIVE' ? (
                                         <button
                                             onClick={() => openConfirm(selectedAccount, 'FROZEN')}
@@ -526,6 +547,51 @@ export default function AccountManager() {
                     </div>
                 );
             })()}
+
+            {/* ── Reset PIN Dialog ────────────────────────────────── */}
+            {resetPinDialog.open && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setResetPinDialog({ open: false })} />
+                    <div className="relative bg-primary-900 border border-white/10 rounded-2xl shadow-2xl w-full max-w-md p-8 animate-fade-in" onClick={e => e.stopPropagation()}>
+                        <div className="flex justify-center mb-5">
+                            <span className="text-5xl">🔐</span>
+                        </div>
+                        <h2 className="text-xl font-bold text-white text-center mb-2">Reset ATM PIN</h2>
+                        <p className="text-primary-300 text-center text-sm mb-6">
+                            Enter the new 6-digit ATM PIN for account <span className="font-mono text-primary-100">{resetPinDialog.accountNumber}</span>.
+                        </p>
+                        <form onSubmit={handleResetPin} className="space-y-6">
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-bold uppercase text-primary-300 tracking-wider">New PIN</label>
+                                <input
+                                    type="text"
+                                    className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-purple-500 transition-all placeholder:text-primary-600 font-mono text-center text-xl tracking-widest"
+                                    placeholder="123456"
+                                    value={resetPinDialog.newPin}
+                                    onChange={e => setResetPinDialog({ ...resetPinDialog, newPin: e.target.value.replace(/\D/g, '').slice(0, 6) })}
+                                    maxLength="6"
+                                    required
+                                />
+                            </div>
+                            <div className="flex gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => setResetPinDialog({ open: false })}
+                                    className="flex-1 py-3 rounded-xl border border-white/10 text-primary-200 font-semibold hover:bg-white/5 transition-all"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="flex-1 py-3 rounded-xl text-white font-bold shadow-lg transition-all active:scale-[0.98] bg-purple-600 hover:bg-purple-500 shadow-purple-500/30"
+                                >
+                                    Reset PIN
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
