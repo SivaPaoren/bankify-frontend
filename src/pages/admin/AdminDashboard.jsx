@@ -9,7 +9,8 @@ import {
     ArrowUpRight,
     ArrowDownRight,
     Clock,
-    ShieldAlert
+    ShieldAlert,
+    Key
 } from 'lucide-react';
 import {
     AreaChart,
@@ -30,6 +31,7 @@ export default function AdminDashboard() {
         failedTransactions: 3
     });
     const [recentAlerts, setRecentAlerts] = useState([]);
+    const [pendingActions, setPendingActions] = useState([]);
 
     useEffect(() => {
         adminService.getCustomers().then(data => {
@@ -45,6 +47,28 @@ export default function AdminDashboard() {
                 .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
                 .slice(0, 5);
             setRecentAlerts(alerts);
+        }).catch(console.error);
+
+        // Fetch pending actions (Partner Apps + Rotations)
+        Promise.all([
+            adminService.getClients(),
+            adminService.listRotationRequests()
+        ]).then(([clientsData, rotationsData]) => {
+            const clientList = Array.isArray(clientsData) ? clientsData : (clientsData.content || []);
+            const pendingCl = clientList.filter(c => c.status === 'PENDING').map(c => ({
+                id: c.id,
+                title: 'New Partner App',
+                desc: c.name,
+                type: 'app'
+            }));
+            const rots = Array.isArray(rotationsData) ? rotationsData : [];
+            const pendingRot = rots.map(r => ({
+                id: r.id,
+                title: 'Key Rotation Request',
+                desc: `App ID: ${String(r.partnerAppId).substring(0, 8)}`,
+                type: 'key'
+            }));
+            setPendingActions([...pendingCl, ...pendingRot]);
         }).catch(console.error);
     }, []);
 
@@ -198,69 +222,109 @@ export default function AdminDashboard() {
                     </div>
                 </div>
 
-                {/* Recent Security Events from real audit log */}
-                <div className="bg-white/5 p-6 rounded-3xl border border-white/10 backdrop-blur-md shadow-xl flex flex-col">
-                    <h3 className="text-lg font-bold text-white mb-1 flex items-center gap-2">
-                        <ShieldAlert size={20} className="text-orange-400" />
-                        Recent Security Events
-                    </h3>
-                    <p className="text-xs text-primary-400 mb-5">System & partner actions · live from audit log</p>
-
-                    <div className="space-y-3 flex-1 overflow-y-auto custom-scrollbar pr-1">
-                        {recentAlerts.length === 0 ? (
-                            <div className="flex-1 flex flex-col items-center justify-center py-8 text-primary-500">
-                                <ShieldAlert size={28} className="mb-2 opacity-40" />
-                                <p className="text-sm">No recent alerts</p>
-                            </div>
+                {/* Right Column Stack */}
+                <div className="flex flex-col gap-6">
+                    {/* Pending Actions Widget */}
+                    <div className="bg-white/5 p-6 rounded-3xl border border-white/10 backdrop-blur-md shadow-xl flex flex-col">
+                        <div className="flex justify-between items-start mb-4">
+                            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                                <Key size={20} className="text-amber-400" />
+                                Pending Actions
+                            </h3>
+                            {pendingActions.length > 0 && (
+                                <span className="bg-amber-500 text-black text-xs font-bold px-2 py-0.5 rounded-full animate-pulse">
+                                    {pendingActions.length}
+                                </span>
+                            )}
+                        </div>
+                        {pendingActions.length === 0 ? (
+                            <div className="py-6 text-center text-primary-500 text-sm italic">System clear. No pending approvals.</div>
                         ) : (
-                            recentAlerts.map((event, i) => {
-                                const isError = event.action?.includes('FAIL') || event.action?.includes('ERROR');
-                                const relTime = event.createdAt
-                                    ? (() => {
-                                        const diff = Date.now() - new Date(event.createdAt);
-                                        const mins = Math.floor(diff / 60000);
-                                        const hrs = Math.floor(diff / 3600000);
-                                        if (mins < 60) return `${mins}m ago`;
-                                        if (hrs < 24) return `${hrs}h ago`;
-                                        return new Date(event.createdAt).toLocaleDateString();
-                                    })()
-                                    : '—';
-                                return (
-                                    <div
-                                        key={event.id ?? i}
-                                        onClick={() => navigate('/admin/audit-logs')}
-                                        className="group flex items-start gap-3 p-3.5 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/10 transition-all cursor-pointer"
-                                    >
-                                        <div className={`mt-0.5 p-2 rounded-xl border group-hover:scale-110 transition-transform ${isError
-                                            ? 'bg-red-500/10 text-red-400 border-red-500/10'
-                                            : 'bg-orange-500/10 text-orange-400 border-orange-500/10'
-                                            }`}>
-                                            <AlertTriangle size={14} />
+                            <div className="space-y-3">
+                                {pendingActions.slice(0, 3).map((action, i) => (
+                                    <div key={i} className="flex justify-between items-center p-3 rounded-xl bg-black/20 border border-white/5 hover:bg-white/5 transition-colors group cursor-pointer" onClick={() => navigate('/admin/clients')}>
+                                        <div>
+                                            <p className="text-sm font-bold text-white group-hover:text-cyan-300 transition-colors">{action.title}</p>
+                                            <p className="text-xs text-primary-400 font-mono mt-0.5">{action.desc}</p>
                                         </div>
-                                        <div className="min-w-0">
-                                            <p className="text-sm font-bold text-slate-100 group-hover:text-white transition-colors truncate">
-                                                {event.action?.replace(/_/g, ' ')}
-                                            </p>
-                                            <p className="text-xs text-primary-300 mt-0.5 truncate">
-                                                {event.actorType} · {event.actorId ?? '—'}
-                                            </p>
-                                            <div className="flex items-center gap-1.5 mt-1.5 text-[10px] text-primary-400 font-mono">
-                                                <Clock size={9} />
-                                                <span>{relTime}</span>
-                                            </div>
+                                        <div className="text-cyan-400 bg-cyan-500/10 p-1.5 rounded-lg group-hover:bg-cyan-500/20 transition-colors">
+                                            <ArrowUpRight size={16} />
                                         </div>
                                     </div>
-                                );
-                            })
+                                ))}
+                                {pendingActions.length > 3 && (
+                                    <button onClick={() => navigate('/admin/clients')} className="w-full text-xs text-primary-300 hover:text-white pt-2 font-bold tracking-wider">
+                                        + {pendingActions.length - 3} MORE ACTIONS
+                                    </button>
+                                )}
+                            </div>
                         )}
                     </div>
 
-                    <button
-                        onClick={() => navigate('/admin/audit-logs')}
-                        className="w-full mt-5 py-3 rounded-xl border border-white/10 text-primary-200 text-sm font-bold hover:bg-white/5 hover:text-white transition-all shadow-lg"
-                    >
-                        View All Audit Logs
-                    </button>
+                    {/* Recent Security Events from real audit log */}
+                    <div className="bg-white/5 p-6 rounded-3xl border border-white/10 backdrop-blur-md shadow-xl flex flex-col flex-1 min-h-[300px]">
+                        <h3 className="text-lg font-bold text-white mb-1 flex items-center gap-2">
+                            <ShieldAlert size={20} className="text-orange-400" />
+                            Recent Security Events
+                        </h3>
+                        <p className="text-xs text-primary-400 mb-5">System & partner actions · live from audit log</p>
+
+                        <div className="space-y-3 flex-1 overflow-y-auto custom-scrollbar pr-1">
+                            {recentAlerts.length === 0 ? (
+                                <div className="flex-1 flex flex-col items-center justify-center py-8 text-primary-500">
+                                    <ShieldAlert size={28} className="mb-2 opacity-40" />
+                                    <p className="text-sm">No recent alerts</p>
+                                </div>
+                            ) : (
+                                recentAlerts.map((event, i) => {
+                                    const isError = event.action?.includes('FAIL') || event.action?.includes('ERROR');
+                                    const relTime = event.createdAt
+                                        ? (() => {
+                                            const diff = Date.now() - new Date(event.createdAt);
+                                            const mins = Math.floor(diff / 60000);
+                                            const hrs = Math.floor(diff / 3600000);
+                                            if (mins < 60) return `${mins}m ago`;
+                                            if (hrs < 24) return `${hrs}h ago`;
+                                            return new Date(event.createdAt).toLocaleDateString();
+                                        })()
+                                        : '—';
+                                    return (
+                                        <div
+                                            key={event.id ?? i}
+                                            onClick={() => navigate('/admin/audit-logs')}
+                                            className="group flex items-start gap-3 p-3.5 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/10 transition-all cursor-pointer"
+                                        >
+                                            <div className={`mt-0.5 p-2 rounded-xl border group-hover:scale-110 transition-transform ${isError
+                                                ? 'bg-red-500/10 text-red-400 border-red-500/10'
+                                                : 'bg-orange-500/10 text-orange-400 border-orange-500/10'
+                                                }`}>
+                                                <AlertTriangle size={14} />
+                                            </div>
+                                            <div className="min-w-0">
+                                                <p className="text-sm font-bold text-slate-100 group-hover:text-white transition-colors truncate">
+                                                    {event.action?.replace(/_/g, ' ')}
+                                                </p>
+                                                <p className="text-xs text-primary-300 mt-0.5 truncate">
+                                                    {event.actorType} · {event.actorId ?? '—'}
+                                                </p>
+                                                <div className="flex items-center gap-1.5 mt-1.5 text-[10px] text-primary-400 font-mono">
+                                                    <Clock size={9} />
+                                                    <span>{relTime}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })
+                            )}
+                        </div>
+
+                        <button
+                            onClick={() => navigate('/admin/audit-logs')}
+                            className="w-full mt-5 py-3 rounded-xl border border-white/10 text-primary-200 text-sm font-bold hover:bg-white/5 hover:text-white transition-all shadow-lg"
+                        >
+                            View All Audit Logs
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

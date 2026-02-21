@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { adminService } from '../../api';
-import { Shield, Power, CheckCircle, XCircle, Clock, Search, Filter, RefreshCw, Key } from 'lucide-react';
+import { Shield, Power, CheckCircle, XCircle, Clock, Search, Filter, RefreshCw, Key, Eye, EyeOff, Lock, Activity, AlertTriangle, X, Trash2, Globe, BarChart3, Calendar } from 'lucide-react';
 import FilterDropdown from '../common/FilterDropdown';
 
 export default function ClientManager() {
@@ -11,6 +11,11 @@ export default function ClientManager() {
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('ALL');
     const [newKeyDialog, setNewKeyDialog] = useState({ open: false, key: '' });
+
+    // Dossier Slide-Over
+    const [selectedClient, setSelectedClient] = useState(null);
+    const [revealState, setRevealState] = useState('hidden'); // hidden, prompting, revealed
+    const [adminPassword, setAdminPassword] = useState('');
 
     const fetchClients = async () => {
         try {
@@ -98,6 +103,23 @@ export default function ClientManager() {
         { key: 'PENDING', label: 'Pending', cls: 'border-amber-500/20 text-amber-400', activeCls: 'bg-amber-500/20 border-amber-500/40 text-amber-300' },
         { key: 'DISABLED', label: 'Disabled', cls: 'border-red-500/20 text-red-400', activeCls: 'bg-red-500/20 border-red-500/40 text-red-300' },
     ];
+
+    const handleRevealSecret = (e) => {
+        e.preventDefault();
+        // Mock MFA / Password Validation
+        if (adminPassword.length > 3) {
+            setRevealState('revealed');
+            setAdminPassword('');
+        } else {
+            alert("Invalid password");
+        }
+    };
+
+    const closeDossier = () => {
+        setSelectedClient(null);
+        setRevealState('hidden');
+        setAdminPassword('');
+    };
 
     return (
         <div className="space-y-6">
@@ -195,7 +217,11 @@ export default function ClientManager() {
                                 </thead>
                                 <tbody className="divide-y divide-white/5">
                                     {filteredClients.length > 0 ? filteredClients.map((row) => (
-                                        <tr key={row.id} className="hover:bg-white/5 transition-colors group">
+                                        <tr
+                                            key={row.id}
+                                            className="hover:bg-white/5 transition-colors group cursor-pointer"
+                                            onClick={() => setSelectedClient(row)}
+                                        >
                                             <td className="px-6 py-4">
                                                 <div className="flex items-center gap-3">
                                                     <div className="w-9 h-9 rounded-xl bg-linear-to-br from-orange-500/20 to-amber-500/20 text-orange-400 border border-orange-500/10 flex items-center justify-center font-bold shadow-inner">
@@ -224,7 +250,10 @@ export default function ClientManager() {
                                             </td>
                                             <td className="px-6 py-4">
                                                 <button
-                                                    onClick={() => handleAction(row.id, row.status)}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        handleAction(row.id, row.status);
+                                                    }}
                                                     className={`p-2 rounded-xl transition-all ${row.status === 'ACTIVE'
                                                         ? 'text-primary-300 hover:text-red-400 hover:bg-red-500/10'
                                                         : 'text-primary-300 hover:text-emerald-400 hover:bg-emerald-500/10'
@@ -353,9 +382,180 @@ export default function ClientManager() {
                         </div>
                     </div>
                 </div>
-            )
-            }
+            )}
 
-        </div >
+            {/* PARTNER DOSSIER SLIDE-OVER */}
+            {selectedClient && (
+                <>
+                    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity" onClick={closeDossier}></div>
+                    <div className="fixed top-0 right-0 h-full w-full max-w-md bg-primary-950 border-l border-white/10 shadow-2xl z-50 transform transition-transform flex flex-col pt-16 md:pt-0">
+
+                        {/* Dossier Header */}
+                        <div className="p-6 border-b border-white/5 bg-[#0b1121] flex justify-between items-start">
+                            <div>
+                                <div className="flex items-center gap-2 mb-2">
+                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${selectedClient.status === 'ACTIVE' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : selectedClient.status === 'PENDING' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
+                                        {selectedClient.status}
+                                    </span>
+                                    <span className="text-xs text-primary-400 font-mono">ID: {selectedClient.id?.substring(0, 8)}</span>
+                                </div>
+                                <h2 className="text-2xl font-bold text-white tracking-tight">{selectedClient.name}</h2>
+                            </div>
+                            <button onClick={closeDossier} className="text-primary-400 hover:text-white p-2 hover:bg-white/5 rounded-full transition-colors">
+                                <X size={20} />
+                            </button>
+                        </div>
+
+                        {/* Dossier Body */}
+                        <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar relative">
+                            {/* API Secret Section */}
+                            <div className="space-y-3">
+                                <h3 className="text-xs font-bold uppercase tracking-widest text-primary-400 flex items-center gap-2">
+                                    <Key size={14} /> Production API Secret
+                                </h3>
+
+                                {revealState === 'hidden' && (
+                                    <div className="flex items-center justify-between bg-black/30 border border-white/10 rounded-xl p-4">
+                                        <div className="text-2xl tracking-widest text-primary-500 font-mono select-none">•••••••••••••••••••••</div>
+                                        <button
+                                            onClick={() => setRevealState('prompting')}
+                                            className="p-2 text-cyan-400 hover:bg-cyan-500/10 rounded-lg transition-colors"
+                                            title="Reveal Secret"
+                                        >
+                                            <Eye size={18} />
+                                        </button>
+                                    </div>
+                                )}
+
+                                {revealState === 'prompting' && (
+                                    <div className="bg-primary-900 border border-cyan-500/30 rounded-xl p-4 animate-fade-in shadow-lg">
+                                        <p className="text-xs text-cyan-300 font-bold mb-3 flex items-center gap-2">
+                                            <Lock size={14} /> Admin Verification Required
+                                        </p>
+                                        <form onSubmit={handleRevealSecret} className="flex gap-2">
+                                            <input
+                                                type="password"
+                                                autoFocus
+                                                placeholder="Enter admin password..."
+                                                className="flex-1 bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-cyan-500 transition-colors"
+                                                value={adminPassword}
+                                                onChange={e => setAdminPassword(e.target.value)}
+                                            />
+                                            <button
+                                                type="submit"
+                                                className="px-4 py-2 bg-cyan-500 text-black font-bold text-sm rounded-lg hover:bg-cyan-400 transition-colors"
+                                            >
+                                                Verify
+                                            </button>
+                                        </form>
+                                        <button
+                                            onClick={() => setRevealState('hidden')}
+                                            className="text-primary-400 text-xs mt-3 hover:text-white"
+                                        >
+                                            Cancel
+                                        </button>
+                                    </div>
+                                )}
+
+                                {revealState === 'revealed' && (
+                                    <div className="flex items-start justify-between bg-amber-500/5 border border-amber-500/20 rounded-xl p-4 animate-fade-in">
+                                        <div>
+                                            <div className="text-amber-400/80 text-[10px] uppercase font-bold tracking-wider mb-1">Sensitive Data Revealed</div>
+                                            <code className="text-white font-mono text-sm break-all">
+                                                sk_live_{Math.random().toString(36).substring(2, 15)}...
+                                            </code>
+                                        </div>
+                                        <button
+                                            onClick={() => setRevealState('hidden')}
+                                            className="p-2 text-primary-400 hover:bg-white/5 rounded-lg transition-colors flex-shrink-0"
+                                            title="Hide Secret"
+                                        >
+                                            <EyeOff size={18} />
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Usage Quotas */}
+                            <div className="space-y-3">
+                                <h3 className="text-xs font-bold uppercase tracking-widest text-primary-400 flex items-center gap-2">
+                                    <BarChart3 size={14} /> Usage & Quotas (24h)
+                                </h3>
+                                <div className="bg-white/5 border border-white/5 rounded-xl p-5">
+                                    <div className="flex justify-between items-end mb-2">
+                                        <div>
+                                            <div className="text-2xl font-bold text-white">45,200</div>
+                                            <div className="text-xs text-primary-400 mt-1">API Calls Made</div>
+                                        </div>
+                                        <div className="text-right">
+                                            <div className="text-sm font-medium text-cyan-400">45.2%</div>
+                                            <div className="text-[10px] text-primary-500 uppercase tracking-widest mt-1">of 100k Limit</div>
+                                        </div>
+                                    </div>
+                                    <div className="w-full bg-black/40 rounded-full h-2 mt-4 overflow-hidden">
+                                        <div className="bg-cyan-500 h-2 rounded-full" style={{ width: '45.2%' }}></div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Webhook Health */}
+                            <div className="space-y-3">
+                                <h3 className="text-xs font-bold uppercase tracking-widest text-primary-400 flex items-center gap-2">
+                                    <Globe size={14} /> Webhook Health
+                                </h3>
+                                <div className="bg-white/5 border border-white/5 rounded-xl p-5 flex items-start gap-4">
+                                    <div className={`p-2.5 rounded-lg ${selectedClient.status === 'ACTIVE' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-orange-500/10 text-orange-400'}`}>
+                                        {selectedClient.status === 'ACTIVE' ? <Activity size={20} /> : <AlertTriangle size={20} />}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <span className={`text-sm font-bold ${selectedClient.status === 'ACTIVE' ? 'text-emerald-400' : 'text-orange-400'}`}>
+                                                {selectedClient.status === 'ACTIVE' ? '200 OK (Healthy)' : '503 Service Unavailable'}
+                                            </span>
+                                        </div>
+                                        <p className="text-xs text-primary-400 font-mono truncate" title="https://api.partner.com/webhooks/bankify">
+                                            https://api.partner.com/webhooks/bankify
+                                        </p>
+                                        <div className="text-[10px] text-primary-500 mt-2">Last ping: 2 mins ago</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* API Key Lifecycle */}
+                            <div className="space-y-3">
+                                <h3 className="text-xs font-bold uppercase tracking-widest text-primary-400 flex items-center gap-2">
+                                    <Clock size={14} /> Lifecycle
+                                </h3>
+                                <div className="bg-white/5 border border-white/5 rounded-xl p-4 flex justify-between items-center text-sm">
+                                    <span className="text-primary-300">Last Used</span>
+                                    <span className="text-white font-mono">{new Date().toLocaleString()}</span>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        {/* Dossier Footer / Kill Switch */}
+                        <div className="p-6 border-t border-white/5 bg-black/20">
+                            {selectedClient.status === 'ACTIVE' ? (
+                                <button
+                                    onClick={() => handleAction(selectedClient.id, 'ACTIVE')}
+                                    className="w-full flex items-center justify-center gap-2 py-3.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 hover:border-red-500/40 rounded-xl font-bold transition-all"
+                                >
+                                    <Power size={18} /> Emergency Kill Switch
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={() => handleAction(selectedClient.id, selectedClient.status)}
+                                    className="w-full flex items-center justify-center gap-2 py-3.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 hover:border-emerald-500/40 rounded-xl font-bold transition-all"
+                                >
+                                    <CheckCircle size={18} /> Restore Client Access
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </>
+            )}
+
+        </div>
     );
 }

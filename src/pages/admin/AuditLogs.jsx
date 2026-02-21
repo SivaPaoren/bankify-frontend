@@ -48,6 +48,9 @@ const ACTION_COLOR = {
   CUSTOMER_CLOSE: 'text-red-300 bg-red-500/10 border-red-500/20',
   PARTNER_ROTATION_APPROVED: 'text-purple-300 bg-purple-500/10 border-purple-500/20',
   PARTNER_ROTATION_REJECTED: 'text-red-300 bg-red-500/10 border-red-500/20',
+  PARTNER_APP_APPROVED: 'text-emerald-300 bg-emerald-500/10 border-emerald-500/20',
+  PARTNER_APP_DISABLED: 'text-red-300 bg-red-500/10 border-red-500/20',
+  PARTNER_APP_ACTIVATED: 'text-teal-300 bg-teal-500/10 border-teal-500/20',
 };
 
 const toStartCase = (str) =>
@@ -76,6 +79,9 @@ const ACTION_FLAT_OPTIONS = [
   { key: 'TRANSACTION_TRANSFER', label: 'Transfer' },
   { key: 'PARTNER_ROTATION_APPROVED', label: 'Approve Rotation' },
   { key: 'PARTNER_ROTATION_REJECTED', label: 'Reject Rotation' },
+  { key: 'PARTNER_APP_APPROVED', label: 'Approve Partner App' },
+  { key: 'PARTNER_APP_DISABLED', label: 'Disable Partner App' },
+  { key: 'PARTNER_APP_ACTIVATED', label: 'Reactivate Partner App' },
 ];
 
 const ACTOR_OPTIONS = [
