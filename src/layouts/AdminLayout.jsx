@@ -36,14 +36,33 @@ export default function AdminLayout() {
         return path.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
     };
 
-    const navItems = [
-        { to: '/admin', end: true, label: 'Dashboard', icon: LayoutDashboard },
-        { to: '/admin/clients', label: 'API Clients', icon: Shield },
-        { to: '/admin/audit-logs', label: 'Audit Logs', icon: FileText },
-        { to: '/admin/transactions', label: 'Transactions', icon: History },
-        { to: '/admin/ledger', label: 'Master Ledger', icon: BookOpen },
-        { to: '/admin/accounts', label: 'Accounts', icon: Wallet },
-        { to: '/admin/customers', label: 'Customers', icon: Users },
+    const navGroups = [
+        {
+            items: [
+                { to: '/admin', end: true, label: 'Dashboard', icon: LayoutDashboard },
+            ]
+        },
+        {
+            title: 'Core Banking',
+            items: [
+                { to: '/admin/customers', label: 'Customers', icon: Users },
+                { to: '/admin/accounts', label: 'Accounts', icon: Wallet },
+                { to: '/admin/transactions', label: 'Transactions', icon: History },
+            ]
+        },
+        {
+            title: 'Ledger & Compliance',
+            items: [
+                { to: '/admin/ledger', label: 'Master Ledger', icon: BookOpen },
+                { to: '/admin/audit-logs', label: 'Audit Logs', icon: FileText },
+            ]
+        },
+        {
+            title: 'Developer Platform',
+            items: [
+                { to: '/admin/clients', label: 'API Clients', icon: Shield },
+            ]
+        }
     ];
 
     const navLinkClass = ({ isActive }) =>
@@ -84,32 +103,39 @@ export default function AdminLayout() {
                 </div>
 
                 {/* Navigation */}
-                <div className="flex-1 overflow-y-auto py-8 px-4 space-y-2 custom-scrollbar">
-                    {!collapsed && (
-                        <p className="px-4 mb-4 text-[10px] font-bold uppercase tracking-widest text-primary-400/60">
-                            Main Menu
-                        </p>
-                    )}
-                    <nav className="space-y-1">
-                        {navItems.map((item) => (
-                            <NavLink
-                                key={item.to}
-                                to={item.to}
-                                end={item.end}
-                                className={navLinkClass}
-                            >
-                                {({ isActive }) => (
-                                    <>
-                                        <item.icon size={20} className={`transition-colors duration-300 ${isActive ? 'text-white' : 'text-primary-400 group-hover:text-cyan-300'}`} />
-                                        {!collapsed && <span className="tracking-wide">{item.label}</span>}
-                                        {isActive && !collapsed && (
-                                            <div className="absolute right-3 w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.5)]"></div>
+                <div className="flex-1 overflow-y-auto py-8 px-4 space-y-6 custom-scrollbar">
+                    {navGroups.map((group, groupIdx) => (
+                        <div key={groupIdx} className="space-y-1">
+                            {group.title && !collapsed && (
+                                <p className="px-4 mb-3 text-[10px] font-bold uppercase tracking-widest text-primary-400/60">
+                                    {group.title}
+                                </p>
+                            )}
+                            {group.title && collapsed && (
+                                <div className="h-px bg-white/5 mx-4 my-4" />
+                            )}
+                            <nav className="space-y-1">
+                                {group.items.map((item) => (
+                                    <NavLink
+                                        key={item.to}
+                                        to={item.to}
+                                        end={item.end}
+                                        className={navLinkClass}
+                                    >
+                                        {({ isActive }) => (
+                                            <>
+                                                <item.icon size={20} className={`transition-all duration-300 ${isActive ? 'text-white' : 'text-primary-400 group-hover:text-cyan-300 group-hover:translate-x-1'}`} />
+                                                {!collapsed && <span className="tracking-wide">{item.label}</span>}
+                                                {isActive && !collapsed && (
+                                                    <div className="absolute right-3 w-1.5 h-1.5 rounded-full bg-white shadow-[0_0_8px_rgba(255,255,255,0.5)]"></div>
+                                                )}
+                                            </>
                                         )}
-                                    </>
-                                )}
-                            </NavLink>
-                        ))}
-                    </nav>
+                                    </NavLink>
+                                ))}
+                            </nav>
+                        </div>
+                    ))}
                 </div>
 
                 {/* Footer User Profile */}
@@ -120,8 +146,8 @@ export default function AdminLayout() {
                         </div>
                         {!collapsed && (
                             <div className="flex-1 overflow-hidden">
-                                <p className="text-sm font-bold text-white truncate">{user?.email || 'Administrator'}</p>
-                                <p className="text-xs text-primary-300 truncate">Super User Access</p>
+                                <p className="text-sm font-bold text-white truncate">Administrator</p>
+                                <p className="text-xs text-primary-300 truncate">{user?.email || 'admin@bankify.internal'}</p>
                             </div>
                         )}
                         {!collapsed && (
