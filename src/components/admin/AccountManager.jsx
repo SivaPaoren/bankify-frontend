@@ -458,107 +458,136 @@ export default function AccountManager() {
                             </div>
 
                             <div className="relative z-10">
-                                <p className="text-primary-300 font-medium mb-1">{selectedAccount.accountType} Account</p>
-                                <h2 className="text-3xl font-mono text-white tracking-tight mb-4">{selectedAccount.accountNumber}</h2>
-                                <div className="flex items-end gap-3">
-                                    <span className="text-4xl font-bold text-white tracking-tighter">
-                                        {formatCurrency(selectedAccount.balance, selectedAccount.currency)}
+                                <div className="flex items-center gap-3 mb-2">
+                                    <span className="px-2.5 py-1 rounded-lg bg-white/10 text-xs font-bold text-primary-200 uppercase tracking-wider">{selectedAccount.accountType}</span>
+                                    <span className={`px-2.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wider border ${selectedAccount.status === 'ACTIVE'
+                                        ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
+                                        : selectedAccount.status === 'FROZEN'
+                                            ? 'bg-blue-500/20 text-blue-300 border-blue-500/30'
+                                            : 'bg-red-500/20 text-red-300 border-red-500/30'
+                                        }`}>
+                                        {selectedAccount.status}
                                     </span>
-                                    <span className="mb-1.5 px-2.5 py-0.5 rounded-lg bg-white/10 text-xs font-bold text-primary-200">Current Balance</span>
+                                </div>
+                                <h2 className="text-4xl font-mono text-white tracking-tight mb-6 drop-shadow-md">{selectedAccount.accountNumber}</h2>
+
+                                <div className="bg-white/5 border border-white/10 rounded-2xl p-5 relative overflow-hidden">
+                                    <div className="absolute top-0 right-0 w-32 h-32 bg-cyan-500/20 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none"></div>
+                                    <p className="text-primary-300 text-sm font-semibold uppercase tracking-widest mb-1">Current Balance</p>
+                                    <div className="text-5xl font-black text-white tracking-tighter drop-shadow-[0_0_15px_rgba(255,255,255,0.3)]">
+                                        {formatCurrency(selectedAccount.balance, selectedAccount.currency)}
+                                    </div>
                                 </div>
                             </div>
                         </div>
 
                         <div className="flex-1 overflow-y-auto p-6 md:p-8 custom-scrollbar relative bg-black/20 flex flex-col">
-                            {/* Tabs */}
-                            <div className="flex gap-4 mb-6 border-b border-white/5 pb-4">
-                                <button
-                                    onClick={() => setActiveTab('transactions')}
-                                    className={`text-lg font-bold flex items-center gap-2 transition-colors ${activeTab === 'transactions' ? 'text-white' : 'text-primary-400 hover:text-primary-300'}`}
-                                >
-                                    <FileText size={20} className={activeTab === 'transactions' ? 'text-primary-400' : ''} />
-                                    Transaction History
-                                </button>
-                                <button
-                                    onClick={() => setActiveTab('ledger')}
-                                    className={`text-lg font-bold flex items-center gap-2 transition-colors ${activeTab === 'ledger' ? 'text-white' : 'text-primary-400 hover:text-primary-300'}`}
-                                >
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={activeTab === 'ledger' ? 'text-primary-400' : ''}><rect width="18" height="18" x="3" y="3" rx="2" ry="2" /><line x1="3" x2="21" y1="9" y2="9" /><line x1="9" x2="9" y1="9" y2="21" /></svg>
-                                    Ledger Entries
-                                </button>
-                            </div>
+                            {/* Compute Running Balance */}
+                            {(() => {
+                                let currentRunning = selectedAccount.balance;
+                                const processedLedger = accountLedger.map((entry) => {
+                                    const entryBalanceAfter = currentRunning;
+                                    const impact = entry.direction === 'CREDIT' ? entry.amount : -entry.amount;
+                                    currentRunning = currentRunning - impact;
+                                    return { ...entry, computedBalanceAfter: entryBalanceAfter };
+                                });
 
-                            {activeTab === 'transactions' ? (
-                                <div className="space-y-4">
-                                    {accountTransactions.length > 0 ? accountTransactions.map((tx) => (
-                                        <div key={tx.id} className="bg-white/5 border border-white/5 rounded-2xl p-5 flex items-center justify-between hover:bg-white/10 transition-colors group">
-                                            <div className="flex items-center gap-4">
-                                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center border ${tx.type === 'DEPOSIT' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' :
-                                                    tx.type === 'WITHDRAWAL' ? 'bg-red-500/10 border-red-500/20 text-red-400' :
-                                                        'bg-blue-500/10 border-blue-500/20 text-blue-400'
-                                                    }`}>
-                                                    {tx.type === 'DEPOSIT' && <ArrowDownLeft size={24} />}
-                                                    {tx.type === 'WITHDRAWAL' && <ArrowUpRight size={24} />}
-                                                    {tx.type === 'TRANSFER' && <ArrowRight size={24} />}
-                                                </div>
-                                                <div>
-                                                    <div className="font-bold text-white mb-0.5">{tx.description || tx.type}</div>
-                                                    <div className="text-xs text-primary-300 flex items-center gap-2">
-                                                        <Calendar size={12} />
-                                                        {new Date(tx.createdAt).toLocaleString()}
+                                return (
+                                    <>
+                                        {/* Tabs */}
+                                        <div className="flex gap-4 mb-6 border-b border-white/5 pb-4">
+                                            <button
+                                                onClick={() => setActiveTab('transactions')}
+                                                className={`text-lg font-bold flex items-center gap-2 transition-colors ${activeTab === 'transactions' ? 'text-white' : 'text-primary-400 hover:text-primary-300'}`}
+                                            >
+                                                <FileText size={20} className={activeTab === 'transactions' ? 'text-primary-400' : ''} />
+                                                Activity
+                                            </button>
+                                            <button
+                                                onClick={() => setActiveTab('ledger')}
+                                                className={`text-lg font-bold flex items-center gap-2 transition-colors ${activeTab === 'ledger' ? 'text-white' : 'text-primary-400 hover:text-primary-300'}`}
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={activeTab === 'ledger' ? 'text-primary-400' : ''}><rect width="18" height="18" x="3" y="3" rx="2" ry="2" /><line x1="3" x2="21" y1="9" y2="9" /><line x1="9" x2="9" y1="9" y2="21" /></svg>
+                                                Accounting
+                                            </button>
+                                        </div>
+
+                                        {activeTab === 'transactions' ? (
+                                            <div className="space-y-4">
+                                                {accountTransactions.length > 0 ? accountTransactions.map((tx) => (
+                                                    <div key={tx.id} className="bg-white/5 border border-white/5 rounded-2xl p-5 flex items-center justify-between hover:bg-white/10 transition-colors group">
+                                                        <div className="flex items-center gap-4">
+                                                            <div className={`w-12 h-12 rounded-xl flex items-center justify-center border ${tx.type === 'DEPOSIT' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' :
+                                                                tx.type === 'WITHDRAWAL' ? 'bg-red-500/10 border-red-500/20 text-red-400' :
+                                                                    'bg-blue-500/10 border-blue-500/20 text-blue-400'
+                                                                }`}>
+                                                                {tx.type === 'DEPOSIT' && <ArrowDownLeft size={24} />}
+                                                                {tx.type === 'WITHDRAWAL' && <ArrowUpRight size={24} />}
+                                                                {tx.type === 'TRANSFER' && <ArrowRight size={24} />}
+                                                            </div>
+                                                            <div>
+                                                                <div className="font-bold text-white mb-0.5">{tx.description || tx.type}</div>
+                                                                <div className="text-xs text-primary-300 flex items-center gap-2">
+                                                                    <Calendar size={12} />
+                                                                    {new Date(tx.createdAt).toLocaleString()}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <div className={`font-bold text-lg ${tx.type === 'DEPOSIT' ? 'text-emerald-400' : 'text-white'}`}>
+                                                                {tx.type === 'DEPOSIT' ? '+' : '-'}{new Intl.NumberFormat('en-US', { style: 'currency', currency: selectedAccount.currency || 'THB' }).format(tx.amount)}
+                                                            </div>
+                                                            <div className="text-xs text-primary-400 font-mono mt-0.5">Ref: {tx.reference ? tx.reference.substring(0, 8) + '...' : '—'}</div>
+                                                        </div>
                                                     </div>
-                                                </div>
+                                                )) : (
+                                                    <div className="flex flex-col items-center justify-center py-20 text-primary-400/60">
+                                                        <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mb-4">
+                                                            <AlertCircle size={32} />
+                                                        </div>
+                                                        <p className="italic">No transactions found for this account.</p>
+                                                    </div>
+                                                )}
                                             </div>
-                                            <div className={`text-right font-bold text-lg ${tx.type === 'DEPOSIT' ? 'text-emerald-400' : 'text-white'
-                                                }`}>
-                                                {tx.type === 'DEPOSIT' ? '+' : '-'}{new Intl.NumberFormat('en-US', { style: 'currency', currency: selectedAccount.currency }).format(tx.amount)}
+                                        ) : (
+                                            <div className="overflow-x-auto">
+                                                <table className="w-full text-left text-sm border-collapse">
+                                                    <thead>
+                                                        <tr className="border-b border-white/10 text-primary-300">
+                                                            <th className="py-3 px-4 font-semibold uppercase tracking-wider text-xs">Date</th>
+                                                            <th className="py-3 px-4 font-semibold uppercase tracking-wider text-xs">Entry Type</th>
+                                                            <th className="py-3 px-4 text-right font-semibold uppercase tracking-wider text-xs">Amount</th>
+                                                            <th className="py-3 px-4 text-right font-semibold uppercase tracking-wider text-xs">Balance After</th>
+                                                            <th className="py-3 px-4 font-semibold uppercase tracking-wider text-xs text-right">Transaction Ref</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody className="divide-y divide-white/5 font-mono">
+                                                        {processedLedger.length > 0 ? processedLedger.map((entry) => (
+                                                            <tr key={entry.id} className="hover:bg-white/5 transition-colors">
+                                                                <td className="py-4 px-4 text-primary-200">{new Date(entry.createAt || entry.createdAt).toLocaleString()}</td>
+                                                                <td className="py-4 px-4 flex gap-2">
+                                                                    <span className={`px-2.5 py-1 rounded-lg text-xs font-bold ${entry.direction === 'DEBIT' ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}`}>{entry.direction}</span>
+                                                                </td>
+                                                                <td className={`py-4 px-4 text-right ${entry.direction === 'DEBIT' ? 'text-red-400' : 'text-emerald-400'}`}>
+                                                                    {entry.direction === 'DEBIT' ? '-' : '+'}{new Intl.NumberFormat('en-US', { minimumFractionDigits: 2 }).format(entry.amount)}
+                                                                </td>
+                                                                <td className="py-4 px-4 text-right text-white font-bold">{new Intl.NumberFormat('en-US', { style: 'currency', currency: entry.currency || 'THB' }).format(entry.computedBalanceAfter)}</td>
+                                                                <td className="py-4 px-4 text-primary-500 text-xs text-right" title={entry.transactionId}>{entry.transactionId ? entry.transactionId.substring(0, 8) + '...' : 'SYSTEM'}</td>
+                                                            </tr>
+                                                        )) : (
+                                                            <tr>
+                                                                <td colSpan="5" className="py-12 text-center">
+                                                                    <div className="text-primary-400/60 mb-2">No accounting entries generated yet.</div>
+                                                                </td>
+                                                            </tr>
+                                                        )}
+                                                    </tbody>
+                                                </table>
                                             </div>
-                                        </div>
-                                    )) : (
-                                        <div className="flex flex-col items-center justify-center py-20 text-primary-400/60">
-                                            <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mb-4">
-                                                <AlertCircle size={32} />
-                                            </div>
-                                            <p className="italic">No transactions found for this account.</p>
-                                        </div>
-                                    )}
-                                </div>
-                            ) : (
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-left text-sm border-collapse">
-                                        <thead>
-                                            <tr className="border-b border-white/10 text-primary-300">
-                                                <th className="py-3 px-4 font-semibold uppercase tracking-wider text-xs">Date</th>
-                                                <th className="py-3 px-4 font-semibold uppercase tracking-wider text-xs">Entry Type</th>
-                                                <th className="py-3 px-4 text-right font-semibold uppercase tracking-wider text-xs">Amount</th>
-                                                <th className="py-3 px-4 text-right font-semibold uppercase tracking-wider text-xs">Balance After</th>
-                                                <th className="py-3 px-4 font-semibold uppercase tracking-wider text-xs text-right">Entry ID</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-white/5 font-mono">
-                                            {accountLedger.length > 0 ? accountLedger.map((entry) => (
-                                                <tr key={entry.id} className="hover:bg-white/5 transition-colors">
-                                                    <td className="py-4 px-4 text-primary-200">{new Date(entry.createdAt).toLocaleString()}</td>
-                                                    <td className="py-4 px-4 flex gap-2">
-                                                        <span className={`px-2 py-1 rounded text-xs font-bold ${entry.type === 'DEBIT' ? 'bg-red-500/10 text-red-400 border border-red-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20'}`}>{entry.type}</span>
-                                                    </td>
-                                                    <td className={`py-4 px-4 text-right ${entry.type === 'DEBIT' ? 'text-red-400' : 'text-emerald-400'}`}>
-                                                        {entry.type === 'DEBIT' ? '-' : '+'}{new Intl.NumberFormat('en-US', { minimumFractionDigits: 2 }).format(entry.amount)}
-                                                    </td>
-                                                    <td className="py-4 px-4 text-right text-white font-bold">{new Intl.NumberFormat('en-US', { minimumFractionDigits: 2 }).format(entry.balanceAfter)}</td>
-                                                    <td className="py-4 px-4 text-primary-500 text-xs text-right" title={entry.id}>{entry.id.substring(0, 8)}...</td>
-                                                </tr>
-                                            )) : (
-                                                <tr>
-                                                    <td colSpan="5" className="py-12 text-center">
-                                                        <div className="text-primary-400/60 mb-2">No ledger entries generated yet.</div>
-                                                    </td>
-                                                </tr>
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            )}
+                                        )}
+                                    </>
+                                );
+                            })()}
                         </div>
                     </>
                 )}

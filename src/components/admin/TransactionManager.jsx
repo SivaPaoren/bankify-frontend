@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { adminService } from '../../api';
 import { formatCurrency } from '../../utils/formatters';
 import FilterDropdown from '../common/FilterDropdown';
-import { Search, Filter, ArrowUpRight, ArrowDownLeft, RefreshCw, Smartphone, CreditCard, CheckCircle, XCircle, Clock, Plus, X } from 'lucide-react';
+import { Search, Filter, ArrowUpRight, ArrowDownLeft, RefreshCw, Smartphone, CreditCard, CheckCircle, XCircle, Clock, Plus, X, BookOpen } from 'lucide-react';
 
 export default function TransactionManager() {
+    const navigate = useNavigate();
     const [transactions, setTransactions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -204,6 +206,7 @@ export default function TransactionManager() {
                                 <th className="px-6 py-4">Source / Dest</th>
                                 <th className="px-6 py-4 text-right">Amount</th>
                                 <th className="px-6 py-4 text-right">Status</th>
+                                <th className="px-6 py-4 text-right">Accounting</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-white/5">
@@ -262,10 +265,23 @@ export default function TransactionManager() {
                                                 {tx.status}
                                             </span>
                                         </td>
+                                        <td className="px-6 py-4 text-right">
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    navigate(`/admin/ledger?reference=${encodeURIComponent(tx.reference)}`);
+                                                }}
+                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-cyan-400 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/20 hover:border-cyan-500/40 transition-all ml-auto"
+                                                title="View Accounting Entries"
+                                            >
+                                                <BookOpen size={14} />
+                                                <span>Audit Logs</span>
+                                            </button>
+                                        </td>
                                     </tr>
                                 ))
                             ) : (
-                                <tr><td colSpan="6" className="px-6 py-12 text-center text-primary-300 italic">No transactions found.</td></tr>
+                                <tr><td colSpan="7" className="px-6 py-12 text-center text-primary-300 italic">No transactions found.</td></tr>
                             )}
                         </tbody>
                     </table>

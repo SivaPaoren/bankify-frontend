@@ -284,6 +284,11 @@ export const adminService = {
         const response = await adminApi.get('/admin/transactions', { params });
         return response.data;
     },
+    // Global Ledger (Admin View)
+    getGlobalLedger: async (params = {}) => {
+        const response = await adminApi.get('/admin/transactions/ledger', { params });
+        return response.data;
+    },
 
 };
 
