@@ -235,20 +235,24 @@ export const adminService = {
 
     // 4. Admin Transactions (Internal/Optional but recommended)
     deposit: async (accountId, amount, note = "Admin Deposit") => {
-        // POST /api/v1/admin/transactions/deposit
-        // Body: { accountId, amount, note } (Presumed based on controller standard)
-        // Or maybe just { amount, ... } if endpoint is /accounts/{id}/deposit? 
-        // Spec says: POST /api/v1/admin/transactions/deposit
-        // So body likely needs accountId.
-        const response = await adminApi.post('/admin/transactions/deposit', { accountId, amount, note });
+        const idempotencyKey = generateIdempotencyKey('DEP');
+        const response = await adminApi.post('/admin/transactions/deposit', { accountId, amount, note }, {
+            headers: { 'Idempotency-Key': idempotencyKey }
+        });
         return response.data;
     },
     withdraw: async (accountId, amount, note = "Admin Withdraw") => {
-        const response = await adminApi.post('/admin/transactions/withdraw', { accountId, amount, note });
+        const idempotencyKey = generateIdempotencyKey('WDR');
+        const response = await adminApi.post('/admin/transactions/withdraw', { accountId, amount, note }, {
+            headers: { 'Idempotency-Key': idempotencyKey }
+        });
         return response.data;
     },
     transfer: async (fromAccountId, toAccountId, amount, note = "Admin Transfer") => {
-        const response = await adminApi.post('/admin/transactions/transfer', { fromAccountId, toAccountId, amount, note });
+        const idempotencyKey = generateIdempotencyKey('TRF');
+        const response = await adminApi.post('/admin/transactions/transfer', { fromAccountId, toAccountId, amount, note }, {
+            headers: { 'Idempotency-Key': idempotencyKey }
+        });
         return response.data;
     },
 

@@ -20,7 +20,7 @@ export default function AccountManager() {
         open: false, accountId: null, accountNumber: null, newPin: '', loading: false, error: null, success: false
     });
     const [newAccount, setNewAccount] = useState({
-        customerId: '', accountType: 'SAVINGS', currency: 'THB', pin: '123456'
+        customerId: '', accountType: 'SAVINGS', currency: 'THB'
     });
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('ALL');
@@ -34,7 +34,7 @@ export default function AccountManager() {
         setLoading(true);
         try {
             const data = await adminService.getAccounts();
-            setAccounts(data);
+            setAccounts(Array.isArray(data) ? data : (data.content || []));
         } catch (error) {
             console.error("Failed to fetch accounts", error);
         } finally {
@@ -49,13 +49,13 @@ export default function AccountManager() {
                 customerId: newAccount.customerId.trim(),
                 type: newAccount.accountType,
                 currency: newAccount.currency,
-                pin: newAccount.pin
+                pin: '123456'
             };
 
             await adminService.createAccount(accountData);
 
             setShowCreateModal(false);
-            setNewAccount({ customerId: '', accountType: 'SAVINGS', currency: 'THB', pin: '123456' });
+            setNewAccount({ customerId: '', accountType: 'SAVINGS', currency: 'THB' });
             fetchAccounts();
         } catch (error) {
             console.error("Create account error", error);
@@ -396,18 +396,6 @@ export default function AccountManager() {
                                         <option value="CHF">CHF (Fr)</option>
                                     </select>
                                 </div>
-                            </div>
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-bold uppercase text-primary-300 tracking-wider">ATM PIN (6 digits)</label>
-                                <input
-                                    type="text"
-                                    className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-emerald-500 transition-all placeholder:text-primary-600 font-mono text-center text-lg tracking-widest"
-                                    placeholder="123456"
-                                    value={newAccount.pin}
-                                    onChange={e => setNewAccount({ ...newAccount, pin: e.target.value.replace(/\D/g, '').slice(0, 6) })}
-                                    maxLength="6"
-                                    required
-                                />
                             </div>
 
                             <div className="pt-2">

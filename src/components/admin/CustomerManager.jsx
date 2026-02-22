@@ -112,7 +112,7 @@ export default function CustomerManager() {
         setLoading(true);
         try {
             const data = await adminService.getCustomers();
-            setCustomers(Array.isArray(data) ? data : []);
+            setCustomers(Array.isArray(data) ? data : (data.content || []));
         } catch (err) {
             console.error('Failed to fetch customers', err);
             setCustomers([]);
@@ -197,7 +197,7 @@ export default function CustomerManager() {
         setShowDrawer(true);
         try {
             const accounts = await adminService.getAccounts({ customerId: customer.id });
-            setCustomerAccounts(Array.isArray(accounts) ? accounts : []);
+            setCustomerAccounts(Array.isArray(accounts) ? accounts : (accounts.content || []));
         } catch {
             setCustomerAccounts([]);
         }

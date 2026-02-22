@@ -15,8 +15,7 @@ import {
     Wallet,
     History,
     ChevronRight,
-    Key,
-    BookOpen
+    Key
 } from 'lucide-react';
 
 export default function AdminLayout() {
@@ -53,7 +52,6 @@ export default function AdminLayout() {
         {
             title: 'Ledger & Compliance',
             items: [
-                { to: '/admin/ledger', label: 'Master Ledger', icon: BookOpen },
                 { to: '/admin/audit-logs', label: 'Audit Logs', icon: FileText },
             ]
         },
@@ -200,8 +198,8 @@ export default function AdminLayout() {
                 </header>
 
                 {/* Main Content */}
-                <main className="flex-1 overflow-y-auto p-6 md:p-8 custom-scrollbar scroll-smooth">
-                    <div className="max-w-7xl mx-auto space-y-8 animate-page">
+                <main className="flex-1 overflow-y-auto p-4 md:p-6 custom-scrollbar scroll-smooth">
+                    <div className="max-w-7xl mx-auto animate-page">
                         <Outlet />
                     </div>
                 </main>

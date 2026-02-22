@@ -26,10 +26,13 @@ export default function AdminDashboard() {
     const navigate = useNavigate();
     const [stats, setStats] = useState({
         activeCustomers: 0,
-        totalBalance: 2450000.00,
-        todayTransactions: 142,
-        failedTransactions: 3
+        totalBalance: 0,
+        todayTransactions: 0,
+        failedTransactions: 0
     });
+    const [transactionVolData, setTransactionVolData] = useState([]);
+    const [allTransactions, setAllTransactions] = useState([]);
+    const [timeframe, setTimeframe] = useState('24h');
     const [recentAlerts, setRecentAlerts] = useState([]);
     const [pendingActions, setPendingActions] = useState([]);
 
@@ -39,13 +42,38 @@ export default function AdminDashboard() {
             setStats(prev => ({ ...prev, activeCustomers: count }));
         }).catch(console.error);
 
+        // Fetch Live Accounts to compute "Liquid Assets"
+        adminService.getAccounts().then(data => {
+            const accs = Array.isArray(data) ? data : (data.content || []);
+            const liquid = accs.reduce((sum, acc) => sum + (Number(acc.balance) || 0), 0);
+            setStats(prev => ({ ...prev, totalBalance: liquid }));
+        }).catch(console.error);
+
+        // Fetch Live Transactions to compute 24h Volume and Chart
+        adminService.getTransactions().then(data => {
+            const txs = Array.isArray(data) ? data : (data.content || []);
+            setAllTransactions(txs);
+
+            const now = new Date();
+            const oneDayAgo = new Date(now.getTime() - (24 * 60 * 60 * 1000));
+
+            // Filter last 24h transactions for the Top Stat Card
+            const recentTxs = txs.filter(tx => new Date(tx.createdAt) >= oneDayAgo);
+            setStats(prev => ({ ...prev, todayTransactions: recentTxs.length }));
+        }).catch(console.error);
+
         // Pull recent non-user security-relevant events from audit logs
         adminService.getAuditLogs().then(data => {
-            if (!Array.isArray(data)) return;
-            const alerts = data
+            const logs = Array.isArray(data) ? data : (data.content || []);
+            if (!logs.length) return;
+            // Track failures for Top Stats
+            const failures = logs.filter(l => l.action?.includes('FAIL') || l.action?.includes('ERROR'));
+            setStats(prev => ({ ...prev, failedTransactions: failures.length }));
+
+            const alerts = logs
                 .filter(l => l.actorType !== 'USER' || l.action?.includes('FAIL') || l.action?.includes('FREEZE') || l.action?.includes('CLOSE'))
                 .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-                .slice(0, 5);
+                .slice(0, 3);
             setRecentAlerts(alerts);
         }).catch(console.error);
 
@@ -72,25 +100,84 @@ export default function AdminDashboard() {
         }).catch(console.error);
     }, []);
 
-    // Mock Chart Data - adjusted for a more "crypto/fintech" look
-    const chartData = [
-        { name: '00:00', volume: 4000 },
-        { name: '04:00', volume: 3000 },
-        { name: '08:00', volume: 5000 },
-        { name: '12:00', volume: 8800 },
-        { name: '16:00', volume: 6900 },
-        { name: '20:00', volume: 9200 },
-        { name: '23:59', volume: 7800 },
+    // Watch for timeframe changes and recalculate chart data
+    useEffect(() => {
+        if (!allTransactions.length) {
+            setTransactionVolData([]);
+            return;
+        }
+
+        const now = new Date();
+
+        if (timeframe === '24h') {
+            const oneDayAgo = new Date(now.getTime() - (24 * 60 * 60 * 1000));
+            const recentTxs = allTransactions.filter(tx => new Date(tx.createdAt) >= oneDayAgo);
+
+            const hourlyBlocks = { '00:00': 0, '04:00': 0, '08:00': 0, '12:00': 0, '16:00': 0, '20:00': 0 };
+            recentTxs.forEach(tx => {
+                const h = new Date(tx.createdAt).getHours();
+                if (h >= 0 && h < 4) hourlyBlocks['00:00']++;
+                else if (h >= 4 && h < 8) hourlyBlocks['04:00']++;
+                else if (h >= 8 && h < 12) hourlyBlocks['08:00']++;
+                else if (h >= 12 && h < 16) hourlyBlocks['12:00']++;
+                else if (h >= 16 && h < 20) hourlyBlocks['16:00']++;
+                else hourlyBlocks['20:00']++;
+            });
+
+            const dynamicChart = Object.keys(hourlyBlocks).map(timeKey => ({
+                name: timeKey,
+                volume: hourlyBlocks[timeKey]
+            }));
+            dynamicChart.push({ name: '23:59', volume: hourlyBlocks['20:00'] });
+            setTransactionVolData(dynamicChart);
+
+        } else if (timeframe === '7d') {
+            const sevenDaysAgo = new Date(now.getTime() - (7 * 24 * 60 * 60 * 1000));
+            const recentTxs = allTransactions.filter(tx => new Date(tx.createdAt) >= sevenDaysAgo);
+
+            const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+            const dailyBlocks = {};
+            days.forEach(d => dailyBlocks[d] = 0);
+
+            recentTxs.forEach(tx => {
+                const dayName = days[new Date(tx.createdAt).getDay()];
+                dailyBlocks[dayName]++;
+            });
+
+            const dynamicChart = [];
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date(now.getTime() - (i * 24 * 60 * 60 * 1000));
+                const dayName = days[d.getDay()];
+                dynamicChart.push({
+                    name: dayName,
+                    volume: dailyBlocks[dayName]
+                });
+            }
+            setTransactionVolData(dynamicChart);
+        }
+    }, [allTransactions, timeframe]);
+
+    // Dynamic Chart Data (Fallback to zeros if none yet)
+    const chartData = transactionVolData.length > 0 ? transactionVolData : [
+        { name: '00:00', volume: 0 }, { name: '04:00', volume: 0 }, { name: '08:00', volume: 0 },
+        { name: '12:00', volume: 0 }, { name: '16:00', volume: 0 }, { name: '20:00', volume: 0 },
+        { name: '23:59', volume: 0 }
     ];
 
-    const StatCard = ({ title, value, subtext, icon: Icon, colorClass, trend }) => (
-        <div className="relative overflow-hidden p-6 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md hover:bg-white/10 transition-all duration-300 group shadow-lg">
+    const StatCard = ({ title, value, subtext, icon: Icon, colorClass, trend, linkTo }) => (
+        <div
+            onClick={() => linkTo && navigate(linkTo)}
+            className={`relative overflow-hidden p-6 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md transition-all duration-300 group shadow-lg ${linkTo ? 'hover:bg-white/10 cursor-pointer active:scale-95' : ''}`}
+        >
             {/* Glow Effect */}
             <div className={`absolute -right-6 -top-6 w-24 h-24 rounded-full ${colorClass.replace('text-', 'bg-')}/20 blur-2xl group-hover:blur-3xl transition-all`}></div>
 
             <div className="relative z-10 flex justify-between items-start">
                 <div>
-                    <p className="text-primary-200 text-xs font-bold uppercase tracking-widest mb-2">{title}</p>
+                    <p className="text-primary-200 text-xs font-bold uppercase tracking-widest mb-2 flex items-center gap-1 group-hover:text-white transition-colors">
+                        {title}
+                        {linkTo && <ArrowUpRight size={12} className="opacity-0 group-hover:opacity-100 transition-opacity" />}
+                    </p>
                     <h3 className="text-3xl font-bold text-white tracking-tight">{value}</h3>
                 </div>
                 <div className={`p-2.5 rounded-xl ${colorClass.replace('text-', 'bg-')}/20 border border-white/5`}>
@@ -99,9 +186,9 @@ export default function AdminDashboard() {
             </div>
 
             <div className="relative z-10 flex items-center gap-2 mt-4">
-                <div className={`flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-lg ${trend === 'up' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-red-500/20 text-red-400'}`}>
-                    {trend === 'up' ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
-                    <span>12.5%</span>
+                <div className={`flex items-center gap-1 text-xs font-bold px-2 py-0.5 rounded-lg ${trend === 'up' ? 'bg-emerald-500/20 text-emerald-400' : trend === 'down' ? 'bg-red-500/20 text-red-400' : 'bg-primary-500/20 text-primary-400'}`}>
+                    {trend === 'up' ? <ArrowUpRight size={14} /> : trend === 'down' ? <ArrowDownRight size={14} /> : <Activity size={14} />}
+                    <span>Live</span>
                 </div>
                 <span className="text-xs text-primary-400 font-medium">
                     {subtext}
@@ -111,7 +198,7 @@ export default function AdminDashboard() {
     );
 
     return (
-        <div className="space-y-8">
+        <div className="space-y-4">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-bold text-white tracking-tight">System Overview</h1>
@@ -127,30 +214,33 @@ export default function AdminDashboard() {
             </div>
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <StatCard
                     title="Active Customers"
                     value={stats.activeCustomers}
-                    subtext="vs last month"
+                    subtext="Real-time network count"
                     icon={Users}
                     colorClass="text-cyan-400"
                     trend="up"
+                    linkTo="/admin/customers"
                 />
                 <StatCard
                     title="Liquid Assets"
-                    value={`฿${(stats.totalBalance / 1000000).toFixed(1)}M`}
-                    subtext="Total reserve"
+                    value={`$${(stats.totalBalance).toLocaleString()}`}
+                    subtext="Sum of all user ledgers"
                     icon={Wallet}
                     colorClass="text-emerald-400"
                     trend="up"
+                    linkTo="/admin/accounts"
                 />
                 <StatCard
                     title="24h Transactions"
                     value={stats.todayTransactions}
-                    subtext="98.2% Success"
+                    subtext="Last 24 hours throughput"
                     icon={Activity}
                     colorClass="text-primary-400"
-                    trend="up"
+                    trend="neutral"
+                    linkTo="/admin/transactions"
                 />
                 <StatCard
                     title="Security Alerts"
@@ -158,26 +248,31 @@ export default function AdminDashboard() {
                     subtext="Requires triage"
                     icon={AlertTriangle}
                     colorClass="text-orange-400"
-                    trend="down"
+                    trend={stats.failedTransactions > 0 ? 'down' : 'up'}
+                    linkTo="/admin/audit-logs"
                 />
             </div>
 
             {/* Main Content Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 {/* Chart Section */}
-                <div className="lg:col-span-2 bg-white/5 p-6 rounded-3xl border border-white/10 backdrop-blur-md shadow-xl relative overflow-hidden">
-                    <div className="flex items-center justify-between mb-8 relative z-10">
+                <div className="lg:col-span-2 bg-white/5 p-5 rounded-3xl border border-white/10 backdrop-blur-md shadow-xl relative overflow-hidden flex flex-col">
+                    <div className="flex items-center justify-between mb-4 relative z-10 shrink-0">
                         <div>
                             <h3 className="text-lg font-bold text-white">Transaction Volume</h3>
                             <p className="text-sm text-primary-300">Inbound and outbound api calls</p>
                         </div>
-                        <select className="bg-black/20 text-primary-200 text-sm border border-white/10 rounded-lg px-3 py-1.5 outline-none focus:border-primary-500">
-                            <option>Last 24 Hours</option>
-                            <option>Last 7 Days</option>
+                        <select
+                            value={timeframe}
+                            onChange={(e) => setTimeframe(e.target.value)}
+                            className="bg-black/20 text-primary-200 text-sm border border-white/10 rounded-lg px-3 py-1.5 outline-none focus:border-primary-500 cursor-pointer"
+                        >
+                            <option value="24h">Last 24 Hours</option>
+                            <option value="7d">Last 7 Days</option>
                         </select>
                     </div>
 
-                    <div className="h-[350px] w-full relative z-10">
+                    <div className="flex-1 w-full relative z-10 min-h-[200px] -ml-2">
                         <ResponsiveContainer width="100%" height="100%">
                             <AreaChart data={chartData}>
                                 <defs>
@@ -223,7 +318,7 @@ export default function AdminDashboard() {
                 </div>
 
                 {/* Right Column Stack */}
-                <div className="flex flex-col gap-6">
+                <div className="flex flex-col gap-4">
                     {/* Pending Actions Widget */}
                     <div className="bg-white/5 p-6 rounded-3xl border border-white/10 backdrop-blur-md shadow-xl flex flex-col">
                         <div className="flex justify-between items-start mb-4">
@@ -262,7 +357,7 @@ export default function AdminDashboard() {
                     </div>
 
                     {/* Recent Security Events from real audit log */}
-                    <div className="bg-white/5 p-6 rounded-3xl border border-white/10 backdrop-blur-md shadow-xl flex flex-col flex-1 min-h-[300px]">
+                    <div className="bg-white/5 p-6 rounded-3xl border border-white/10 backdrop-blur-md shadow-xl flex flex-col flex-1">
                         <h3 className="text-lg font-bold text-white mb-1 flex items-center gap-2">
                             <ShieldAlert size={20} className="text-orange-400" />
                             Recent Security Events

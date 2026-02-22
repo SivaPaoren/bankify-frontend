@@ -13,9 +13,6 @@ export default function TransactionManager() {
     const [typeFilter, setTypeFilter] = useState('ALL');
     const [statusFilter, setStatusFilter] = useState('ALL');
     const [dateFilter, setDateFilter] = useState('');
-    const [showCreateModal, setShowCreateModal] = useState(false);
-    const [newTx, setNewTx] = useState({ type: 'DEPOSIT', fromAccountId: '', toAccountId: '', amount: '', note: 'Admin Operation' });
-    const [submitting, setSubmitting] = useState(false);
 
     useEffect(() => {
         fetchTransactions();
@@ -25,6 +22,7 @@ export default function TransactionManager() {
         setLoading(true);
         try {
             const data = await adminService.getTransactions();
+            console.log(data);
             setTransactions(Array.isArray(data) ? data : (data.content || []));
         } catch (error) {
             console.error("Failed to fetch transactions", error);
@@ -33,27 +31,7 @@ export default function TransactionManager() {
         }
     };
 
-    const handleCreateTransaction = async (e) => {
-        e.preventDefault();
-        setSubmitting(true);
-        try {
-            if (newTx.type === 'DEPOSIT') {
-                await adminService.deposit(newTx.toAccountId, newTx.amount, newTx.note);
-            } else if (newTx.type === 'WITHDRAWAL') {
-                await adminService.withdraw(newTx.fromAccountId, newTx.amount, newTx.note);
-            } else if (newTx.type === 'TRANSFER') {
-                await adminService.transfer(newTx.fromAccountId, newTx.toAccountId, newTx.amount, newTx.note);
-            }
-            setShowCreateModal(false);
-            setNewTx({ type: 'DEPOSIT', fromAccountId: '', toAccountId: '', amount: '', note: 'Admin Operation' });
-            fetchTransactions();
-        } catch (error) {
-            console.error("Transaction failed", error);
-            alert(`Failed: ${error.response?.data?.message || error.message}`);
-        } finally {
-            setSubmitting(false);
-        }
-    };
+    // Manual Transaction Creation Removed: Admins only monitor activity.
 
     const filteredTransactions = transactions.filter(tx => {
         if (typeFilter !== 'ALL' && tx.type !== typeFilter) return false;
@@ -97,8 +75,14 @@ export default function TransactionManager() {
         <div className="space-y-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-white tracking-tight">Transactions</h1>
-                    <p className="text-primary-300 mt-1">Monitor and audit system-wide financial movements.</p>
+                    <h1 className="text-3xl font-bold text-white tracking-tight flex items-center gap-3">
+                        Transactions
+                        <span className="relative flex h-3 w-3 mt-1">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-3 w-3 bg-cyan-500"></span>
+                        </span>
+                    </h1>
+                    <p className="text-primary-300 mt-1">Securely monitoring system-wide network movements.</p>
                 </div>
                 <div className="flex gap-3">
                     <button
@@ -107,13 +91,6 @@ export default function TransactionManager() {
                     >
                         <RefreshCw size={18} />
                         Refresh Feed
-                    </button>
-                    <button
-                        onClick={() => setShowCreateModal(true)}
-                        className="flex items-center gap-2 bg-linear-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-cyan-500/20 active:scale-95"
-                    >
-                        <Plus size={18} />
-                        New Transaction
                     </button>
                 </div>
             </div>
@@ -281,127 +258,26 @@ export default function TransactionManager() {
                                     </tr>
                                 ))
                             ) : (
-                                <tr><td colSpan="7" className="px-6 py-12 text-center text-primary-300 italic">No transactions found.</td></tr>
+                                <tr>
+                                    <td colSpan="7" className="px-6 py-24 text-center">
+                                        <div className="flex flex-col items-center justify-center max-w-sm mx-auto space-y-4">
+                                            <div className="w-20 h-20 bg-white/5 rounded-full flex items-center justify-center border border-white/10 mb-2 relative group shadow-lg">
+                                                <div className="absolute inset-0 bg-cyan-500/10 rounded-full blur-xl animate-pulse"></div>
+                                                <RefreshCw size={36} className="text-cyan-400/80 animate-[spin_4s_linear_infinite]" />
+                                            </div>
+                                            <h3 className="text-xl font-bold text-white tracking-tight">Awaiting Network Activity</h3>
+                                            <p className="text-sm text-primary-400 leading-relaxed text-balance">
+                                                The system is securely monitoring the network. All new transactions processed by ATMs or Partner APIs will appear here automatically.
+                                            </p>
+                                        </div>
+                                    </td>
+                                </tr>
                             )}
                         </tbody>
                     </table>
                 </div>
             </div>
 
-            {/* Create Admin Transaction Modal */}
-            {showCreateModal && (
-                <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-primary-950/80 backdrop-blur-sm animate-fade-in">
-                    <div className="bg-primary-900 border border-white/10 rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden relative">
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
-
-                        <div className="p-6 border-b border-white/5 flex justify-between items-center relative z-10">
-                            <h3 className="text-xl font-bold text-white">Execute Admin Transaction</h3>
-                            <button onClick={() => setShowCreateModal(false)} className="text-primary-400 hover:text-white transition-colors">
-                                <X size={24} />
-                            </button>
-                        </div>
-                        <form onSubmit={handleCreateTransaction} className="p-6 space-y-5 relative z-10">
-                            {/* Transaction Type */}
-                            <div className="space-y-1.5">
-                                <label className="text-xs font-bold uppercase text-primary-300 tracking-wider">Transaction Type</label>
-                                <div className="grid grid-cols-3 gap-3">
-                                    {['DEPOSIT', 'WITHDRAWAL', 'TRANSFER'].map(type => (
-                                        <button
-                                            key={type}
-                                            type="button"
-                                            onClick={() => setNewTx({ ...newTx, type, fromAccountId: '', toAccountId: '' })}
-                                            className={`py-3 rounded-xl border flex items-center justify-center gap-2 font-bold transition-all text-sm ${newTx.type === type ?
-                                                'bg-white/10 border-white/30 text-white' :
-                                                'bg-black/20 border-white/5 text-primary-400 hover:bg-white/5'
-                                                }`}
-                                        >
-                                            {type === 'DEPOSIT' && <ArrowDownLeft size={16} />}
-                                            {type === 'WITHDRAWAL' && <ArrowUpRight size={16} />}
-                                            {type === 'TRANSFER' && <RefreshCw size={16} />}
-                                            {type}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Accounts */}
-                            {(newTx.type === 'WITHDRAWAL' || newTx.type === 'TRANSFER') && (
-                                <div className="space-y-1.5">
-                                    <label className="text-xs font-bold uppercase text-primary-300 tracking-wider">Source Account ID (From)</label>
-                                    <input
-                                        type="text"
-                                        className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-emerald-500 transition-all placeholder:text-primary-600 font-mono text-sm"
-                                        placeholder="UUID of source account"
-                                        value={newTx.fromAccountId}
-                                        onChange={e => setNewTx({ ...newTx, fromAccountId: e.target.value })}
-                                        required={newTx.type === 'WITHDRAWAL' || newTx.type === 'TRANSFER'}
-                                    />
-                                </div>
-                            )}
-
-                            {(newTx.type === 'DEPOSIT' || newTx.type === 'TRANSFER') && (
-                                <div className="space-y-1.5">
-                                    <label className="text-xs font-bold uppercase text-primary-300 tracking-wider">Destination Account ID (To)</label>
-                                    <input
-                                        type="text"
-                                        className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-emerald-500 transition-all placeholder:text-primary-600 font-mono text-sm"
-                                        placeholder="UUID of destination account"
-                                        value={newTx.toAccountId}
-                                        onChange={e => setNewTx({ ...newTx, toAccountId: e.target.value })}
-                                        required={newTx.type === 'DEPOSIT' || newTx.type === 'TRANSFER'}
-                                    />
-                                </div>
-                            )}
-
-                            {/* Amount & Note */}
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-1.5">
-                                    <label className="text-xs font-bold uppercase text-primary-300 tracking-wider">Amount</label>
-                                    <input
-                                        type="number"
-                                        className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-emerald-400 outline-none focus:border-emerald-500 transition-all placeholder:text-primary-600 font-bold text-lg"
-                                        placeholder="0.00"
-                                        min="0.01"
-                                        step="0.01"
-                                        value={newTx.amount}
-                                        onChange={e => setNewTx({ ...newTx, amount: e.target.value })}
-                                        required
-                                    />
-                                </div>
-                                <div className="space-y-1.5">
-                                    <label className="text-xs font-bold uppercase text-primary-300 tracking-wider">Admin Note</label>
-                                    <input
-                                        type="text"
-                                        className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-emerald-500 transition-all placeholder:text-primary-600"
-                                        placeholder="Reason for override"
-                                        value={newTx.note}
-                                        onChange={e => setNewTx({ ...newTx, note: e.target.value })}
-                                        required
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Warning */}
-                            <div className="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4 flex items-start gap-3 mt-2">
-                                <AlertCircle size={20} className="text-amber-400 shrink-0 mt-0.5" />
-                                <p className="text-xs text-amber-200/80 leading-relaxed">
-                                    You are executing a native Admin Override transaction. This bypasses standard user balances checks and goes straight to the core ledger. It will be permanently recorded in the Audit Log under your Admin ID.
-                                </p>
-                            </div>
-
-                            <div className="pt-2">
-                                <button
-                                    type="submit"
-                                    disabled={submitting}
-                                    className="w-full bg-linear-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-emerald-500/20 transition-all active:scale-[0.98] disabled:opacity-50 flex items-center justify-center gap-2"
-                                >
-                                    {submitting ? 'Executing...' : 'Execute Transaction'}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
         </div>
     );
 }
