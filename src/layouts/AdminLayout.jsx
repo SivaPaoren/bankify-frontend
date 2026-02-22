@@ -60,7 +60,7 @@ export default function AdminLayout() {
         {
             title: 'Developer Platform',
             items: [
-                { to: '/admin/clients', label: 'API Clients', icon: Shield },
+                { to: '/admin/clients', label: 'Partner Apps', icon: Shield },
             ]
         }
     ];

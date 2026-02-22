@@ -12,9 +12,11 @@ export const AuthProvider = ({ children }) => {
   // Check if user is already logged in on page load
   useEffect(() => {
     const savedUser = localStorage.getItem('bankify_user');
-    const savedToken = localStorage.getItem('bankify_token');
+    const adminToken = localStorage.getItem('bankify_admin_token');
+    const partnerToken = localStorage.getItem('bankify_partner_token');
+    const atmToken = localStorage.getItem('bankify_atm_token');
 
-    if (savedUser && savedToken) {
+    if (savedUser && (adminToken || partnerToken || atmToken)) {
       try {
         const parsedUser = JSON.parse(savedUser);
         setUser(parsedUser);
@@ -23,35 +25,37 @@ export const AuthProvider = ({ children }) => {
       } catch (e) {
         console.error("Failed to parse saved user", e);
         // Clear invalid data
-        localStorage.removeItem('bankify_token');
+        localStorage.removeItem('bankify_admin_token');
+        localStorage.removeItem('bankify_partner_token');
+        localStorage.removeItem('bankify_atm_token');
         localStorage.removeItem('bankify_user');
       }
     }
     setLoading(false);
   }, []);
 
-  // Standard Login (Admin & Client) - Smart Fallback Logic
-  const login = async (email, password) => {
+  // Admin Login - Strict
+  const adminLogin = async (email, password) => {
     try {
-      // 1. First attempt Admin Login
       const data = await authService.login(email, password);
-      return handleLoginSuccess(data, 'ADMIN');
-    } catch (adminError) {
-      // If Admin fails, check if the error was a 401/403/404 indicating invalid credentials
-      // and not a network error.
-      try {
-        // 2. Fallback to Partner/Client Login
-        const partnerData = await authService.partnerLogin(email, password);
-        return handleLoginSuccess(partnerData, 'CLIENT');
-      } catch (partnerError) {
-        // Both failed
-        return { success: false, message: "Invalid email or password." };
-      }
+      return handleLoginSuccess(data, 'ADMIN', 'bankify_admin_token');
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || "Invalid Admin credentials." };
+    }
+  };
+
+  // Partner Login - Strict
+  const partnerLogin = async (email, password) => {
+    try {
+      const data = await authService.partnerLogin(email, password);
+      return handleLoginSuccess(data, 'CLIENT', 'bankify_partner_token');
+    } catch (error) {
+      return { success: false, message: error.response?.data?.message || "Invalid Partner credentials." };
     }
   };
 
   // Helper method to standardize local storage and state upon login success
-  const handleLoginSuccess = (data, fallbackRole) => {
+  const handleLoginSuccess = (data, fallbackRole, tokenKey) => {
     let token = data.token;
     let user = data.user || data;
 
@@ -59,7 +63,7 @@ export const AuthProvider = ({ children }) => {
       user = { ...data, role: data.role || fallbackRole };
     }
 
-    localStorage.setItem('bankify_token', token);
+    localStorage.setItem(tokenKey, token);
     localStorage.setItem('bankify_user', JSON.stringify(user));
 
     setUser(user);
@@ -96,7 +100,7 @@ export const AuthProvider = ({ children }) => {
       if (!user.name) user.name = "ATM User";
       if (!user.role) user.role = "USER";
 
-      localStorage.setItem('bankify_token', token);
+      localStorage.setItem('bankify_atm_token', token);
       localStorage.setItem('bankify_user', JSON.stringify(user));
 
       setUser(user);
@@ -110,7 +114,9 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    localStorage.removeItem('bankify_token');
+    localStorage.removeItem('bankify_admin_token');
+    localStorage.removeItem('bankify_partner_token');
+    localStorage.removeItem('bankify_atm_token');
     localStorage.removeItem('bankify_user');
     setUser(null);
     setRole(null);
@@ -123,7 +129,8 @@ export const AuthProvider = ({ children }) => {
       role,
       isAuthenticated,
       loading,
-      login,
+      adminLogin,
+      partnerLogin,
       partnerSignup,
       atmLogin,
       logout

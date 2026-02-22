@@ -4,9 +4,9 @@ import { useAuth } from "../../context/AuthContext";
 import logo from "../../assets/BankifyLogo.png";
 import { User, Lock, ArrowRight, ShieldCheck, Globe } from "lucide-react";
 
-export default function LoginPage() {
+export default function AdminLoginPage() {
   const navigate = useNavigate();
-  const { login, isAuthenticated, role } = useAuth();
+  const { adminLogin, isAuthenticated, role } = useAuth();
 
   const [email, setEmail] = useState("admin@bankify.local");
   const [password, setPassword] = useState("admin123");
@@ -30,10 +30,10 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      const result = await login(email, password);
+      const result = await adminLogin(email, password);
 
       if (!result.success) {
-        setError(result.message || "Invalid credentials");
+        setError(result.message || "Invalid Admin credentials");
         setLoading(false);
       }
     } catch (err) {
@@ -158,12 +158,13 @@ export default function LoginPage() {
 
           <div className="mt-8 pt-6 border-t border-slate-100 text-center">
             <p className="text-sm text-slate-500">
-              Building the future of finance?{' '}
+              Partner Integration Portal?{' '}
               <button
-                onClick={() => navigate('/client-signup')}
+                type="button"
+                onClick={() => navigate('/partner/login')}
                 className="font-bold text-indigo-600 hover:text-indigo-500 transition-colors"
               >
-                Create a Partner Account
+                Access Partner Login
               </button>
             </p>
           </div>

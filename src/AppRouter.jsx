@@ -26,8 +26,9 @@ import ATMHistory from "./pages/atm/History";
 import ATMLogin from "./pages/auth/ATMLogin";
 
 // Auth
-import LoginPage from "./pages/auth/LoginPage";
-import ClientSignupPage from "./pages/auth/ClientSignupPage";
+import AdminLoginPage from "./pages/auth/AdminLoginPage";
+import PartnerLoginPage from "./pages/auth/PartnerLoginPage";
+import PartnerSignupPage from "./pages/auth/PartnerSignupPage";
 
 export default function AppRouter() {
   const { role, isAuthenticated, loading } = useAuth();
@@ -45,7 +46,10 @@ export default function AppRouter() {
       if (location.pathname.startsWith('/atm')) {
         return <Navigate to="/atm-login" replace />;
       }
-      return <Navigate to="/login" replace />;
+      if (location.pathname.startsWith('/partner')) {
+        return <Navigate to="/partner/login" replace />;
+      }
+      return <Navigate to="/admin/login" replace />;
     }
 
     if (allowedRoles && !allowedRoles.includes(role)) {
@@ -62,8 +66,9 @@ export default function AppRouter() {
   return (
     <Routes>
       {/* Public Routes */}
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/client-signup" element={<ClientSignupPage />} />
+      <Route path="/admin/login" element={<AdminLoginPage />} />
+      <Route path="/partner/login" element={<PartnerLoginPage />} />
+      <Route path="/partner/signup" element={<PartnerSignupPage />} />
       <Route path="/atm-login" element={<ATMLogin />} />
 
       {/* Admin Routes */}
@@ -116,7 +121,7 @@ export default function AppRouter() {
       </Route>
 
       {/* Default Fallback */}
-      <Route path="*" element={<Navigate to="/login" replace />} />
+      <Route path="*" element={<Navigate to="/admin/login" replace />} />
     </Routes>
   );
 }

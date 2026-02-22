@@ -125,7 +125,7 @@ export default function ClientManager() {
         <div className="space-y-6">
             <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-white tracking-tight">API Clients</h1>
+                    <h1 className="text-3xl font-bold text-white tracking-tight">Partner Apps</h1>
                     <p className="text-primary-300 mt-1">Manage external access and evaluate incoming registration requests.</p>
                 </div>
                 <div className="flex gap-2 bg-black/20 p-1.5 rounded-xl border border-white/5 relative">
