@@ -183,7 +183,15 @@ export default function CustomerManager() {
     const handleCreate = async (e) => {
         e.preventDefault();
         try {
-            await adminService.createCustomer(newCustomer);
+            // Backend CreateCustomerRequest expects 'phoneNumber', but response returns 'phone'
+            const payload = {
+                firstName: newCustomer.firstName,
+                lastName: newCustomer.lastName,
+                email: newCustomer.email,
+                phoneNumber: newCustomer.phone,  // remap: state=phone → backend=phoneNumber
+                type: newCustomer.type,
+            };
+            await adminService.createCustomer(payload);
             setShowModal(false);
             setNewCustomer({ firstName: '', lastName: '', email: '', phone: '', type: 'INDIVIDUAL' });
             fetchCustomers();
@@ -191,6 +199,7 @@ export default function CustomerManager() {
             console.error('Create failed', err);
         }
     };
+
 
     const handleViewAccounts = async (customer) => {
         setSelectedCustomer(customer);
