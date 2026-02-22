@@ -96,7 +96,7 @@ export default function ATMLogin() {
     if (stage === "ACCOUNT" && accountNumber.length < 12) {
       setAccountNumber((p) => p + n);
     }
-    if (stage === "PIN" && pin.length < 4) {
+    if (stage === "PIN" && pin.length < 6) {
       setPin((p) => p + n);
     }
   };
@@ -126,8 +126,8 @@ export default function ATMLogin() {
     }
 
     if (stage === "PIN") {
-      if (pin.length !== 4) {
-        setError("PIN must be 4 digits");
+      if (pin.length !== 6) {
+        setError("PIN must be 6 digits");
         return;
       }
       setStage("PROCESSING");
@@ -183,7 +183,7 @@ export default function ATMLogin() {
         <div className="text-center w-full max-w-xs">
           <p className="text-cyan-500 text-xs font-bold uppercase mb-4">Enter Account Number</p>
           <div className="bg-black/40 border border-slate-600 p-4 rounded text-2xl font-mono text-white tracking-widest shadow-inner">
-            {accountNumber || "_ _ _ _ _ _"}
+            {accountNumber || "_ _ _ _ _ _ _ _ _ _ _ _"}
           </div>
           {error && <p className="text-red-500 text-xs mt-3">{error}</p>}
         </div>

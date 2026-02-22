@@ -227,6 +227,11 @@ export const adminService = {
         const response = await adminApi.get('/admin/transactions', { params: { accountId } });
         return response.data;
     },
+    // Single transaction
+    getTransaction: async (transactionId) => {
+        const response = await adminApi.get(`/admin/transactions/${transactionId}`);
+        return response.data;
+    },
 
     // 1.4 Admin Operations
     resetAtmPin: async (accountId, newPin) => {
@@ -311,6 +316,12 @@ export const clientService = {
 };
 
 export const atmService = {
+    // 2.1 Balance
+    getBalance: async () => {
+        const response = await atmApi.get('/atm/me/balance');
+        return response.data;
+    },
+
     // 2.2 Deposit
     deposit: async (amount, note) => {
         const idempotencyKey = generateIdempotencyKey('DEP');
@@ -336,10 +347,10 @@ export const atmService = {
     },
 
     // 2.4 Transfer
-    transfer: async (toAccountNumber, amount, note) => {
+    transfer: async (accountNumber, amount, note) => {
         const idempotencyKey = generateIdempotencyKey('TRF');
         const response = await atmApi.post('/atm/me/transfer', {
-            toAccountNumber,
+            accountNumber,
             amount: Number(amount),
             note
         }, {
@@ -368,6 +379,18 @@ export const atmService = {
 };
 
 export const partnerService = {
+    // Partner Balance
+    getBalance: async () => {
+        const response = await partnerApi.get('/partner/me/balance');
+        return response.data;
+    },
+
+    // Partner Portal Info
+    getPartnerInfo: async () => {
+        const response = await partnerApi.get('/partner/portal/me');
+        return response.data;
+    },
+
     // Partner Money Ops
     deposit: async (amount, note) => {
         const idempotencyKey = generateIdempotencyKey('DEP');

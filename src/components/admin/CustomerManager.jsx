@@ -105,7 +105,7 @@ export default function CustomerManager() {
     const [customerAccounts, setCustomerAccounts] = useState([]);
     const [showDrawer, setShowDrawer] = useState(false);
     const [newCustomer, setNewCustomer] = useState({
-        firstName: '', lastName: '', email: '', phoneNumber: '', type: 'INDIVIDUAL'
+        firstName: '', lastName: '', email: '', phone: '', type: 'INDIVIDUAL'
     });
 
     const fetchCustomers = useCallback(async () => {
@@ -185,7 +185,7 @@ export default function CustomerManager() {
         try {
             await adminService.createCustomer(newCustomer);
             setShowModal(false);
-            setNewCustomer({ firstName: '', lastName: '', email: '', phoneNumber: '', type: 'INDIVIDUAL' });
+            setNewCustomer({ firstName: '', lastName: '', email: '', phone: '', type: 'INDIVIDUAL' });
             fetchCustomers();
         } catch (err) {
             console.error('Create failed', err);
@@ -333,7 +333,7 @@ export default function CustomerManager() {
                                             <Mail size={14} className="text-primary-400 shrink-0" />{c.email}
                                         </div>
                                         <div className="flex items-center gap-2 text-sm text-primary-100">
-                                            <Phone size={14} className="text-primary-400 shrink-0" />{c.phoneNumber || c.phone || 'N/A'}
+                                            <Phone size={14} className="text-primary-400 shrink-0" />{c.phone || c.phoneNumber || 'N/A'}
                                         </div>
                                     </td>
 
@@ -451,8 +451,8 @@ export default function CustomerManager() {
                             <div className="space-y-1.5">
                                 <label className="text-xs font-bold uppercase text-primary-300 tracking-wider">Phone Number</label>
                                 <input type="tel" className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-cyan-500 transition-all placeholder:text-primary-600"
-                                    placeholder="+1 (555) 000-0000" value={newCustomer.phoneNumber}
-                                    onChange={e => setNewCustomer({ ...newCustomer, phoneNumber: e.target.value })} required />
+                                    placeholder="+1 (555) 000-0000" value={newCustomer.phone}
+                                    onChange={e => setNewCustomer({ ...newCustomer, phone: e.target.value })} required />
                             </div>
                             <div className="space-y-1.5">
                                 <label className="text-xs font-bold uppercase text-primary-300 tracking-wider">Customer Type</label>
