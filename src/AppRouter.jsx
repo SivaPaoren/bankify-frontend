@@ -1,7 +1,6 @@
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
 
-// Admin Components
 import AdminLayout from "./layouts/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import ClientManager from "./components/admin/ClientManager";
@@ -9,6 +8,8 @@ import CustomerManager from "./components/admin/CustomerManager";
 import AccountManager from "./components/admin/AccountManager";
 import TransactionManager from "./components/admin/TransactionManager";
 import AuditLogs from "./pages/admin/AuditLogs";
+import AdminLedger from "./pages/admin/AdminLedger";
+import SecurityApprovals from "./pages/admin/SecurityApprovals";
 
 // Client Components
 import ClientLayout from "./layouts/ClientLayout";
@@ -22,6 +23,7 @@ import ATMDeposit from "./pages/atm/ATMDeposit";
 import ATMWithdraw from "./pages/atm/ATMWithdraw";
 import ATMTransfer from "./pages/atm/ATMTransfer";
 import ATMHistory from "./pages/atm/History";
+import ATMChangePin from "./pages/atm/ATMChangePin";
 import ATMLogin from "./pages/auth/ATMLogin";
 
 // Auth
@@ -84,7 +86,9 @@ export default function AppRouter() {
         <Route path="customers" element={<CustomerManager />} />
         <Route path="accounts" element={<AccountManager />} />
         <Route path="transactions" element={<TransactionManager />} />
+        <Route path="ledger" element={<AdminLedger />} />
         <Route path="audit-logs" element={<AuditLogs />} />
+        <Route path="security" element={<SecurityApprovals />} />
       </Route>
 
       {/* Client Routes */}
@@ -116,6 +120,7 @@ export default function AppRouter() {
         <Route path="withdraw" element={<ATMWithdraw />} />
         <Route path="transfer" element={<ATMTransfer />} />
         <Route path="history" element={<ATMHistory />} />
+        <Route path="change-pin" element={<ATMChangePin />} />
       </Route>
 
       {/* Default Fallback */}

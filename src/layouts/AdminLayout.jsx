@@ -6,6 +6,7 @@ import {
     LayoutDashboard,
     Users,
     Shield,
+    ShieldCheck,
     LogOut,
     Menu,
     ChevronLeft,
@@ -15,7 +16,8 @@ import {
     Wallet,
     History,
     ChevronRight,
-    Key
+    Key,
+    BookOpen
 } from 'lucide-react';
 
 export default function AdminLayout() {
@@ -53,12 +55,14 @@ export default function AdminLayout() {
             title: 'Ledger & Compliance',
             items: [
                 { to: '/admin/audit-logs', label: 'Audit Logs', icon: FileText },
+                { to: '/admin/ledger', label: 'Global Ledger', icon: BookOpen },
             ]
         },
         {
             title: 'Developer Platform',
             items: [
                 { to: '/admin/clients', label: 'Partner Apps', icon: Shield },
+                { to: '/admin/security', label: 'Security Approvals', icon: ShieldCheck },
             ]
         }
     ];

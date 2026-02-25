@@ -75,9 +75,9 @@ const KeyButton = ({ label, color, span = 1 }) => {
 export default function ATMHome() {
   const navigate = useNavigate();
 
-  const leftLabels = ["", "Balance", "Transfer", "Exit"];
+  const leftLabels = ["Change PIN", "Balance", "Transfer", "Exit"];
   const leftActions = [
-    null,
+    () => navigate("/atm/change-pin"),
     () => navigate("/atm/balance"),
     () => navigate("/atm/transfer"),
     () => navigate("/atm-login")

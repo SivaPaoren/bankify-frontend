@@ -35,6 +35,7 @@ export default function ATMLayout() {
     <div className="min-h-screen bg-white flex items-center justify-center overflow-hidden">
       {/* ATM SCREEN CONTENT */}
       <Outlet />
+      
     </div>
   );
 }

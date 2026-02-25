@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../context/AuthContext";
 import bankifyLogo from "../../assets/BankifyWhiteLogo.png";
 
@@ -12,8 +12,8 @@ const BezelButton = ({ onClick, disabled, side }) => (
     className={`
       relative w-12 h-10 transition-all duration-100 ease-out z-20
       flex items-center justify-center
-      ${disabled 
-        ? "opacity-50 cursor-not-allowed" 
+      ${disabled
+        ? "opacity-50 cursor-not-allowed"
         : "active:scale-95 active:brightness-90 cursor-pointer"}
     `}
   >
@@ -101,11 +101,30 @@ export default function ATMLogin() {
     }
   };
 
+  const backspace = () => {
+    if (stage === "ACCOUNT") setAccountNumber((p) => p.slice(0, -1));
+    if (stage === "PIN") setPin((p) => p.slice(0, -1));
+    setError("");
+  };
+
   const clear = () => {
     if (stage === "ACCOUNT") setAccountNumber("");
     if (stage === "PIN") setPin("");
     setError("");
   };
+
+  // ── Keyboard support ──────────────────────────────────────────────────────
+  useEffect(() => {
+    const handleKey = (e) => {
+      if (e.key >= '0' && e.key <= '9') pressNumber(e.key);
+      else if (e.key === 'Backspace') backspace();
+      else if (e.key === 'Escape') cancel();
+      else if (e.key === 'Enter') handleEnter();
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stage, accountNumber, pin]);
 
   const cancel = () => {
     setAccountNumber("");
@@ -117,8 +136,8 @@ export default function ATMLogin() {
 
   const handleEnter = async () => {
     if (stage === "ACCOUNT") {
-      if (accountNumber.length < 6) {
-        setError("Invalid account");
+      if (accountNumber.length !== 12) {
+        setError("Invalid Account Number");
         return;
       }
       setStage("PIN");
@@ -127,7 +146,7 @@ export default function ATMLogin() {
 
     if (stage === "PIN") {
       if (pin.length !== 6) {
-        setError("PIN must be 6 digits");
+        setError("Invalid PIN");
         return;
       }
       setStage("PROCESSING");
@@ -179,13 +198,20 @@ export default function ATMLogin() {
     }
 
     if (stage === "ACCOUNT") {
+      // Format as 4-4-4 groups for readability
+      const formatted = accountNumber
+        ? accountNumber.replace(/(\d{4})(?=\d)/g, '$1 ')
+        : null;
+      // Placeholder: 4 blocks of 3 underscores = 12 slots
+      const placeholder = "_ _ _ _   _ _ _ _   _ _ _ _";
       return (
         <div className="text-center w-full max-w-xs">
           <p className="text-cyan-500 text-xs font-bold uppercase mb-4">Enter Account Number</p>
-          <div className="bg-black/40 border border-slate-600 p-4 rounded text-2xl font-mono text-white tracking-widest shadow-inner">
-            {accountNumber || "_ _ _ _ _ _ _ _ _ _ _ _"}
+          <div className="bg-black/40 border border-slate-600 p-4 rounded text-xl font-mono text-white tracking-widest shadow-inner min-h-[60px] flex items-center justify-center">
+            {formatted || <span className="text-slate-600 text-sm tracking-[0.2em]">{placeholder}</span>}
           </div>
-          {error && <p className="text-red-500 text-xs mt-3">{error}</p>}
+          <p className="text-slate-500 text-[10px] font-mono mt-2">{accountNumber.length} / 12 digits</p>
+          {error && <p className="text-red-500 text-xs mt-2">{error}</p>}
         </div>
       );
     }
@@ -258,7 +284,7 @@ export default function ATMLogin() {
                     {rightLabels.map((label, i) => (
                       <div key={i} className="h-10 flex items-center justify-end">
                         {label && (
-                           <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1">
                             <span className="bg-slate-800/90 text-white text-xs px-2 py-1 rounded border-r-2 border-cyan-500 shadow-lg text-right">
                               {label}
                             </span>
@@ -270,7 +296,7 @@ export default function ATMLogin() {
                   </div>
 
                   <div className="w-full h-full flex items-center justify-center p-5 relative z-10">
-                     {renderCenterScreen()}
+                    {renderCenterScreen()}
                   </div>
                 </div>
 
@@ -293,7 +319,7 @@ export default function ATMLogin() {
 
           {/* RIGHT UNIT: CARD SLOT, KEYPAD, RECEIPT */}
           <div className="flex flex-col gap-6 w-72">
-            
+
             <div className="bg-gray-200 p-4 rounded-xl border border-gray-400 shadow-inner relative z-0">
               <div className="h-10 bg-gray-900 rounded relative flex items-center justify-center border-b border-gray-700 z-10">
                 <div className={`w-16 h-1 animate-pulse shadow-[0_0_5px_rgba(34,197,94,0.5)] ${cardInserted ? 'bg-green-500' : 'bg-cyan-500'}`} />
@@ -343,9 +369,9 @@ export default function ATMLogin() {
               </div>
             </div>
 
-             <div className="bg-gray-200 p-3 rounded-lg border border-gray-400 shadow-inner flex flex-col items-center justify-center h-32">
-                <div className="w-3/4 h-1.5 bg-gray-900 rounded-full mb-2 border-b border-white/10 shadow-inner" />
-                <span className="text-[11px] text-gray-500 font-black uppercase tracking-widest">Receipt</span>
+            <div className="bg-gray-200 p-3 rounded-lg border border-gray-400 shadow-inner flex flex-col items-center justify-center h-32">
+              <div className="w-3/4 h-1.5 bg-gray-900 rounded-full mb-2 border-b border-white/10 shadow-inner" />
+              <span className="text-[11px] text-gray-500 font-black uppercase tracking-widest">Receipt</span>
             </div>
           </div>
 

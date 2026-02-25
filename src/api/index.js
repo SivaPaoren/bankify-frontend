@@ -389,17 +389,16 @@ export const atmService = {
         return response.data;
     },
 
-    // Legacy support for older components using getTransactionsByAccount(id)
-    getTransactionsByAccount: async () => {
-        // If called with ID, warn but try to use "me" logic if it matches? 
-        // Or just redirect to getTransactions()
-        return atmService.getTransactions();
+    // 2.6 Change PIN — backend expects { oldPin, newPin }
+    changePin: async ({ oldPin, newPin }) => {
+        const response = await atmApi.post('/atm/me/change-pin', { oldPin, newPin });
+        return response.data;
     },
 
-    // 2.6 Change PIN
-    changePin: async (oldPin, newPin) => {
-        await atmApi.post('/atm/me/change-pin', { oldPin, newPin });
-    }
+    // Legacy support for older components using getTransactionsByAccount(id)
+    getTransactionsByAccount: async () => {
+        return atmService.getTransactions();
+    },
 };
 
 export const partnerService = {
