@@ -40,7 +40,7 @@ export default function SecurityApprovals() {
             setProcessingId(requestId || partnerId);
             await adminService.approveKeyRotation(requestId);
             // Re-fetch or filter out
-            setRequests(prev => prev.filter(r => (r.id !== requestId && r.partnerId !== partnerId)));
+            setRequests(prev => prev.filter(r => r.id !== requestId));
         } catch (e) {
             console.error("Failed to approve rotation", e);
             setError("Failed to approve the key rotation request.");
@@ -54,7 +54,7 @@ export default function SecurityApprovals() {
             setProcessingId(requestId || partnerId);
             await adminService.rejectKeyRotation(requestId);
             // Re-fetch or filter out
-            setRequests(prev => prev.filter(r => (r.id !== requestId && r.partnerId !== partnerId)));
+            setRequests(prev => prev.filter(r => r.id !== requestId));
         } catch (e) {
             console.error("Failed to reject rotation", e);
             setError("Failed to reject the key rotation request.");
@@ -101,8 +101,8 @@ export default function SecurityApprovals() {
                 <table className="w-full text-left border-collapse">
                     <thead>
                         <tr className="bg-white/5 border-b border-white/5 text-xs uppercase tracking-widest text-primary-200 font-bold">
-                            <th className="px-6 py-4">Partner details</th>
-                            <th className="px-6 py-4">Environment</th>
+                            <th className="px-6 py-4">App ID</th>
+                            <th className="px-6 py-4">Request Reason</th>
                             <th className="px-6 py-4">Requested At</th>
                             <th className="px-6 py-4 text-right">Actions</th>
                         </tr>
@@ -119,10 +119,10 @@ export default function SecurityApprovals() {
                             </tr>
                         ) : requests.length > 0 ? (
                             requests.map((req, idx) => {
-                                const isProcessing = processingId === (req.id || req.partnerId);
+                                const isProcessing = processingId === req.id;
 
                                 return (
-                                    <tr key={req.id || req.partnerId || idx} className="hover:bg-white/5 transition-colors group">
+                                    <tr key={req.id || idx} className="hover:bg-white/5 transition-colors group">
 
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
@@ -131,19 +131,18 @@ export default function SecurityApprovals() {
                                                 </div>
                                                 <div className="flex flex-col">
                                                     <span className="text-sm font-bold text-white group-hover:text-cyan-300 transition-colors">
-                                                        {req.partnerName || `Partner ${req.partnerId}`}
+                                                        Partner App
                                                     </span>
                                                     <span className="text-xs text-primary-400 font-mono">
-                                                        ID: {req.partnerId}
+                                                        ID: {req.partnerAppId ? String(req.partnerAppId).substring(0, 8).toUpperCase() : 'N/A'}
                                                     </span>
                                                 </div>
                                             </div>
                                         </td>
 
                                         <td className="px-6 py-4">
-                                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg border text-xs font-bold uppercase tracking-wider bg-blue-500/10 text-blue-300 border-blue-500/20">
-                                                <Server size={12} />
-                                                {req.environment || 'PRODUCTION'}
+                                            <span className="text-sm text-primary-300 italic">
+                                                {req.reason || 'No reason provided'}
                                             </span>
                                         </td>
 
@@ -151,9 +150,9 @@ export default function SecurityApprovals() {
                                             <div className="flex items-center gap-2">
                                                 <Clock size={14} className="text-primary-500 shrink-0" />
                                                 <span>
-                                                    {req.requestedAt
-                                                        ? new Date(req.requestedAt).toLocaleString()
-                                                        : 'Just now'}
+                                                    {req.createdAt
+                                                        ? new Date(req.createdAt).toLocaleString()
+                                                        : 'Unknown Date'}
                                                 </span>
                                             </div>
                                         </td>
@@ -161,7 +160,7 @@ export default function SecurityApprovals() {
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex items-center justify-end gap-2">
                                                 <button
-                                                    onClick={() => handleReject(req.partnerId, req.id)}
+                                                    onClick={() => handleReject(req.partnerAppId, req.id)}
                                                     disabled={isProcessing}
                                                     className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-bold text-red-400 hover:text-white hover:bg-red-500/80 border border-red-500/30 hover:border-red-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed group/btn"
                                                 >
@@ -169,7 +168,7 @@ export default function SecurityApprovals() {
                                                     Reject
                                                 </button>
                                                 <button
-                                                    onClick={() => handleApprove(req.partnerId, req.id)}
+                                                    onClick={() => handleApprove(req.partnerAppId, req.id)}
                                                     disabled={isProcessing}
                                                     className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-bold text-emerald-400 hover:text-white bg-emerald-500/10 hover:bg-emerald-500 border border-emerald-500/30 hover:border-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.1)] hover:shadow-[0_0_15px_rgba(16,185,129,0.4)] transition-all disabled:opacity-50 disabled:cursor-not-allowed group/btn"
                                                 >

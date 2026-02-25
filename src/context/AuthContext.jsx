@@ -89,14 +89,10 @@ export const AuthProvider = ({ children }) => {
     try {
       const data = await authService.atmLogin(bankId, password);
 
-      // Standardize response
       let token = data.token;
       let user = data.user || data;
 
-      if (!user.role && data.role) {
-        user = { ...data };
-      }
-      // Ensure specific fields for ATM user if missing
+      if (!user.role && data.role) user = { ...data };
       if (!user.name) user.name = "ATM User";
       if (!user.role) user.role = "USER";
 
@@ -106,7 +102,9 @@ export const AuthProvider = ({ children }) => {
       setUser(user);
       setRole(user.role);
       setIsAuthenticated(true);
-      return { success: true, role: user.role };
+
+      // ✅ Return pinChangeRequired so ATMLogin can redirect to /atm/change-pin
+      return { success: true, role: user.role, pinChangeRequired: !!data.pinChangeRequired };
     } catch (error) {
       const message = error.response?.data?.message || error.message || "ATM Login failed";
       return { success: false, message };

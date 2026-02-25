@@ -88,11 +88,11 @@ export default function AdminLedger() {
             {/* Filter by reference */}
             <form onSubmit={handleSearch} className="flex gap-3 bg-white/3 border border-white/10 rounded-2xl px-4 py-3">
                 <div className="flex items-center gap-3 bg-black/20 px-4 py-2.5 rounded-xl border border-white/10 focus-within:border-cyan-500 transition-all flex-1 group">
-                    <Search size={16} className="text-primary-400 group-focus-within:text-cyan-400 shrink-0" />
+                    <Search size={18} className="text-primary-400 group-focus-within:text-cyan-400 shrink-0" />
                     <input
                         type="text"
                         placeholder="Filter by transaction reference / ID..."
-                        className="bg-transparent outline-none text-white w-full placeholder:text-primary-500 text-sm font-mono"
+                        className="bg-transparent outline-none text-white w-full placeholder:text-primary-500 text-sm"
                         value={reference}
                         onChange={e => setReference(e.target.value)}
                     />

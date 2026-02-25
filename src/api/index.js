@@ -59,13 +59,18 @@ partnerApi.interceptors.request.use(
 // Generic Response Interceptor (Applied to all)
 const handleResponseError = (error, type) => {
     if (error.response && error.response.status === 401) {
-        // Clear specific token based on type
         if (type === 'ADMIN') localStorage.removeItem('bankify_admin_token');
-        if (type === 'ATM') localStorage.removeItem('bankify_atm_token');
         if (type === 'PARTNER') localStorage.removeItem('bankify_partner_token');
-
-        // Optional: Redirect if needed, but components often handle redirects
-        // window.location.href = '/login'; 
+        if (type === 'ATM') {
+            localStorage.removeItem('bankify_atm_token');
+            // Auto-redirect to ATM login on token expiry (3-minute backend limit)
+            // Skip redirect for /atm/change-pin so it can attempt a silent re-auth
+            const isLogin = window.location.pathname.includes('/atm-login');
+            const isChangePin = window.location.pathname.includes('/atm/change-pin');
+            if (!isLogin && !isChangePin) {
+                window.location.href = '/atm-login?expired=1';
+            }
+        }
     }
     return Promise.reject(error);
 };

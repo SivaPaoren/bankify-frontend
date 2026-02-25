@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../context/AuthContext";
 import bankifyLogo from "../../assets/BankifyWhiteLogo.png";
@@ -79,12 +79,17 @@ const KeyButton = ({ label, color, span = 1, onClick }) => {
 
 export default function ATMLogin() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { atmLogin, loading } = useAuth();
 
-  const [stage, setStage] = useState("IDLE");
-  const [accountNumber, setAccountNumber] = useState("");
+  const isExpired = new URLSearchParams(location.search).get('expired') === '1';
+  // Pre-fill account number from sessionStorage if returning from expired session
+  const savedAccount = sessionStorage.getItem('bankify_atm_last_account') || '';
+
+  const [stage, setStage] = useState(isExpired && savedAccount ? "PIN" : "IDLE");
+  const [accountNumber, setAccountNumber] = useState(savedAccount);
   const [pin, setPin] = useState("");
-  const [error, setError] = useState("");
+  const [error, setError] = useState(isExpired ? "Session expired — please re-enter your PIN" : "");
   const [cardInserted, setCardInserted] = useState(false);
 
   /* --- LOGIC --- */
@@ -126,12 +131,19 @@ export default function ATMLogin() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [stage, accountNumber, pin]);
 
+  // Full cancel — reset all state. In expired mode, preserve savedAccount so re-login works.
   const cancel = () => {
-    setAccountNumber("");
+    setAccountNumber(isExpired ? savedAccount : ""); // ✅ keep saved account, only clear if normal session
     setPin("");
     setError("");
     setStage("IDLE");
     setCardInserted(false);
+  };
+
+  // Hard exit — clears saved account, returns to fresh ATM login
+  const exitSession = () => {
+    sessionStorage.removeItem('bankify_atm_last_account');
+    window.location.href = '/atm-login'; // full reload, clears isExpired flag
   };
 
   const handleEnter = async () => {
@@ -152,7 +164,13 @@ export default function ATMLogin() {
       setStage("PROCESSING");
       const result = await atmLogin(accountNumber || "CARD", pin);
       if (result.success) {
-        navigate("/atm");
+        // Save account number for smooth re-login if session expires
+        sessionStorage.setItem('bankify_atm_last_account', accountNumber);
+        if (result.pinChangeRequired) {
+          navigate("/atm/change-pin", { state: { knownCurrentPin: pin } });
+        } else {
+          navigate("/atm");
+        }
       } else {
         setError("Invalid credentials");
         setPin("");
@@ -176,8 +194,15 @@ export default function ATMLogin() {
   let rightActions = [null, null, null, null];
 
   if (stage === "IDLE") {
-    rightLabels = ["", "", "", "Input Account No."];
-    rightActions = [null, null, null, () => setStage("ACCOUNT")];
+    if (isExpired && savedAccount) {
+      leftLabels = ["", "", "", "Exit"];
+      leftActions = [null, null, null, exitSession];
+      rightLabels = ["", "", "", "Re-enter PIN"];
+      rightActions = [null, null, null, () => { setAccountNumber(savedAccount); setStage("PIN"); setPin(""); setError(""); }];
+    } else {
+      rightLabels = ["", "", "", "Input Account No."];
+      rightActions = [null, null, null, () => setStage("ACCOUNT")];
+    }
   } else if (stage === "ACCOUNT" || stage === "PIN") {
     leftLabels = ["", "", "", "Cancel"];
     leftActions = [null, null, null, cancel];
@@ -189,9 +214,16 @@ export default function ATMLogin() {
     if (stage === "IDLE") {
       return (
         <div className="text-center">
+          {isExpired && (
+            <div className="mb-3 px-3 py-1.5 bg-amber-500/20 border border-amber-500/40 rounded text-amber-400 text-[10px] font-bold uppercase tracking-wider animate-pulse">
+              ⚠ Session Expired
+            </div>
+          )}
           <h2 className="text-white text-xl font-bold tracking-wider mb-2">WELCOME</h2>
           <p className="text-cyan-400 text-xs font-mono animate-pulse uppercase">
-            PLEASE INSERT CARD OR SELECT OPTION
+            {isExpired && savedAccount
+              ? `RE-AUTHENTICATE: ...${savedAccount.slice(-4)}`
+              : "PLEASE INSERT CARD OR SELECT OPTION"}
           </p>
         </div>
       );

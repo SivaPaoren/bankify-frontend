@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import bankifyLogo from "../../assets/BankifyWhiteLogo.png";
 import { atmService } from "../../api";
+import { useAuth } from "../../context/AuthContext";
 
 /* ---------- SHARED HARDWARE UI COMPONENTS ---------- */
 
@@ -43,9 +44,14 @@ const KeyButton = ({ label, color, onClick }) => {
 
 export default function ATMChangePin() {
     const navigate = useNavigate();
+    const location = useLocation();
+    const { atmLogin } = useAuth();
 
-    const [stage, setStage] = useState("CURRENT_PIN");
-    const [currentPin, setCurrentPin] = useState("");
+    // Check if we came from ATMLogin with the known PIN
+    const knownCurrentPin = location.state?.knownCurrentPin || "";
+
+    const [stage, setStage] = useState(knownCurrentPin ? "NEW_PIN" : "CURRENT_PIN");
+    const [currentPin, setCurrentPin] = useState(knownCurrentPin);
     const [newPin, setNewPin] = useState("");
     const [confirmPin, setConfirmPin] = useState("");
     const [error, setError] = useState("");
@@ -95,6 +101,26 @@ export default function ATMChangePin() {
                 await atmService.changePin({ oldPin: currentPin, newPin });
                 setStage("SUCCESS");
             } catch (err) {
+                // Silent retry if token expired (401/403)
+                if (err.response?.status === 401 || err.response?.status === 403) {
+                    const savedAccount = sessionStorage.getItem('bankify_atm_last_account');
+                    if (savedAccount && currentPin) {
+                        try {
+                            const reAuth = await atmLogin(savedAccount, currentPin);
+                            if (reAuth.success) {
+                                await atmService.changePin({ oldPin: currentPin, newPin });
+                                setStage("SUCCESS");
+                                return;
+                            }
+                        } catch (retryErr) {
+                            // fall down to error handler
+                        }
+                    }
+                    // If we get here, silent retry failed or couldn't apply
+                    window.location.href = '/atm-login?expired=1';
+                    return;
+                }
+
                 const msg = err.response?.data?.message || "CHANGE PIN FAILED";
                 setError(msg.toUpperCase());
                 setCurrentPin("");
@@ -119,6 +145,14 @@ export default function ATMChangePin() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [stage, currentPin, newPin, confirmPin]);
 
+    // Auto-navigate to /atm after successful PIN change
+    useEffect(() => {
+        if (stage === "SUCCESS") {
+            const t = setTimeout(() => navigate("/atm"), 2000);
+            return () => clearTimeout(t);
+        }
+    }, [stage, navigate]);
+
     // Screen label maps
     const stageLabel = {
         CURRENT_PIN: "ENTER CURRENT PIN",
@@ -141,9 +175,9 @@ export default function ATMChangePin() {
         if (stage === "SUCCESS") {
             return (
                 <div className="text-center space-y-3 text-white font-mono">
-                    <div className="text-4xl mb-2">✓</div>
+                    <div className="text-5xl mb-2 text-green-400">✓</div>
                     <p className="text-green-400 font-bold uppercase tracking-widest text-sm">PIN Changed!</p>
-                    <p className="text-cyan-400/60 text-[10px]">Press CANCEL to return.</p>
+                    <p className="text-cyan-400/60 text-[10px] animate-pulse">Returning to menu...</p>
                 </div>
             );
         }
