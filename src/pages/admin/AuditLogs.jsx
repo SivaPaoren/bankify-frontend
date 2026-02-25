@@ -21,7 +21,8 @@ function parseDetails(details, entityType, entityId) {
 }
 
 const ACTOR_BADGE = {
-  USER: { cls: 'bg-blue-500/10 text-blue-300 border-blue-500/20', Icon: User, label: 'USER' },
+  ADMIN: { cls: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20', Icon: Shield, label: 'ADMIN' },
+  USER: { cls: 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20', Icon: Shield, label: 'ADMIN' },
   ATM: { cls: 'bg-amber-500/10 text-amber-300 border-amber-500/20', Icon: Cpu, label: 'ATM' },
   PARTNER: { cls: 'bg-purple-500/10 text-purple-300 border-purple-500/20', Icon: Shield, label: 'PARTNER' },
 };
@@ -51,6 +52,9 @@ const ACTION_COLOR = {
   PARTNER_APP_APPROVED: 'text-emerald-300 bg-emerald-500/10 border-emerald-500/20',
   PARTNER_APP_DISABLED: 'text-red-300 bg-red-500/10 border-red-500/20',
   PARTNER_APP_ACTIVATED: 'text-teal-300 bg-teal-500/10 border-teal-500/20',
+  PARTNER_LOGIN: 'text-purple-300 bg-purple-500/10 border-purple-500/20',
+  ATM_LOGIN: 'text-amber-300 bg-amber-500/10 border-amber-500/20',
+  ATM_PIN_CHANGE: 'text-yellow-300 bg-yellow-500/10 border-yellow-500/20',
 };
 
 const toStartCase = (str) =>
@@ -62,31 +66,58 @@ const PAGE_SIZE_OPTIONS = [
   { key: '100', label: '100 rows' },
 ];
 
-const ACTION_FLAT_OPTIONS = [
-  { key: 'ALL', label: 'All Actions' },
-  { key: 'USER_LOGIN', label: 'User Login' },
-  { key: 'ACCOUNT_CREATE', label: 'Create Account' },
-  { key: 'ACCOUNT_FREEZE', label: 'Freeze Account' },
-  { key: 'ACCOUNT_REACTIVATE', label: 'Reactivate Account' },
-  { key: 'ACCOUNT_CLOSE', label: 'Close Account' },
-  { key: 'ACCOUNT_PIN_RESET', label: 'PIN Reset' },
-  { key: 'CUSTOMER_CREATE', label: 'Create Customer' },
-  { key: 'CUSTOMER_FREEZE', label: 'Freeze Customer' },
-  { key: 'CUSTOMER_REACTIVATE', label: 'Reactivate Customer' },
-  { key: 'CUSTOMER_CLOSE', label: 'Close Customer' },
-  { key: 'TRANSACTION_DEPOSIT', label: 'Deposit' },
-  { key: 'TRANSACTION_WITHDRAW', label: 'Withdraw' },
-  { key: 'TRANSACTION_TRANSFER', label: 'Transfer' },
-  { key: 'PARTNER_ROTATION_APPROVED', label: 'Approve Rotation' },
-  { key: 'PARTNER_ROTATION_REJECTED', label: 'Reject Rotation' },
-  { key: 'PARTNER_APP_APPROVED', label: 'Approve Partner App' },
-  { key: 'PARTNER_APP_DISABLED', label: 'Disable Partner App' },
-  { key: 'PARTNER_APP_ACTIVATED', label: 'Reactivate Partner App' },
+const ACTION_GROUPS = [
+  {
+    label: 'Authentication',
+    options: [
+      { key: 'USER_LOGIN', label: 'Admin Login' },
+      { key: 'PARTNER_LOGIN', label: 'Partner Login' },
+      { key: 'ATM_LOGIN', label: 'ATM Login' }
+    ]
+  },
+  {
+    label: 'Accounts',
+    options: [
+      { key: 'ACCOUNT_CREATE', label: 'Create Account' },
+      { key: 'ACCOUNT_FREEZE', label: 'Freeze Account' },
+      { key: 'ACCOUNT_REACTIVATE', label: 'Reactivate Account' },
+      { key: 'ACCOUNT_CLOSE', label: 'Close Account' },
+      { key: 'ACCOUNT_PIN_RESET', label: 'Admin PIN Reset' },
+      { key: 'ATM_PIN_CHANGE', label: 'ATM PIN Change' },
+    ]
+  },
+  {
+    label: 'Customers',
+    options: [
+      { key: 'CUSTOMER_CREATE', label: 'Create Customer' },
+      { key: 'CUSTOMER_FREEZE', label: 'Freeze Customer' },
+      { key: 'CUSTOMER_REACTIVATE', label: 'Reactivate Customer' },
+      { key: 'CUSTOMER_CLOSE', label: 'Close Customer' },
+    ]
+  },
+  {
+    label: 'Transactions',
+    options: [
+      { key: 'TRANSACTION_DEPOSIT', label: 'Deposit' },
+      { key: 'TRANSACTION_WITHDRAW', label: 'Withdraw' },
+      { key: 'TRANSACTION_TRANSFER', label: 'Transfer' },
+    ]
+  },
+  {
+    label: 'Partner Platform',
+    options: [
+      { key: 'PARTNER_ROTATION_APPROVED', label: 'Approve Rotation' },
+      { key: 'PARTNER_ROTATION_REJECTED', label: 'Reject Rotation' },
+      { key: 'PARTNER_APP_APPROVED', label: 'Approve Partner App' },
+      { key: 'PARTNER_APP_DISABLED', label: 'Disable Partner App' },
+      { key: 'PARTNER_APP_ACTIVATED', label: 'Reactivate Partner App' },
+    ]
+  }
 ];
 
 const ACTOR_OPTIONS = [
   { key: 'ALL', label: 'All Sources' },
-  { key: 'USER', label: 'Portal Users', cls: 'border-blue-500/20 text-blue-400', activeCls: 'bg-blue-500/20 border-blue-500/40 text-blue-300' },
+  { key: 'ADMIN', label: 'System Admins', cls: 'border-emerald-500/20 text-emerald-400', activeCls: 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300' },
   { key: 'ATM', label: 'ATM Terminals', cls: 'border-amber-500/20 text-amber-400', activeCls: 'bg-amber-500/20 border-amber-500/40 text-amber-300' },
   { key: 'PARTNER', label: 'Partner Apps', cls: 'border-purple-500/20 text-purple-400', activeCls: 'bg-purple-500/20 border-purple-500/40 text-purple-300' },
 ];
@@ -106,11 +137,7 @@ export default function AuditLogs() {
     const fetchLogs = async () => {
       setLoading(true);
       try {
-        const params = {};
-        if (actorFilter !== 'ALL') params.actorType = actorFilter;
-        if (actionFilter !== 'ALL') params.action = actionFilter;
-
-        const data = await adminService.getAuditLogs(params);
+        const data = await adminService.getAuditLogs({});
         setLogs(Array.isArray(data) ? data : (data.content || []));
       } catch (err) {
         console.error('Failed to fetch logs', err);
@@ -119,16 +146,22 @@ export default function AuditLogs() {
       }
     };
     fetchLogs();
-  }, [actorFilter, actionFilter]);
-
-  // Reset to page 1 when any filter changes
-  useEffect(() => { setCurrentPage(1); }, [actorFilter, actionFilter, dateFrom, dateTo, pageSize, sortConfig]);
+  }, [actorFilter, actionFilter, dateFrom, dateTo, pageSize, sortConfig]);
 
   const filteredLogs = useMemo(() => {
     let result = logs.filter(log => {
-      // Actor and Action are now filtered by the backend
-      if (dateFrom && log.createdAt && log.createdAt < dateFrom) return false;
-      if (dateTo && log.createdAt && log.createdAt.slice(0, 10) > dateTo) return false;
+      // Date filtering
+      const logDate = log.createdAt ? log.createdAt.slice(0, 10) : '';
+      if (dateFrom && logDate < dateFrom) return false;
+      if (dateTo && logDate > dateTo) return false;
+      if (actionFilter !== 'ALL' && log.action !== actionFilter) return false;
+      if (actorFilter !== 'ALL') {
+        if (actorFilter === 'ADMIN' && (log.actorType === 'ADMIN' || log.actorType === 'USER')) {
+          // matched explicitly
+        } else if (log.actorType !== actorFilter) {
+          return false;
+        }
+      }
       return true;
     });
 
@@ -160,7 +193,7 @@ export default function AuditLogs() {
   const stats = {
     total: logs.length,
     recent: logs.filter(l => (Date.now() - new Date(l.createdAt)) < 86400000).length,
-    users: logs.filter(l => l.actorType === 'USER').length,
+    admins: logs.filter(l => l.actorType === 'ADMIN' || l.actorType === 'USER').length,
     errors: logs.filter(l => l.action?.includes('FAIL') || l.action?.includes('ERROR') || l.details?.includes('error')).length,
   };
 
@@ -236,17 +269,12 @@ export default function AuditLogs() {
         </button>
 
         <button
-          onClick={() => applyQuickFilter('USER', 'ALL')}
-          className="text-left bg-white/5 border border-white/10 rounded-2xl p-4 hover:bg-white/10 hover:border-blue-500/30 transition-all group"
+          onClick={() => applyQuickFilter('ADMIN', 'ALL')}
+          className="text-left bg-white/5 border border-white/10 rounded-2xl p-4 hover:bg-white/10 hover:border-emerald-500/30 transition-all group"
         >
-          <div className="text-xs text-blue-400/80 uppercase tracking-widest font-bold mb-1">User Actions</div>
-          <div className="text-2xl font-bold text-blue-400 group-hover:text-blue-300 transition-colors">{stats.users}</div>
+          <div className="text-xs text-emerald-400/80 uppercase tracking-widest font-bold mb-1">Admin Actions</div>
+          <div className="text-2xl font-bold text-emerald-400 group-hover:text-emerald-300 transition-colors">{stats.admins}</div>
         </button>
-
-        <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-          <div className="text-xs text-red-400/80 uppercase tracking-widest font-bold mb-1">Errors / Failures</div>
-          <div className="text-2xl font-bold text-red-400">{stats.errors}</div>
-        </div>
       </div>
 
       {/* ── Toolbar — date left, filters right ── */}
@@ -287,7 +315,8 @@ export default function AuditLogs() {
           />
           <FilterDropdown
             label="Action"
-            options={ACTION_FLAT_OPTIONS}
+            options={ACTION_GROUPS}
+            grouped={true}
             value={actionFilter}
             onChange={setActionFilter}
           />
