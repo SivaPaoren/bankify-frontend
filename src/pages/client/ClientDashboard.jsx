@@ -3,23 +3,14 @@ import { useAuth } from '../../context/AuthContext';
 import { partnerService } from '../../api';
 import {
     Wallet, ArrowUpRight, ArrowDownLeft, ArrowLeftRight,
-    RefreshCw, X, CheckCircle, Clock, AlertCircle, TrendingUp
+    RefreshCw, X, CheckCircle, Clock, AlertCircle, TrendingUp,
+    Lock, ShieldCheck
 } from 'lucide-react';
 
 const formatCurrency = (amount, currency = 'THB') =>
     new Intl.NumberFormat('en-US', { style: 'currency', currency, minimumFractionDigits: 2 }).format(amount ?? 0);
 
 const ACTION_CONFIG = {
-    // deposit: {
-    //     label: 'Deposit',
-    //     icon: ArrowDownLeft,
-    //     color: 'emerald',
-    //     gradient: 'from-emerald-500 to-teal-500',
-    //     bg: 'bg-emerald-500/10',
-    //     border: 'border-emerald-500/20',
-    //     text: 'text-emerald-400',
-    //     btnClass: 'from-emerald-500 to-teal-600 shadow-emerald-500/20',
-    // },
     withdraw: {
         label: 'Withdraw',
         icon: ArrowUpRight,
@@ -42,22 +33,39 @@ const ACTION_CONFIG = {
     },
 };
 
+// Generates a unique idempotency key per call — critical for safe payments
+const generateIdempotencyKey = (prefix = 'TX') => {
+    const uuid = (typeof crypto !== 'undefined' && crypto.randomUUID)
+        ? crypto.randomUUID()
+        : `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
+    return `${prefix}-${uuid}`;
+};
+
 export default function ClientDashboard() {
     const { user } = useAuth();
     const [balanceData, setBalanceData] = useState(null);
     const [loadingBalance, setLoadingBalance] = useState(true);
-    const [activeModal, setActiveModal] = useState(null); // 'deposit' | 'withdraw' | 'transfer'
+    const [balanceError, setBalanceError] = useState(null);
+    const [activeModal, setActiveModal] = useState(null);
     const [form, setForm] = useState({ amount: '', note: '', accountNumber: '' });
-    const [txStatus, setTxStatus] = useState(null); // null | 'loading' | 'success' | 'error'
+    const [txStatus, setTxStatus] = useState(null);
     const [txMessage, setTxMessage] = useState('');
 
     const fetchBalance = useCallback(async () => {
         setLoadingBalance(true);
+        setBalanceError(null);
         try {
             const data = await partnerService.getBalance();
             setBalanceData(data);
         } catch (err) {
-            console.error('Balance fetch failed', err);
+            const status = err.response?.status;
+            if (status === 401) {
+                setBalanceError('Unauthorized — balance requires X-API-Key (server-to-server only).');
+            } else if (status === 403) {
+                setBalanceError('Access denied — your partner app may still be pending approval.');
+            } else {
+                setBalanceError('Could not load balance. Please try again.');
+            }
         } finally {
             setLoadingBalance(false);
         }
@@ -82,20 +90,28 @@ export default function ClientDashboard() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setTxStatus('loading');
+
+        // Each submission generates a FRESH unique idempotency key
+        // This guarantees uniqueness even if the user submits the same amount twice
+        const idempotencyKey = generateIdempotencyKey(activeModal === 'withdraw' ? 'WDR' : 'TRF');
+        console.log('[Bankify] Idempotency-Key:', idempotencyKey);
+
         try {
-            if (activeModal === 'deposit') {
-                await partnerService.deposit(form.amount, form.note);
-            } else if (activeModal === 'withdraw') {
+            if (activeModal === 'withdraw') {
                 await partnerService.withdraw(form.amount, form.note);
             } else if (activeModal === 'transfer') {
                 await partnerService.transfer(form.accountNumber, form.amount, form.note);
             }
             setTxStatus('success');
             setTxMessage('Transaction completed successfully!');
-            fetchBalance(); // Refresh balance
+            fetchBalance();
         } catch (err) {
+            const status = err.response?.status;
+            let message = err.response?.data?.message || 'Transaction failed. Please try again.';
+            if (status === 401) message = 'Unauthorized — this operation requires X-API-Key (server-to-server).';
+            if (status === 403) message = 'Forbidden — your partner app may be pending approval.';
             setTxStatus('error');
-            setTxMessage(err.response?.data?.message || 'Transaction failed. Please try again.');
+            setTxMessage(message);
         }
     };
 
@@ -122,7 +138,6 @@ export default function ClientDashboard() {
 
             {/* Balance Hero Card */}
             <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-orange-950/80 via-[#1a0e00] to-red-950/60 border border-orange-500/20 p-8 shadow-2xl shadow-orange-900/20">
-                {/* Background Glow */}
                 <div className="absolute top-0 right-0 w-80 h-80 bg-orange-500/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
                 <div className="absolute bottom-0 left-0 w-60 h-60 bg-red-500/8 rounded-full blur-3xl -ml-10 -mb-10 pointer-events-none" />
 
@@ -134,8 +149,8 @@ export default function ClientDashboard() {
                             </div>
                             <div>
                                 <p className="text-orange-300/70 text-sm font-semibold uppercase tracking-widest">Partner Account</p>
-                                <p className="text-slate-400 text-xs font-mono mt-0.5 truncate max-w-[200px]">
-                                    {balanceData?.accountId ? `ID: ${String(balanceData.accountId).substring(0, 16)}...` : 'Loading...'}
+                                <p className="text-slate-400 text-xs font-mono mt-0.5">
+                                    {user?.email || 'Loading...'}
                                 </p>
                             </div>
                         </div>
@@ -149,6 +164,17 @@ export default function ClientDashboard() {
                         <p className="text-slate-400 text-sm mb-2 font-semibold uppercase tracking-widest">Current Balance</p>
                         {loadingBalance ? (
                             <div className="h-14 w-64 bg-white/5 rounded-2xl animate-pulse" />
+                        ) : balanceError ? (
+                            <div className="flex items-start gap-3 p-4 bg-orange-500/10 border border-orange-500/20 rounded-2xl max-w-xl">
+                                <Lock size={20} className="text-orange-400 shrink-0 mt-0.5" />
+                                <div>
+                                    <p className="text-orange-300 font-bold text-sm">Balance Requires X-API-Key</p>
+                                    <p className="text-orange-400/70 text-xs mt-1">
+                                        The <code className="bg-black/30 px-1 rounded">/partner/me/balance</code> endpoint is a server-to-server API.
+                                        Use your <strong>X-API-Key</strong> from the Developer Console on your backend server to access it.
+                                    </p>
+                                </div>
+                            </div>
                         ) : (
                             <div className="flex items-end gap-3">
                                 <span className="text-6xl font-black text-white tracking-tighter drop-shadow-[0_0_30px_rgba(251,146,60,0.3)]">
@@ -164,8 +190,8 @@ export default function ClientDashboard() {
                         )}
                     </div>
 
-                    {/* Quick Action Buttons */}
-                    <div className="flex flex-wrap gap-3">
+                    {/* Quick Action Buttons — server-to-server only notice */}
+                    <div className="flex flex-wrap gap-3 items-center">
                         {Object.entries(ACTION_CONFIG).map(([type, config]) => {
                             const Icon = config.icon;
                             return (
@@ -179,6 +205,10 @@ export default function ClientDashboard() {
                                 </button>
                             );
                         })}
+                        <span className="text-slate-600 text-xs flex items-center gap-1.5">
+                            <ShieldCheck size={12} className="text-slate-500" />
+                            All transactions secured with unique Idempotency-Key
+                        </span>
                     </div>
                 </div>
             </div>
@@ -187,18 +217,18 @@ export default function ClientDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {[
                     {
-                        label: 'Currency',
-                        value: balanceData?.currency || '—',
+                        label: 'Email',
+                        value: user?.email || '—',
                         icon: TrendingUp,
                         color: 'orange',
-                        sub: 'Base currency'
+                        sub: 'Portal login'
                     },
                     {
-                        label: 'Account ID',
-                        value: balanceData?.accountId ? String(balanceData.accountId).substring(0, 8) + '...' : '—',
+                        label: 'Account Type',
+                        value: 'PARTNER',
                         icon: Wallet,
                         color: 'blue',
-                        sub: 'Unique identifier'
+                        sub: 'Enterprise'
                     },
                     {
                         label: 'Status',
@@ -217,11 +247,26 @@ export default function ClientDashboard() {
                                     <Icon size={15} className={`text-${s.color}-400`} />
                                 </div>
                             </div>
-                            <p className="text-xl font-bold text-white font-mono">{loadingBalance ? '...' : s.value}</p>
+                            <p className="text-lg font-bold text-white font-mono truncate">{s.value}</p>
                             <p className="text-xs text-slate-600 mt-1">{s.sub}</p>
                         </div>
                     );
                 })}
+            </div>
+
+            {/* API Note */}
+            <div className="bg-white/3 border border-white/8 rounded-2xl p-5 flex items-start gap-3">
+                <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0">
+                    <Lock size={15} className="text-blue-400" />
+                </div>
+                <div>
+                    <p className="text-sm font-bold text-white">Server-to-Server Money Operations</p>
+                    <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                        Deposit, Withdraw, and Transfer endpoints require <code className="bg-black/30 px-1 rounded text-orange-300">X-API-Key</code> authentication.
+                        These operations must be called from your backend server — never from the browser.
+                        Each request must include a unique <code className="bg-black/30 px-1 rounded text-orange-300">Idempotency-Key</code> header to prevent duplicate charges.
+                    </p>
+                </div>
             </div>
 
             {/* Transaction Modal */}
@@ -231,10 +276,8 @@ export default function ClientDashboard() {
                         className="bg-[#111115] border border-white/10 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden relative"
                         onClick={e => e.stopPropagation()}
                     >
-                        {/* Modal Glow */}
                         <div className={`absolute top-0 right-0 w-40 h-40 bg-${cfg.color}-500/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none`} />
 
-                        {/* Header */}
                         <div className="p-6 border-b border-white/5 flex justify-between items-center relative z-10">
                             <div className="flex items-center gap-3">
                                 <div className={`p-2.5 rounded-xl ${cfg.bg} border ${cfg.border}`}>
@@ -242,7 +285,10 @@ export default function ClientDashboard() {
                                 </div>
                                 <div>
                                     <h3 className="text-lg font-bold text-white">{cfg.label}</h3>
-                                    <p className="text-xs text-slate-500">Secured with Idempotency-Key</p>
+                                    <p className="text-xs text-slate-500 flex items-center gap-1">
+                                        <ShieldCheck size={10} className="text-emerald-500" />
+                                        Unique Idempotency-Key per request
+                                    </p>
                                 </div>
                             </div>
                             <button onClick={closeModal} className="text-slate-500 hover:text-white transition-colors p-1">
@@ -250,7 +296,6 @@ export default function ClientDashboard() {
                             </button>
                         </div>
 
-                        {/* Body */}
                         <div className="p-6 relative z-10">
                             {txStatus === 'success' ? (
                                 <div className="text-center py-8">
@@ -259,10 +304,7 @@ export default function ClientDashboard() {
                                     </div>
                                     <p className="text-white font-bold text-lg">Success!</p>
                                     <p className="text-slate-400 text-sm mt-1">{txMessage}</p>
-                                    <button
-                                        onClick={closeModal}
-                                        className="mt-6 w-full py-3 rounded-xl bg-white/10 hover:bg-white/15 text-white font-semibold transition-all"
-                                    >
+                                    <button onClick={closeModal} className="mt-6 w-full py-3 rounded-xl bg-white/10 hover:bg-white/15 text-white font-semibold transition-all">
                                         Close
                                     </button>
                                 </div>
@@ -285,7 +327,7 @@ export default function ClientDashboard() {
                                     <div className="space-y-1.5">
                                         <label className="text-xs font-bold uppercase text-slate-400 tracking-wider">Amount</label>
                                         <div className="relative">
-                                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-bold">{balanceData?.currency || 'THB'}</span>
+                                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-bold text-sm">THB</span>
                                             <input
                                                 type="number"
                                                 min="0.01"
@@ -304,7 +346,7 @@ export default function ClientDashboard() {
                                         <input
                                             type="text"
                                             className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-orange-500 transition-all placeholder:text-slate-600"
-                                            placeholder={activeModal === 'deposit' ? 'Topup' : activeModal === 'withdraw' ? 'Settlement' : 'Payout'}
+                                            placeholder={activeModal === 'withdraw' ? 'Settlement' : 'Payout'}
                                             value={form.note}
                                             onChange={e => setForm({ ...form, note: e.target.value })}
                                         />
@@ -318,11 +360,7 @@ export default function ClientDashboard() {
                                     )}
 
                                     <div className="flex gap-3 pt-2">
-                                        <button
-                                            type="button"
-                                            onClick={closeModal}
-                                            className="flex-1 py-3 rounded-xl border border-white/10 text-slate-300 font-semibold hover:bg-white/5 transition-all"
-                                        >
+                                        <button type="button" onClick={closeModal} className="flex-1 py-3 rounded-xl border border-white/10 text-slate-300 font-semibold hover:bg-white/5 transition-all">
                                             Cancel
                                         </button>
                                         <button

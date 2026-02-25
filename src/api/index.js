@@ -191,8 +191,21 @@ export const adminService = {
         const response = await adminApi.patch(`/admin/customers/${customerId}`, updateData);
         return response.data;
     },
-
-    // 1.3 Accounts
+    // Freeze (disable) a customer
+    freezeCustomer: async (customerId) => {
+        const response = await adminApi.patch(`/admin/customers/${customerId}/disable`);
+        return response.data;
+    },
+    // Re-activate a previously frozen customer
+    reactivateCustomer: async (customerId) => {
+        const response = await adminApi.patch(`/admin/customers/${customerId}/reactivate`);
+        return response.data;
+    },
+    // Permanently close a customer and all their accounts
+    closeCustomer: async (customerId) => {
+        const response = await adminApi.patch(`/admin/customers/${customerId}/close`);
+        return response.data;
+    },
     getAccounts: async (params = {}) => {
         const response = await adminApi.get('/admin/accounts', { params });
         return response.data;
@@ -227,9 +240,20 @@ export const adminService = {
         const response = await adminApi.get('/admin/transactions', { params: { accountId } });
         return response.data;
     },
+    // List ALL transactions (admin view)
+    getTransactions: async (params = {}) => {
+        const response = await adminApi.get('/admin/transactions', { params });
+        return response.data;
+    },
     // Single transaction
     getTransaction: async (transactionId) => {
         const response = await adminApi.get(`/admin/transactions/${transactionId}`);
+        return response.data;
+    },
+    // Global Ledger — every transfer creates DEBIT + CREDIT entries
+    // Filter by reference: getLedger({ reference: 'unique-id-123' })
+    getLedger: async (params = {}) => {
+        const response = await adminApi.get('/admin/transactions/ledger', { params });
         return response.data;
     },
 
@@ -432,10 +456,15 @@ export const partnerService = {
         return response.data;
     },
 
-    // Alias for compatibility
     getTransactionsByAccount: async () => {
         return partnerService.getTransactions();
-    }
+    },
+
+    // Request API key rotation (partner submits reason, admin reviews and approves)
+    requestRotation: async (reason = '') => {
+        const response = await partnerApi.post('/partner/portal/keys/rotate-request', { reason });
+        return response.data;
+    },
 };
 
 // Re-export atmService as transactionService for backward compatibility where possible,

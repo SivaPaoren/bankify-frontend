@@ -49,8 +49,9 @@ export default function ClientManager() {
         try {
             if (currentStatus === 'PENDING') {
                 const response = await adminService.approveClient(clientId);
-                if (response?.apiKey) {
-                    setNewKeyDialog({ open: true, key: response.apiKey });
+                // Backend returns 'apiKeyPlain' — only show ONCE at approval time
+                if (response?.apiKeyPlain) {
+                    setNewKeyDialog({ open: true, key: response.apiKeyPlain });
                 }
             } else if (currentStatus === 'ACTIVE') {
                 await adminService.disableClient(clientId);
@@ -68,8 +69,9 @@ export default function ClientManager() {
         try {
             if (action === 'approve') {
                 const response = await adminService.approveKeyRotation(rotationId);
-                if (response?.apiKey) {
-                    setNewKeyDialog({ open: true, key: response.apiKey });
+                // Backend returns 'apiKeyPlain' on rotation approval — only shown once
+                if (response?.apiKeyPlain) {
+                    setNewKeyDialog({ open: true, key: response.apiKeyPlain });
                 }
             } else {
                 await adminService.rejectKeyRotation(rotationId);
@@ -458,19 +460,21 @@ export default function ClientManager() {
                                 )}
 
                                 {revealState === 'revealed' && (
-                                    <div className="flex items-start justify-between bg-amber-500/5 border border-amber-500/20 rounded-xl p-4 animate-fade-in">
-                                        <div>
-                                            <div className="text-amber-400/80 text-[10px] uppercase font-bold tracking-wider mb-1">Sensitive Data Revealed</div>
-                                            <code className="text-white font-mono text-sm break-all">
-                                                sk_live_{Math.random().toString(36).substring(2, 15)}...
-                                            </code>
+                                    <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-4 animate-fade-in space-y-2">
+                                        <div className="text-amber-400 text-[10px] uppercase font-bold tracking-wider flex items-center gap-1.5">
+                                            <Lock size={10} /> Key Not Stored in Plaintext
                                         </div>
+                                        <p className="text-primary-300 text-sm">
+                                            The API key is <strong>only shown once</strong> at the moment of approval or key rotation. It is stored as a hash and cannot be retrieved.
+                                        </p>
+                                        <p className="text-primary-400 text-xs">
+                                            If the partner has lost their key, approve a <strong>Key Rotation</strong> request from the Security Approvals tab.
+                                        </p>
                                         <button
                                             onClick={() => setRevealState('hidden')}
-                                            className="p-2 text-primary-400 hover:bg-white/5 rounded-lg transition-colors flex-shrink-0"
-                                            title="Hide Secret"
+                                            className="text-primary-500 text-xs hover:text-white transition-colors mt-1"
                                         >
-                                            <EyeOff size={18} />
+                                            ← Hide
                                         </button>
                                     </div>
                                 )}
