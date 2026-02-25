@@ -23,6 +23,7 @@ import ATMWithdraw from "./pages/atm/ATMWithdraw";
 import ATMTransfer from "./pages/atm/ATMTransfer";
 import ATMHistory from "./pages/atm/History";
 import ATMLogin from "./pages/auth/ATMLogin";
+import ATMChangePin from "./pages/atm/ATMChangePin";
 
 // Auth
 import AdminLoginPage from "./pages/auth/AdminLoginPage";
@@ -116,6 +117,7 @@ export default function AppRouter() {
         <Route path="withdraw" element={<ATMWithdraw />} />
         <Route path="transfer" element={<ATMTransfer />} />
         <Route path="history" element={<ATMHistory />} />
+        <Route path="/atm/change-pin" element={<ATMChangePin />} />
       </Route>
 
       {/* Default Fallback */}

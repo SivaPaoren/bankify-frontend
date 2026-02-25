@@ -133,7 +133,14 @@ export default function ATMLogin() {
       setStage("PROCESSING");
       const result = await atmLogin(accountNumber || "CARD", pin);
       if (result.success) {
-        navigate("/atm");
+  const firstLogin = localStorage.getItem("atmFirstLogin");
+
+  if (!firstLogin) {
+    localStorage.setItem("atmFirstLogin", "done");
+    navigate("/atm/change-pin");
+  } else {
+    navigate("/atm");
+  }
       } else {
         setError("Invalid credentials");
         setPin("");
