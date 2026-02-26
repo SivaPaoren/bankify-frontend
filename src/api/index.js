@@ -113,12 +113,14 @@ export const authService = {
     },
 
     // 2. ATM Auth
-    atmLogin: async (toAccountNumber, pin) => {
-        const response = await atmApi.post('/atm/auth/login', { toAccountNumber, pin });
+    atmLogin: async (accountNumber, pin) => {
+        const response = await atmApi.post('/atm/auth/login', { accountNumber, pin });
         const { token } = response.data;
         localStorage.setItem('bankify_atm_token', token);
         return response.data;
     },
+
+    
 
     // 3. Partner Auth (Portal)
     partnerLogin: async (email, password) => {
