@@ -463,8 +463,8 @@ export const partnerService = {
         return partnerService.getTransactions();
     },
 
-    // Request API key rotation (partner submits reason, admin reviews and approves)
-    requestRotation: async (reason = '') => {
+    // Request API key rotation
+    requestRotation: async (reason) => {
         const response = await partnerApi.post('/partner/portal/keys/rotate-request', { reason });
         return response.data;
     },
