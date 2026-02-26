@@ -4,7 +4,7 @@ import { partnerService } from '../../api';
 import {
     Key, Copy, CheckCircle, AlertTriangle,
     RefreshCw, RotateCcw, Lock, ShieldCheck,
-    ChevronDown, ChevronUp, Terminal, BookOpen
+    ChevronDown, ChevronUp, Terminal, BookOpen, History, Clock
 } from 'lucide-react';
 
 // ─── tiny helpers ─────────────────────────────────────────────────────────────
@@ -54,6 +54,12 @@ export default function ClientDeveloper() {
     // live idempotency example key (refreshes on each render)
     const [exampleKey] = useState(() => newKey('tx'));
 
+    // rotation history
+    const [showHistory, setShowHistory] = useState(false);
+    const [rotationHistory, setRotationHistory] = useState([]);
+    const [historyLoading, setHistoryLoading] = useState(false);
+    const [historyError, setHistoryError] = useState(null);
+
     const fetchInfo = async () => {
         setLoading(true);
         setError(null);
@@ -87,10 +93,31 @@ export default function ClientDeveloper() {
             setRotationStatus('success');
             setRotationMsg('Rotation request submitted. An admin will approve it and share the new key with you.');
             setRotationReason('');
+            // refresh history if it's open
+            if (showHistory) fetchHistory();
         } catch (err) {
             setRotationStatus('error');
             setRotationMsg(err.response?.data?.message || 'Failed to submit rotation request.');
         }
+    };
+
+    const fetchHistory = async () => {
+        setHistoryLoading(true);
+        setHistoryError(null);
+        try {
+            const data = await partnerService.getRotationHistory();
+            setRotationHistory(Array.isArray(data) ? data : []);
+        } catch (err) {
+            setHistoryError('Failed to load rotation history.');
+        } finally {
+            setHistoryLoading(false);
+        }
+    };
+
+    const toggleHistory = () => {
+        const next = !showHistory;
+        setShowHistory(next);
+        if (next && rotationHistory.length === 0 && !historyLoading) fetchHistory();
     };
 
     const partnerId = info?.partnerAppId ? String(info.partnerAppId) : null;
@@ -141,8 +168,8 @@ export default function ClientDeveloper() {
                     {/* status badge */}
                     {!loading && appStatus && (
                         <div className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${appStatus === 'ACTIVE'
-                                ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
-                                : 'bg-amber-500/10 border-amber-500/20 text-amber-400'
+                            ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+                            : 'bg-amber-500/10 border-amber-500/20 text-amber-400'
                             }`}>
                             <span className={`w-1.5 h-1.5 rounded-full ${appStatus === 'ACTIVE' ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
                             {appStatus}
@@ -353,6 +380,59 @@ await fetch('https://your-bank-host/api/v1/partner/me/deposit', {
                                         {rotationStatus === 'loading' ? 'Submitting…' : 'Submit Rotation Request'}
                                     </button>
                                 </form>
+                            )}
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* —— 6. Rotation Request History —————————————————— */}
+            {!loading && !error && (
+                <div className="bg-white/3 border border-white/8 rounded-2xl overflow-hidden">
+                    <button
+                        className="w-full px-6 py-4 flex items-center justify-between hover:bg-white/3 transition-colors text-left"
+                        onClick={toggleHistory}
+                    >
+                        <div className="flex items-center gap-2.5">
+                            <History size={15} className="text-slate-400" />
+                            <span className="text-sm font-bold text-white">My Rotation Requests</span>
+                        </div>
+                        {showHistory ? <ChevronUp size={15} className="text-slate-500" /> : <ChevronDown size={15} className="text-slate-500" />}
+                    </button>
+
+                    {showHistory && (
+                        <div className="border-t border-white/5">
+                            {historyLoading ? (
+                                <div className="flex items-center justify-center gap-2 py-8 text-slate-500">
+                                    <RefreshCw size={14} className="animate-spin" />
+                                    <span className="text-sm">Loading history…</span>
+                                </div>
+                            ) : historyError ? (
+                                <div className="px-6 py-4 text-sm text-red-400 flex items-center gap-2">
+                                    <AlertTriangle size={14} /> {historyError}
+                                </div>
+                            ) : rotationHistory.length === 0 ? (
+                                <div className="px-6 py-8 text-center text-slate-500 text-sm">
+                                    No rotation requests submitted yet.
+                                </div>
+                            ) : (
+                                <div className="divide-y divide-white/5">
+                                    {rotationHistory.map((req) => (
+                                        <div key={req.id} className="px-6 py-4 flex items-start justify-between gap-4">
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm text-slate-300 truncate">{req.reason || <span className="italic text-slate-600">No reason provided</span>}</p>
+                                                <p className="text-xs text-slate-600 flex items-center gap-1 mt-1">
+                                                    <Clock size={11} />
+                                                    {req.createdAt ? new Date(req.createdAt).toLocaleString() : 'Unknown date'}
+                                                </p>
+                                            </div>
+                                            <span className={`shrink-0 text-[10px] font-bold uppercase px-2 py-0.5 rounded-full border ${req.status === 'APPROVED' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+                                                    : req.status === 'REJECTED' ? 'bg-red-500/10 border-red-500/20 text-red-400'
+                                                        : 'bg-amber-500/10 border-amber-500/20 text-amber-400'
+                                                }`}>{req.status}</span>
+                                        </div>
+                                    ))}
+                                </div>
                             )}
                         </div>
                     )}

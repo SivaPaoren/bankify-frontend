@@ -469,6 +469,13 @@ export const partnerService = {
         const response = await partnerApi.post('/partner/portal/keys/rotate-request', { reason });
         return response.data;
     },
+
+    // View own rotation request history
+    getRotationHistory: async () => {
+        const response = await partnerApi.get('/partner/portal/keys/rotation-requests');
+        return response.data;
+    },
+
 };
 
 // Re-export atmService as transactionService for backward compatibility where possible,

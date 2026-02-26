@@ -131,10 +131,10 @@ export default function SecurityApprovals() {
                                                 </div>
                                                 <div className="flex flex-col">
                                                     <span className="text-sm font-bold text-white group-hover:text-cyan-300 transition-colors">
-                                                        Partner App
+                                                        {req.partnerName || 'Unknown App'}
                                                     </span>
                                                     <span className="text-xs text-primary-400 font-mono">
-                                                        ID: {req.partnerAppId ? String(req.partnerAppId).substring(0, 8).toUpperCase() : 'N/A'}
+                                                        ID: {req.partnerId ? String(req.partnerId).substring(0, 8).toUpperCase() : 'N/A'}
                                                     </span>
                                                 </div>
                                             </div>
@@ -150,8 +150,8 @@ export default function SecurityApprovals() {
                                             <div className="flex items-center gap-2">
                                                 <Clock size={14} className="text-primary-500 shrink-0" />
                                                 <span>
-                                                    {req.createdAt
-                                                        ? new Date(req.createdAt).toLocaleString()
+                                                    {req.requestedAt
+                                                        ? new Date(req.requestedAt).toLocaleString()
                                                         : 'Unknown Date'}
                                                 </span>
                                             </div>
@@ -160,7 +160,7 @@ export default function SecurityApprovals() {
                                         <td className="px-6 py-4 text-right">
                                             <div className="flex items-center justify-end gap-2">
                                                 <button
-                                                    onClick={() => handleReject(req.partnerAppId, req.id)}
+                                                    onClick={() => handleReject(req.partnerId, req.id)}
                                                     disabled={isProcessing}
                                                     className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-bold text-red-400 hover:text-white hover:bg-red-500/80 border border-red-500/30 hover:border-red-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed group/btn"
                                                 >
@@ -168,7 +168,7 @@ export default function SecurityApprovals() {
                                                     Reject
                                                 </button>
                                                 <button
-                                                    onClick={() => handleApprove(req.partnerAppId, req.id)}
+                                                    onClick={() => handleApprove(req.partnerId, req.id)}
                                                     disabled={isProcessing}
                                                     className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-bold text-emerald-400 hover:text-white bg-emerald-500/10 hover:bg-emerald-500 border border-emerald-500/30 hover:border-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.1)] hover:shadow-[0_0_15px_rgba(16,185,129,0.4)] transition-all disabled:opacity-50 disabled:cursor-not-allowed group/btn"
                                                 >

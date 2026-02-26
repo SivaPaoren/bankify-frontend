@@ -3,42 +3,38 @@ import { useAuth } from '../../context/AuthContext';
 import { partnerService } from '../../api';
 import {
     Wallet, ArrowUpRight, ArrowDownLeft, ArrowLeftRight,
-    RefreshCw, X, CheckCircle, Clock, AlertCircle, TrendingUp,
-    Lock, ShieldCheck
+    RefreshCw, X, CheckCircle, Clock, TrendingUp,
+    Lock, ShieldCheck, Copy, Terminal
 } from 'lucide-react';
 
 const formatCurrency = (amount, currency = 'THB') =>
     new Intl.NumberFormat('en-US', { style: 'currency', currency, minimumFractionDigits: 2 }).format(amount ?? 0);
 
 const ACTION_CONFIG = {
+    deposit: {
+        label: 'Deposit',
+        icon: ArrowDownLeft,
+        color: 'emerald',
+        btnClass: 'from-emerald-500 to-teal-600 shadow-emerald-500/20',
+        endpoint: 'POST /api/v1/partner/me/deposit',
+        body: `{ "amount": 5000.00, "note": "Settlement credit" }`,
+    },
     withdraw: {
         label: 'Withdraw',
         icon: ArrowUpRight,
         color: 'orange',
-        gradient: 'from-orange-500 to-red-500',
-        bg: 'bg-orange-500/10',
-        border: 'border-orange-500/20',
-        text: 'text-orange-400',
         btnClass: 'from-orange-500 to-red-600 shadow-orange-500/20',
+        endpoint: 'POST /api/v1/partner/me/withdraw',
+        body: `{ "amount": 1000.00, "note": "Payout" }`,
     },
     transfer: {
         label: 'Transfer',
         icon: ArrowLeftRight,
         color: 'blue',
-        gradient: 'from-blue-500 to-cyan-500',
-        bg: 'bg-blue-500/10',
-        border: 'border-blue-500/20',
-        text: 'text-blue-400',
         btnClass: 'from-blue-500 to-cyan-600 shadow-blue-500/20',
+        endpoint: 'POST /api/v1/partner/me/transfer',
+        body: `{ "accountNumber": "000123456", "amount": 500.00, "note": "To merchant" }`,
     },
-};
-
-// Generates a unique idempotency key per call — critical for safe payments
-const generateIdempotencyKey = (prefix = 'TX') => {
-    const uuid = (typeof crypto !== 'undefined' && crypto.randomUUID)
-        ? crypto.randomUUID()
-        : `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
-    return `${prefix}-${uuid}`;
 };
 
 export default function ClientDashboard() {
@@ -46,10 +42,9 @@ export default function ClientDashboard() {
     const [balanceData, setBalanceData] = useState(null);
     const [loadingBalance, setLoadingBalance] = useState(true);
     const [balanceError, setBalanceError] = useState(null);
+    const [partnerInfo, setPartnerInfo] = useState(null);
     const [activeModal, setActiveModal] = useState(null);
-    const [form, setForm] = useState({ amount: '', note: '', accountNumber: '' });
-    const [txStatus, setTxStatus] = useState(null);
-    const [txMessage, setTxMessage] = useState('');
+    const [copied, setCopied] = useState(false);
 
     const fetchBalance = useCallback(async () => {
         setLoadingBalance(true);
@@ -60,62 +55,42 @@ export default function ClientDashboard() {
         } catch (err) {
             const status = err.response?.status;
             if (status === 401) {
-                setBalanceError('Unauthorized — balance requires X-API-Key (server-to-server only).');
+                setBalanceError('Balance requires X-API-Key authentication (server-to-server).');
             } else if (status === 403) {
-                setBalanceError('Access denied — your partner app may still be pending approval.');
+                setBalanceError('Access denied — your partner app may be pending approval.');
             } else {
-                setBalanceError('Could not load balance. Please try again.');
+                setBalanceError('Could not load balance.');
             }
         } finally {
             setLoadingBalance(false);
         }
     }, []);
 
+    const fetchPartnerInfo = useCallback(async () => {
+        try {
+            const data = await partnerService.getPartnerInfo();
+            setPartnerInfo(data);
+        } catch (_) {
+            // non-critical
+        }
+    }, []);
+
     useEffect(() => {
         fetchBalance();
-    }, [fetchBalance]);
+        fetchPartnerInfo();
+    }, [fetchBalance, fetchPartnerInfo]);
 
     const openModal = (type) => {
         setActiveModal(type);
-        setForm({ amount: '', note: '', accountNumber: '' });
-        setTxStatus(null);
-        setTxMessage('');
+        setCopied(false);
     };
-
-    const closeModal = () => {
-        setActiveModal(null);
-        setTxStatus(null);
-    };
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setTxStatus('loading');
-
-        // Each submission generates a FRESH unique idempotency key
-        // This guarantees uniqueness even if the user submits the same amount twice
-        const idempotencyKey = generateIdempotencyKey(activeModal === 'withdraw' ? 'WDR' : 'TRF');
-        console.log('[Bankify] Idempotency-Key:', idempotencyKey);
-
-        try {
-            if (activeModal === 'withdraw') {
-                await partnerService.withdraw(form.amount, form.note);
-            } else if (activeModal === 'transfer') {
-                await partnerService.transfer(form.accountNumber, form.amount, form.note);
-            }
-            setTxStatus('success');
-            setTxMessage('Transaction completed successfully!');
-            fetchBalance();
-        } catch (err) {
-            const status = err.response?.status;
-            let message = err.response?.data?.message || 'Transaction failed. Please try again.';
-            if (status === 401) message = 'Unauthorized — this operation requires X-API-Key (server-to-server).';
-            if (status === 403) message = 'Forbidden — your partner app may be pending approval.';
-            setTxStatus('error');
-            setTxMessage(message);
-        }
-    };
+    const closeModal = () => setActiveModal(null);
 
     const cfg = activeModal ? ACTION_CONFIG[activeModal] : null;
+
+    const codeSnippet = cfg ? `// Node.js — call from your backend server\nconst idempotencyKey = \`tx-\${crypto.randomUUID()}\`;\n\nawait fetch('https://your-bank-host${cfg.endpoint.split(' ')[1]}', {\n  method: 'POST',\n  headers: {\n    'X-API-Key':       process.env.BANKIFY_API_KEY, // ← provided at approval\n    'Idempotency-Key': idempotencyKey,              // ← unique per request\n    'Content-Type':    'application/json',\n  },\n  body: JSON.stringify(${cfg.body}),\n});` : '';
+
+    const appStatus = partnerInfo?.appStatus ?? 'ACTIVE';
 
     return (
         <div className="space-y-8 animate-fade-in">
@@ -128,7 +103,7 @@ export default function ClientDashboard() {
                     <p className="text-slate-400 mt-1">Here's your account overview for today.</p>
                 </div>
                 <button
-                    onClick={fetchBalance}
+                    onClick={() => { fetchBalance(); fetchPartnerInfo(); }}
                     disabled={loadingBalance}
                     className="p-2.5 rounded-xl bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:bg-white/10 transition-all"
                 >
@@ -149,14 +124,17 @@ export default function ClientDashboard() {
                             </div>
                             <div>
                                 <p className="text-orange-300/70 text-sm font-semibold uppercase tracking-widest">Partner Account</p>
-                                <p className="text-slate-400 text-xs font-mono mt-0.5">
-                                    {user?.email || 'Loading...'}
-                                </p>
+                                <p className="text-slate-400 text-xs font-mono mt-0.5">{user?.email || 'Loading...'}</p>
                             </div>
                         </div>
-                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold">
-                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                            ACTIVE
+                        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-bold ${appStatus === 'ACTIVE'
+                                ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+                                : appStatus === 'PENDING'
+                                    ? 'bg-amber-500/10 border-amber-500/20 text-amber-400'
+                                    : 'bg-red-500/10 border-red-500/20 text-red-400'
+                            }`}>
+                            <span className={`w-2 h-2 rounded-full ${appStatus === 'ACTIVE' ? 'bg-emerald-500 animate-pulse' : appStatus === 'PENDING' ? 'bg-amber-500' : 'bg-red-500'}`} />
+                            {appStatus}
                         </div>
                     </div>
 
@@ -170,8 +148,8 @@ export default function ClientDashboard() {
                                 <div>
                                     <p className="text-orange-300 font-bold text-sm">Balance Requires X-API-Key</p>
                                     <p className="text-orange-400/70 text-xs mt-1">
-                                        The <code className="bg-black/30 px-1 rounded">/partner/me/balance</code> endpoint is a server-to-server API.
-                                        Use your <strong>X-API-Key</strong> from the Developer Console on your backend server to access it.
+                                        The <code className="bg-black/30 px-1 rounded">/partner/me/balance</code> endpoint is server-to-server.
+                                        Use your <strong>X-API-Key</strong> from your backend to access it.
                                     </p>
                                 </div>
                             </div>
@@ -190,7 +168,7 @@ export default function ClientDashboard() {
                         )}
                     </div>
 
-                    {/* Quick Action Buttons — server-to-server only notice */}
+                    {/* Action Buttons */}
                     <div className="flex flex-wrap gap-3 items-center">
                         {Object.entries(ACTION_CONFIG).map(([type, config]) => {
                             const Icon = config.icon;
@@ -207,7 +185,7 @@ export default function ClientDashboard() {
                         })}
                         <span className="text-slate-600 text-xs flex items-center gap-1.5">
                             <ShieldCheck size={12} className="text-slate-500" />
-                            All transactions secured with unique Idempotency-Key
+                            Server-to-server with X-API-Key
                         </span>
                     </div>
                 </div>
@@ -216,26 +194,14 @@ export default function ClientDashboard() {
             {/* Info Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {[
-                    {
-                        label: 'Email',
-                        value: user?.email || '—',
-                        icon: TrendingUp,
-                        color: 'orange',
-                        sub: 'Portal login'
-                    },
-                    {
-                        label: 'Account Type',
-                        value: 'PARTNER',
-                        icon: Wallet,
-                        color: 'blue',
-                        sub: 'Enterprise'
-                    },
+                    { label: 'Email', value: user?.email || '—', icon: TrendingUp, color: 'orange', sub: 'Portal login' },
+                    { label: 'Account Type', value: 'PARTNER', icon: Wallet, color: 'blue', sub: 'Enterprise' },
                     {
                         label: 'Status',
-                        value: 'ACTIVE',
+                        value: appStatus,
                         icon: CheckCircle,
-                        color: 'emerald',
-                        sub: 'Account standing'
+                        color: appStatus === 'ACTIVE' ? 'emerald' : appStatus === 'PENDING' ? 'amber' : 'red',
+                        sub: 'App standing'
                     },
                 ].map(s => {
                     const Icon = s.icon;
@@ -254,7 +220,7 @@ export default function ClientDashboard() {
                 })}
             </div>
 
-            {/* API Note */}
+            {/* Server-side Note */}
             <div className="bg-white/3 border border-white/8 rounded-2xl p-5 flex items-start gap-3">
                 <div className="w-8 h-8 rounded-lg bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0">
                     <Lock size={15} className="text-blue-400" />
@@ -262,32 +228,32 @@ export default function ClientDashboard() {
                 <div>
                     <p className="text-sm font-bold text-white">Server-to-Server Money Operations</p>
                     <p className="text-xs text-slate-400 mt-1 leading-relaxed">
-                        Deposit, Withdraw, and Transfer endpoints require <code className="bg-black/30 px-1 rounded text-orange-300">X-API-Key</code> authentication.
-                        These operations must be called from your backend server — never from the browser.
-                        Each request must include a unique <code className="bg-black/30 px-1 rounded text-orange-300">Idempotency-Key</code> header to prevent duplicate charges.
+                        Deposit, Withdraw, and Transfer require <code className="bg-black/30 px-1 rounded text-orange-300">X-API-Key</code> authentication.
+                        These must be called from your backend server — never from the browser.
+                        Each request needs a unique <code className="bg-black/30 px-1 rounded text-orange-300">Idempotency-Key</code> to prevent duplicate charges.
                     </p>
                 </div>
             </div>
 
-            {/* Transaction Modal */}
+            {/* Informational Modal — shows code snippet, does NOT call the API */}
             {activeModal && cfg && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm" onClick={closeModal}>
                     <div
-                        className="bg-[#111115] border border-white/10 rounded-3xl shadow-2xl w-full max-w-md overflow-hidden relative"
+                        className="bg-[#111115] border border-white/10 rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden relative"
                         onClick={e => e.stopPropagation()}
                     >
                         <div className={`absolute top-0 right-0 w-40 h-40 bg-${cfg.color}-500/10 rounded-full blur-2xl -mr-10 -mt-10 pointer-events-none`} />
 
                         <div className="p-6 border-b border-white/5 flex justify-between items-center relative z-10">
                             <div className="flex items-center gap-3">
-                                <div className={`p-2.5 rounded-xl ${cfg.bg} border ${cfg.border}`}>
-                                    <cfg.icon size={20} className={cfg.text} />
+                                <div className={`p-2.5 rounded-xl bg-${cfg.color}-500/10 border border-${cfg.color}-500/20`}>
+                                    <cfg.icon size={20} className={`text-${cfg.color}-400`} />
                                 </div>
                                 <div>
                                     <h3 className="text-lg font-bold text-white">{cfg.label}</h3>
                                     <p className="text-xs text-slate-500 flex items-center gap-1">
-                                        <ShieldCheck size={10} className="text-emerald-500" />
-                                        Unique Idempotency-Key per request
+                                        <Terminal size={10} className="text-slate-600" />
+                                        Backend server call — X-API-Key required
                                     </p>
                                 </div>
                             </div>
@@ -296,83 +262,34 @@ export default function ClientDashboard() {
                             </button>
                         </div>
 
-                        <div className="p-6 relative z-10">
-                            {txStatus === 'success' ? (
-                                <div className="text-center py-8">
-                                    <div className="w-16 h-16 rounded-full bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center mx-auto mb-4">
-                                        <CheckCircle size={32} className="text-emerald-400" />
-                                    </div>
-                                    <p className="text-white font-bold text-lg">Success!</p>
-                                    <p className="text-slate-400 text-sm mt-1">{txMessage}</p>
-                                    <button onClick={closeModal} className="mt-6 w-full py-3 rounded-xl bg-white/10 hover:bg-white/15 text-white font-semibold transition-all">
-                                        Close
+                        <div className="p-6 relative z-10 space-y-4">
+                            <div className="flex items-start gap-3 p-3 bg-amber-500/8 border border-amber-500/15 rounded-xl">
+                                <Lock size={14} className="text-amber-400 shrink-0 mt-0.5" />
+                                <p className="text-amber-300 text-xs leading-relaxed">
+                                    This operation must be performed from <strong>your backend server</strong> using your <strong>X-API-Key</strong>.
+                                    It cannot be executed from the browser for security reasons.
+                                </p>
+                            </div>
+
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <p className="text-[11px] font-bold uppercase text-slate-500 tracking-widest">Node.js example</p>
+                                    <button
+                                        onClick={() => { navigator.clipboard.writeText(codeSnippet); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
+                                        className="flex items-center gap-1.5 text-[11px] text-slate-500 hover:text-orange-400 transition-colors"
+                                    >
+                                        {copied ? <CheckCircle size={12} className="text-emerald-400" /> : <Copy size={12} />}
+                                        {copied ? 'Copied!' : 'Copy'}
                                     </button>
                                 </div>
-                            ) : (
-                                <form onSubmit={handleSubmit} className="space-y-4">
-                                    {activeModal === 'transfer' && (
-                                        <div className="space-y-1.5">
-                                            <label className="text-xs font-bold uppercase text-slate-400 tracking-wider">Destination Account Number</label>
-                                            <input
-                                                type="text"
-                                                className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-orange-500 transition-all placeholder:text-slate-600 font-mono"
-                                                placeholder="000123456789"
-                                                value={form.accountNumber}
-                                                onChange={e => setForm({ ...form, accountNumber: e.target.value })}
-                                                required
-                                            />
-                                        </div>
-                                    )}
+                                <pre className="bg-black/50 border border-white/6 rounded-xl p-4 text-xs font-mono text-slate-300 overflow-x-auto leading-relaxed whitespace-pre">
+                                    {codeSnippet}
+                                </pre>
+                            </div>
 
-                                    <div className="space-y-1.5">
-                                        <label className="text-xs font-bold uppercase text-slate-400 tracking-wider">Amount</label>
-                                        <div className="relative">
-                                            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-bold text-sm">THB</span>
-                                            <input
-                                                type="number"
-                                                min="0.01"
-                                                step="0.01"
-                                                className="w-full bg-black/30 border border-white/10 rounded-xl pl-16 pr-4 py-3 text-white outline-none focus:border-orange-500 transition-all placeholder:text-slate-600 text-lg font-bold"
-                                                placeholder="0.00"
-                                                value={form.amount}
-                                                onChange={e => setForm({ ...form, amount: e.target.value })}
-                                                required
-                                            />
-                                        </div>
-                                    </div>
-
-                                    <div className="space-y-1.5">
-                                        <label className="text-xs font-bold uppercase text-slate-400 tracking-wider">Note (optional)</label>
-                                        <input
-                                            type="text"
-                                            className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-orange-500 transition-all placeholder:text-slate-600"
-                                            placeholder={activeModal === 'withdraw' ? 'Settlement' : 'Payout'}
-                                            value={form.note}
-                                            onChange={e => setForm({ ...form, note: e.target.value })}
-                                        />
-                                    </div>
-
-                                    {txStatus === 'error' && (
-                                        <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-start gap-2 text-red-400 text-sm">
-                                            <AlertCircle size={16} className="shrink-0 mt-0.5" />
-                                            <span>{txMessage}</span>
-                                        </div>
-                                    )}
-
-                                    <div className="flex gap-3 pt-2">
-                                        <button type="button" onClick={closeModal} className="flex-1 py-3 rounded-xl border border-white/10 text-slate-300 font-semibold hover:bg-white/5 transition-all">
-                                            Cancel
-                                        </button>
-                                        <button
-                                            type="submit"
-                                            disabled={txStatus === 'loading'}
-                                            className={`flex-1 py-3 rounded-xl text-white font-bold shadow-lg bg-gradient-to-r ${cfg.btnClass} transition-all active:scale-[0.98] disabled:opacity-60`}
-                                        >
-                                            {txStatus === 'loading' ? 'Processing...' : `Confirm ${cfg.label}`}
-                                        </button>
-                                    </div>
-                                </form>
-                            )}
+                            <button onClick={closeModal} className="w-full py-3 rounded-xl border border-white/10 text-slate-300 font-semibold hover:bg-white/5 transition-all text-sm">
+                                Close
+                            </button>
                         </div>
                     </div>
                 </div>
