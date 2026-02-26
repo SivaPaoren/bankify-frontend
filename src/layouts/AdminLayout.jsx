@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import logo from '../assets/BankifyLogo.png';
 import {
     LayoutDashboard,
     Users,
@@ -90,7 +89,11 @@ export default function AdminLayout() {
                 <div className="h-24 flex items-center px-6 border-b border-white/5 bg-[#0b1121]">
                     <div className={`flex items-center gap-4 overflow-hidden transition-all ${collapsed ? 'justify-center w-full' : ''}`}>
                         <div className="w-10 h-10 flex items-center justify-center shrink-0 bg-primary-600/20 rounded-xl border border-primary-500/30 shadow-inner">
-                            <img src={logo} alt="Bankify" className="w-6 h-6 object-contain invert brightness-0 filter drop-shadow-lg" />
+                            <img 
+                            src={`${import.meta.env.BASE_URL}BankifyLogo.png`} 
+                            alt="Bankify Logo" 
+                            className="w-6 h-6 object-contain invert brightness-0 filter drop-shadow-lg" 
+                            />
                         </div>
                         {!collapsed && (
                             <div className="opacity-100 transition-opacity duration-300">

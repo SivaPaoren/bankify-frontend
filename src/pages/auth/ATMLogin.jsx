@@ -1,7 +1,6 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
-import bankifyLogo from "../../assets/BankifyWhiteLogo.png";
 
 /* ---------- HARDWARE UI COMPONENTS ---------- */
 
@@ -276,7 +275,11 @@ export default function ATMLogin() {
       {/* ATM HEADER */}
       <div className="bg-slate-800 w-full max-w-5xl rounded-t-2xl p-4 shadow-2xl border-b-8 border-slate-900 flex justify-between items-center">
         <div className="flex items-center gap-3">
-          <img src={bankifyLogo} alt="Bankify" className="w-8 h-8" />
+          <img 
+            src={`${import.meta.env.BASE_URL}BankifyWhiteLogo.png`} 
+            alt="Bankify" 
+            className="w-8 h-8" 
+          />
           <h1 className="text-2xl text-white font-bold">Bankify</h1>
         </div>
       </div>

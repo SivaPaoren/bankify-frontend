@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import bankifyLogo from "../../assets/BankifyWhiteLogo.png";
 import { atmService } from "../../api";
 // Import the new helper logic
 import { getTransactionDisplay } from "../../utils/formatters"; 
@@ -71,7 +70,7 @@ export default function ATMHistory() {
       {/* ATM HEADER */}
       <div className="bg-slate-800 w-full max-w-5xl rounded-t-2xl p-4 border-b-8 border-slate-900 flex justify-between items-center shadow-2xl">
         <div className="flex items-center gap-3">
-          <img src={bankifyLogo} alt="Bankify" className="w-8 h-8" />
+          <img src={`${import.meta.env.BASE_URL}BankifyLogo.png`} alt="Bankify Logo" className="w-8 h-8" />
           <h1 className="text-2xl text-white font-bold">Bankify</h1>
         </div>
       </div>

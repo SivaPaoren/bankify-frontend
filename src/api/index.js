@@ -6,7 +6,7 @@ import axios from 'axios';
 
 // Base URL for the entire application
 // Base URL for the entire application
-export const API = "";
+export const API = "/finance";
 const API_PREFIX = "/api/v1";
 
 const BASE_URL = `${API}${API_PREFIX}`;

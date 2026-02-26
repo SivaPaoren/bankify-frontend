@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import logo from '../assets/BankifyWhiteLogo.png';
 import {
     LayoutDashboard,
     Code2,
@@ -53,7 +52,11 @@ export default function ClientLayout() {
                 <div className="h-20 flex items-center px-5 border-b border-white/5">
                     <div className={`flex items-center gap-3 overflow-hidden transition-all ${collapsed ? 'justify-center w-full' : ''}`}>
                         <div className="w-9 h-9 rounded-xl bg-orange-500/10 border border-orange-500/20 flex items-center justify-center shrink-0">
-                            <img src={logo} alt="Bankify" className="w-5 h-5 object-contain" />
+                            <img 
+                                src={`${import.meta.env.BASE_URL}BankifyLogo.png`} 
+                                alt="Bankify Logo" 
+                                className="w-5 h-5 object-contain invert brightness-0 filter drop-shadow-lg" 
+                            />
                         </div>
                         {!collapsed && (
                             <div>
