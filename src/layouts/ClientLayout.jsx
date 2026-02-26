@@ -31,7 +31,7 @@ export default function ClientLayout() {
     };
 
     const navItems = [
-        { to: '/client', end: true, label: 'Overview', icon: LayoutDashboard },
+        // { to: '/client', end: true, label: 'Overview', icon: LayoutDashboard },
         { to: '/client/developers', label: 'API Console', icon: Code2 },
     ];
 

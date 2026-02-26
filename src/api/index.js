@@ -132,6 +132,7 @@ export const authService = {
 
     // Partner Signup
     partnerSignup: async (appName, email, password) => {
+    // BUG: Ensure this says /signup, NOT /login
         const response = await partnerApi.post('/partner/auth/signup', { appName, email, password });
         return response.data;
     },
@@ -293,21 +294,21 @@ export const adminService = {
     },
 
     // Customer status actions
-    /** Temporarily freeze customer + cascade freeze their ACTIVE accounts */
-    freezeCustomer: async (customerId) => {
-        const response = await adminApi.patch(`/admin/customers/${customerId}/disable`);
-        return response.data;
-    },
-    /** Re-activate a FROZEN customer + cascade restore their FROZEN accounts */
-    reactivateCustomer: async (customerId) => {
-        const response = await adminApi.patch(`/admin/customers/${customerId}/reactivate`);
-        return response.data;
-    },
-    /** Permanently close customer + close ALL their accounts */
-    closeCustomer: async (customerId) => {
-        const response = await adminApi.patch(`/admin/customers/${customerId}/close`);
-        return response.data;
-    },
+    // /** Temporarily freeze customer + cascade freeze their ACTIVE accounts */
+    // freezeCustomer: async (customerId) => {
+    //     const response = await adminApi.patch(`/admin/customers/${customerId}/disable`);
+    //     return response.data;
+    // },
+    // /** Re-activate a FROZEN customer + cascade restore their FROZEN accounts */
+    // reactivateCustomer: async (customerId) => {
+    //     const response = await adminApi.patch(`/admin/customers/${customerId}/reactivate`);
+    //     return response.data;
+    // },
+    // /** Permanently close customer + close ALL their accounts */
+    // closeCustomer: async (customerId) => {
+    //     const response = await adminApi.patch(`/admin/customers/${customerId}/close`);
+    //     return response.data;
+    // },
     /** @deprecated use freezeCustomer instead */
     deleteCustomer: async (customerId) => {
         const response = await adminApi.patch(`/admin/customers/${customerId}/disable`);
@@ -320,10 +321,10 @@ export const adminService = {
         return response.data;
     },
     // Transactions (Admin View)
-    getTransactions: async (params = {}) => {
-        const response = await adminApi.get('/admin/transactions', { params });
-        return response.data;
-    },
+    // getTransactions: async (params = {}) => {
+    //     const response = await adminApi.get('/admin/transactions', { params });
+    //     return response.data;
+    // },
     // Global Ledger (Admin View)
     getGlobalLedger: async (params = {}) => {
         const response = await adminApi.get('/admin/transactions/ledger', { params });
@@ -448,6 +449,7 @@ export const partnerService = {
     transfer: async (toAccountNumber, amount, note) => {
         const idempotencyKey = generateIdempotencyKey('TRF');
         const response = await partnerApi.post('/partner/me/transfer', {
+            toAccountNumber,
             amount: Number(amount),
             note
         }, {
