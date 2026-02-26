@@ -38,35 +38,27 @@ const KeyButton = ({ label, color, onClick }) => {
     );
 };
 
-
+/* ---------- STAGES ----------
+  CURRENT_PIN  →  NEW_PIN  →  CONFIRM_PIN  →  PROCESSING  →  SUCCESS / ERROR
+*/
 
 export default function ATMChangePin() {
     const navigate = useNavigate();
     const location = useLocation();
     const { atmLogin } = useAuth();
 
-    // 1. Standardized Stage Constants to match stageLabel keys
-    const STAGES = {
-        OLD: "CURRENT_PIN",
-        NEW: "NEW_PIN",
-        CONFIRM: "CONFIRM_PIN",
-        PROCESS: "PROCESSING",
-        SUCCESS: "SUCCESS"
-    };
-
     // Check if we came from ATMLogin with the known PIN
     const knownCurrentPin = location.state?.knownCurrentPin || "";
 
-    // If we know the PIN (forced change), start at NEW_PIN stage
-    const [stage, setStage] = useState(knownCurrentPin ? STAGES.NEW : STAGES.OLD);
+    const [stage, setStage] = useState(knownCurrentPin ? "NEW_PIN" : "CURRENT_PIN");
     const [currentPin, setCurrentPin] = useState(knownCurrentPin);
     const [newPin, setNewPin] = useState("");
     const [confirmPin, setConfirmPin] = useState("");
     const [error, setError] = useState("");
 
-    // 2. Updated active buffer logic to use standardized stages
-    const activePin = stage === STAGES.OLD ? currentPin : stage === STAGES.NEW ? newPin : confirmPin;
-    const setActivePin = stage === STAGES.OLD ? setCurrentPin : stage === STAGES.NEW ? setNewPin : setConfirmPin;
+    // Current active buffer based on stage
+    const activePin = stage === "CURRENT_PIN" ? currentPin : stage === "NEW_PIN" ? newPin : confirmPin;
+    const setActivePin = stage === "CURRENT_PIN" ? setCurrentPin : stage === "NEW_PIN" ? setNewPin : setConfirmPin;
 
     const pressNumber = (n) => {
         setError("");
@@ -86,87 +78,59 @@ export default function ATMChangePin() {
     const cancel = () => navigate("/atm");
 
     const handleEnter = async () => {
-        // Stage 1: Validate Current PIN
-        if (stage === STAGES.OLD) {
-            if (currentPin.length !== 6) { 
-                setError("PIN MUST BE 6 DIGITS"); 
-                return; 
-            }
-            setStage(STAGES.NEW);
+        if (stage === "CURRENT_PIN") {
+            if (currentPin.length !== 6) { setError("PIN MUST BE 6 DIGITS"); return; }
+            setStage("NEW_PIN");
             return;
         }
-
-        // Stage 2: Validate New PIN
-        if (stage === STAGES.NEW) {
-            if (newPin.length !== 6) { 
-                setError("PIN MUST BE 6 DIGITS"); 
-                return; 
-            }
-            if (newPin === currentPin) {
-                setError("NEW PIN MUST BE DIFFERENT");
-                setNewPin("");
-                return;
-            }
-            setStage(STAGES.CONFIRM);
+        if (stage === "NEW_PIN") {
+            if (newPin.length !== 6) { setError("PIN MUST BE 6 DIGITS"); return; }
+            setStage("CONFIRM_PIN");
             return;
         }
-
-        // Stage 3: Confirmation and API Call
-        if (stage === STAGES.CONFIRM) {
-            if (confirmPin.length !== 6) { 
-                setError("PIN MUST BE 6 DIGITS"); 
-                return; 
-            }
+        if (stage === "CONFIRM_PIN") {
+            if (confirmPin.length !== 6) { setError("PIN MUST BE 6 DIGITS"); return; }
             if (newPin !== confirmPin) {
-                setError("PINS DO NOT MATCH");
+                setError("PINs DO NOT MATCH");
                 setConfirmPin("");
                 return;
             }
-
-            setStage(STAGES.PROCESS);
-
+            setStage("PROCESSING");
             try {
-                // ✅ Matches your backend format: { "oldPin": "...", "newPin": "..." }
-                await atmService.changePin({ 
-                    oldPin: currentPin, 
-                    newPin: newPin 
-                });
-                
-                setStage(STAGES.SUCCESS);
-                sessionStorage.removeItem('bankify_atm_last_account');
+                // Backend AtmChangePinRequest record uses `oldPin`, NOT `currentPin`
+                await atmService.changePin({ oldPin: currentPin, newPin });
+                setStage("SUCCESS");
             } catch (err) {
-                const status = err.response?.status;
-
-                // Handle Auth Expiry
-                if (status === 401 || status === 403) {
+                // Silent retry if token expired (401/403)
+                if (err.response?.status === 401 || err.response?.status === 403) {
                     const savedAccount = sessionStorage.getItem('bankify_atm_last_account');
                     if (savedAccount && currentPin) {
                         try {
                             const reAuth = await atmLogin(savedAccount, currentPin);
                             if (reAuth.success) {
                                 await atmService.changePin({ oldPin: currentPin, newPin });
-                                setStage(STAGES.SUCCESS);
+                                setStage("SUCCESS");
                                 return;
                             }
-                        } catch (retryErr) { /* fallback to redirect */ }
+                        } catch (retryErr) {
+                            // fall down to error handler
+                        }
                     }
+                    // If we get here, silent retry failed or couldn't apply
                     window.location.href = '/atm-login?expired=1';
                     return;
                 }
 
-                // Handle Business Errors (e.g., Wrong Current PIN)
                 const msg = err.response?.data?.message || "CHANGE PIN FAILED";
                 setError(msg.toUpperCase());
-                
-                // Reset flow
-                setCurrentPin(knownCurrentPin); // Keep if forced, clear if manual
+                setCurrentPin("");
                 setNewPin("");
                 setConfirmPin("");
-                setStage(knownCurrentPin ? STAGES.NEW : STAGES.OLD);
+                setStage("CURRENT_PIN");
             }
         }
     };
-    
+
     // Keyboard support
     useEffect(() => {
         const handleKey = (e) => {

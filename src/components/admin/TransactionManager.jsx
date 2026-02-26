@@ -216,14 +216,27 @@ export default function TransactionManager() {
                                             </div>
                                         </td>
                                         <td className="px-6 py-4">
-                                            <div className="flex flex-col">
-                                                <span className="text-xs text-primary-400 uppercase tracking-wider mb-0.5">
-                                                    {tx.fromAccountId ? 'From' : 'To'}
-                                                </span>
-                                                <span className="font-mono text-sm text-primary-100">
-                                                    {tx.fromAccountId || tx.toAccountId || 'N/A'}
-                                                </span>
-                                            </div>
+                                            {tx.type === 'TRANSFER' ? (
+                                                <div className="flex flex-col gap-0.5">
+                                                    <div>
+                                                        <span className="text-xs text-primary-400 uppercase tracking-wider">From</span>
+                                                        <span className="block font-mono text-sm text-primary-100">{tx.fromAccountId || 'N/A'}</span>
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-xs text-primary-400 uppercase tracking-wider">To</span>
+                                                        <span className="block font-mono text-sm text-primary-100">{tx.toAccountId || 'N/A'}</span>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="flex flex-col">
+                                                    <span className="text-xs text-primary-400 uppercase tracking-wider mb-0.5">
+                                                        {tx.fromAccountId ? 'From' : 'To'}
+                                                    </span>
+                                                    <span className="font-mono text-sm text-primary-100">
+                                                        {tx.fromAccountId || tx.toAccountId || 'N/A'}
+                                                    </span>
+                                                </div>
+                                            )}
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <span className={`font-bold text-[15px] ${tx.type === 'DEPOSIT' ? 'text-emerald-400' : 'text-white'
@@ -249,10 +262,10 @@ export default function TransactionManager() {
                                                     navigate(`/admin/ledger?reference=${encodeURIComponent(tx.reference)}`);
                                                 }}
                                                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-cyan-400 bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/20 hover:border-cyan-500/40 transition-all ml-auto"
-                                                title="View Accounting Entries"
+                                                title="View Ledger Accounting Entries"
                                             >
                                                 <BookOpen size={14} />
-                                                <span>Global Ledger</span>
+                                                <span>View Ledger</span>
                                             </button>
                                         </td>
                                     </tr>

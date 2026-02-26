@@ -38,7 +38,8 @@ export default function AdminDashboard() {
 
     useEffect(() => {
         adminService.getCustomers().then(data => {
-            const count = Array.isArray(data) ? data.length : (data.content?.length || 0);
+            const list = Array.isArray(data) ? data : (data.content || []);
+            const count = list.filter(c => c.status === 'ACTIVE').length;
             setStats(prev => ({ ...prev, activeCustomers: count }));
         }).catch(console.error);
 

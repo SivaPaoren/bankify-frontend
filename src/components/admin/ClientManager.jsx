@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { adminService } from '../../api';
-import { Shield, Power, CheckCircle, XCircle, Clock, Search, X, Calendar, Info } from 'lucide-react';
+import { Shield, Power, CheckCircle, XCircle, Clock, Search, RefreshCw, Key, Eye, EyeOff, Lock, X, Globe, BarChart3, Calendar } from 'lucide-react';
 import FilterDropdown from '../common/FilterDropdown';
 
 export default function ClientManager() {
+    const [activeTab, setActiveTab] = useState('partners');
     const [clients, setClients] = useState([]);
+    const [rotations, setRotations] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('ALL');
@@ -12,6 +14,8 @@ export default function ClientManager() {
 
     // Dossier Slide-Over
     const [selectedClient, setSelectedClient] = useState(null);
+    const [revealState, setRevealState] = useState('hidden'); // hidden, prompting, revealed
+    const [adminPassword, setAdminPassword] = useState('');
 
     const fetchClients = async () => {
         try {
@@ -22,9 +26,18 @@ export default function ClientManager() {
         }
     };
 
+    const fetchRotations = async () => {
+        try {
+            const data = await adminService.listRotationRequests();
+            setRotations(Array.isArray(data) ? data : []);
+        } catch (error) {
+            console.error("Failed to fetch rotations", error);
+        }
+    };
+
     const loadData = async () => {
         setLoading(true);
-        await fetchClients();
+        await Promise.all([fetchClients(), fetchRotations()]);
         setLoading(false);
     };
 
@@ -36,33 +49,39 @@ export default function ClientManager() {
         try {
             if (currentStatus === 'PENDING') {
                 const response = await adminService.approveClient(clientId);
-                closeDossier();
-                fetchClients();
-                if (response?.apiKey) {
-                    setNewKeyDialog({ open: true, key: response.apiKey });
+                // Backend returns 'apiKeyPlain' — only show ONCE at approval time
+                if (response?.apiKeyPlain) {
+                    setNewKeyDialog({ open: true, key: response.apiKeyPlain });
                 }
             } else if (currentStatus === 'ACTIVE') {
                 await adminService.disableClient(clientId);
-                closeDossier();
-                fetchClients();
             } else {
                 await adminService.activateClient(clientId);
-                closeDossier();
-                fetchClients();
             }
-        } catch (e) {
-            // Always refresh to clear any stale status shown in the UI
             fetchClients();
-            closeDossier();
+        } catch (e) {
             const errorMsg = e.response?.data?.message || e.message;
-            if (errorMsg?.includes('not pending')) {
-                alert(`This partner app is no longer pending — it was already approved.\n\nThe API key may have been generated but the display was interrupted. Please ask the partner to request a Key Rotation from their portal, then approve it from Security Approvals to issue a new key.`);
-            } else {
-                alert(`Failed: ${errorMsg}`);
-            }
+            alert(`Failed: ${errorMsg}`);
         }
     };
 
+    const handleRotationAction = async (rotationId, action) => {
+        try {
+            if (action === 'approve') {
+                const response = await adminService.approveKeyRotation(rotationId);
+                // Backend returns 'apiKeyPlain' on rotation approval — only shown once
+                if (response?.apiKeyPlain) {
+                    setNewKeyDialog({ open: true, key: response.apiKeyPlain });
+                }
+            } else {
+                await adminService.rejectKeyRotation(rotationId);
+            }
+            loadData();
+        } catch (e) {
+            const errorMsg = e.response?.data?.message || e.message;
+            alert(`Failed to ${action} rotation: ${errorMsg}`);
+        }
+    };
 
     const filteredClients = clients.filter(c => {
         if (statusFilter !== 'ALL' && c.status !== statusFilter) return false;
@@ -82,21 +101,26 @@ export default function ClientManager() {
 
     const STATUS_CHIPS = [
         { key: 'ALL', label: 'All Status' },
-        { key: 'ACTIVE', label: 'Active' },
-        { key: 'PENDING', label: 'Pending' },
-        { key: 'DISABLED', label: 'Disabled' },
+        { key: 'ACTIVE', label: 'Active', cls: 'border-emerald-500/20 text-emerald-400', activeCls: 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300' },
+        { key: 'PENDING', label: 'Pending', cls: 'border-amber-500/20 text-amber-400', activeCls: 'bg-amber-500/20 border-amber-500/40 text-amber-300' },
+        { key: 'DISABLED', label: 'Disabled', cls: 'border-red-500/20 text-red-400', activeCls: 'bg-red-500/20 border-red-500/40 text-red-300' },
     ];
+
+    const handleRevealSecret = (e) => {
+        e.preventDefault();
+        // Mock MFA / Password Validation
+        if (adminPassword.length > 3) {
+            setRevealState('revealed');
+            setAdminPassword('');
+        } else {
+            alert("Invalid password");
+        }
+    };
 
     const closeDossier = () => {
         setSelectedClient(null);
-    };
-
-    const formatDate = (iso) => {
-        if (!iso) return '—';
-        return new Date(iso).toLocaleString(undefined, {
-            year: 'numeric', month: 'short', day: 'numeric',
-            hour: '2-digit', minute: '2-digit'
-        });
+        setRevealState('hidden');
+        setAdminPassword('');
     };
 
     return (
@@ -131,6 +155,7 @@ export default function ClientManager() {
 
                 {/* Toolbar */}
                 <div className="flex flex-col md:flex-row gap-3 items-start md:items-center bg-white/3 border border-white/10 rounded-2xl px-4 py-3">
+                    {/* Search */}
                     <div className="flex items-center gap-3 bg-black/20 px-4 py-2.5 rounded-xl border border-white/10 focus-within:border-cyan-500 focus-within:bg-black/30 transition-all flex-1 min-w-0 group">
                         <Search size={18} className="text-primary-400 group-focus-within:text-cyan-400 transition-colors shrink-0" />
                         <input
@@ -141,6 +166,8 @@ export default function ClientManager() {
                             onChange={e => setSearchTerm(e.target.value)}
                         />
                     </div>
+
+                    {/* Filters */}
                     <div className="flex items-center gap-3 ml-auto shrink-0">
                         <FilterDropdown
                             label="Status"
@@ -148,9 +175,9 @@ export default function ClientManager() {
                             value={statusFilter}
                             onChange={setStatusFilter}
                             counts={{
-                                ACTIVE: stats.active,
-                                PENDING: stats.pending,
-                                DISABLED: stats.disabled
+                                ACTIVE: clients.filter(c => c.status === 'ACTIVE').length,
+                                PENDING: clients.filter(c => c.status === 'PENDING').length,
+                                DISABLED: clients.filter(c => c.status === 'DISABLED').length
                             }}
                         />
                     </div>
@@ -164,7 +191,6 @@ export default function ClientManager() {
                                     <th className="px-6 py-4">Client Name</th>
                                     <th className="px-6 py-4">App ID</th>
                                     <th className="px-6 py-4">Status</th>
-                                    <th className="px-6 py-4">Registered On</th>
                                     <th className="px-6 py-4">Actions</th>
                                 </tr>
                             </thead>
@@ -178,7 +204,7 @@ export default function ClientManager() {
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-9 h-9 rounded-xl bg-linear-to-br from-orange-500/20 to-amber-500/20 text-orange-400 border border-orange-500/10 flex items-center justify-center font-bold shadow-inner">
-                                                    {row.name.charAt(0).toUpperCase()}
+                                                    {row.name.charAt(0)}
                                                 </div>
                                                 <span className="font-bold text-white group-hover:text-cyan-300 transition-colors">{row.name}</span>
                                             </div>
@@ -201,9 +227,6 @@ export default function ClientManager() {
                                                 {row.status}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4 text-sm text-primary-400 font-mono">
-                                            {formatDate(row.createdAt)}
-                                        </td>
                                         <td className="px-6 py-4">
                                             <button
                                                 onClick={(e) => {
@@ -222,7 +245,7 @@ export default function ClientManager() {
                                     </tr>
                                 )) : (
                                     <tr>
-                                        <td colSpan="5" className="px-6 py-12 text-center text-primary-400/60 italic">
+                                        <td colSpan="4" className="px-6 py-12 text-center text-primary-400/60 italic">
                                             {loading ? 'SYNCING DATA...' : 'NO CLIENTS FOUND'}
                                         </td>
                                     </tr>
@@ -234,145 +257,213 @@ export default function ClientManager() {
             </div>
 
             {/* ONE-TIME RECORD API KEY MODAL */}
-            {newKeyDialog.open && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
-                    <div className="bg-primary-900 border border-emerald-500/30 rounded-2xl shadow-2xl w-full max-w-lg p-8 animate-fade-in relative overflow-hidden">
-                        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
+            {
+                newKeyDialog.open && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                        <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+                        <div className="bg-primary-900 border border-emerald-500/30 rounded-2xl shadow-2xl w-full max-w-lg p-8 animate-fade-in relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none"></div>
 
-                        <div className="flex justify-center mb-5 relative z-10">
-                            <div className="w-16 h-16 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center">
-                                <Shield size={32} className="text-emerald-400" />
+                            <div className="flex justify-center mb-5 relative z-10">
+                                <div className="w-16 h-16 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center">
+                                    <Shield size={32} className="text-emerald-400" />
+                                </div>
                             </div>
-                        </div>
 
-                        <h2 className="text-2xl font-bold text-white text-center mb-2 relative z-10">Client Approved!</h2>
-                        <p className="text-primary-300 text-center text-sm mb-6 relative z-10">
-                            The Client App has been approved. The following API Key was generated. <br />
-                            <span className="text-amber-400 font-bold">This is the ONLY time it will be shown.</span> Please copy and securely forward it to the partner.
-                        </p>
+                            <h2 className="text-2xl font-bold text-white text-center mb-2 relative z-10">Client Approved!</h2>
+                            <p className="text-primary-300 text-center text-sm mb-6 relative z-10">
+                                The Client App has been approved. The following API Key was generated. <br />
+                                <span className="text-amber-400 font-bold">This is the ONLY time it will be shown.</span> Please copy and securely forward it to the partner.
+                            </p>
 
-                        <div className="bg-black/40 border border-white/10 rounded-xl p-4 mb-8 flex flex-col items-center justify-center relative z-10">
-                            <code className="text-emerald-400 font-mono text-lg tracking-wider break-all text-center selection:bg-emerald-500/30">
-                                {newKeyDialog.key}
-                            </code>
-                            <button
-                                onClick={() => {
-                                    navigator.clipboard.writeText(newKeyDialog.key);
-                                    alert("API Key copied to clipboard!");
-                                }}
-                                className="mt-4 px-4 py-2 bg-white/5 hover:bg-white/10 text-primary-200 text-xs font-bold uppercase tracking-wider rounded-lg border border-white/10 transition-colors"
-                            >
-                                Copy to Clipboard
-                            </button>
-                        </div>
+                            <div className="bg-black/40 border border-white/10 rounded-xl p-4 mb-8 flex flex-col items-center justify-center relative z-10">
+                                <code className="text-emerald-400 font-mono text-lg tracking-wider break-all text-center selection:bg-emerald-500/30">
+                                    {newKeyDialog.key}
+                                </code>
+                                <button
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(newKeyDialog.key);
+                                        alert("API Key copied to clipboard!");
+                                    }}
+                                    className="mt-4 px-4 py-2 bg-white/5 hover:bg-white/10 text-primary-200 text-xs font-bold uppercase tracking-wider rounded-lg border border-white/10 transition-colors"
+                                >
+                                    Copy to Clipboard
+                                </button>
+                            </div>
 
-                        <div className="flex justify-center relative z-10">
-                            <button
-                                onClick={() => setNewKeyDialog({ open: false, key: '' })}
-                                className="px-8 py-3 rounded-xl border border-white/10 bg-linear-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white font-bold shadow-lg shadow-emerald-500/20 transition-all active:scale-[0.98]"
-                            >
-                                I have copied the Key safely
-                            </button>
+                            <div className="flex justify-center relative z-10">
+                                <button
+                                    onClick={() => setNewKeyDialog({ open: false, key: '' })}
+                                    className="px-8 py-3 rounded-xl border border-white/10 bg-linear-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white font-bold shadow-lg shadow-emerald-500/20 transition-all active:scale-[0.98]"
+                                >
+                                    I have copied the Key safely
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                )
+            }
 
             {/* PARTNER DOSSIER SLIDE-OVER */}
-            {selectedClient && (
-                <>
-                    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity" onClick={closeDossier}></div>
-                    <div className="fixed top-0 right-0 h-full w-full max-w-md bg-primary-950 border-l border-white/10 shadow-2xl z-50 transform transition-transform flex flex-col pt-16 md:pt-0">
+            {
+                selectedClient && (
+                    <>
+                        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity" onClick={closeDossier}></div>
+                        <div className="fixed top-0 right-0 h-full w-full max-w-md bg-primary-950 border-l border-white/10 shadow-2xl z-50 transform transition-transform flex flex-col pt-16 md:pt-0">
 
-                        {/* Dossier Header */}
-                        <div className="p-6 border-b border-white/5 bg-[#0b1121] flex justify-between items-start">
-                            <div>
-                                <div className="flex items-center gap-2 mb-2">
-                                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${selectedClient.status === 'ACTIVE' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : selectedClient.status === 'PENDING' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
-                                        {selectedClient.status}
-                                    </span>
-                                    <span className="text-xs text-primary-400 font-mono">ID: {selectedClient.id?.substring(0, 8)}</span>
-                                </div>
-                                <h2 className="text-2xl font-bold text-white tracking-tight">{selectedClient.name}</h2>
-                            </div>
-                            <button onClick={closeDossier} className="text-primary-400 hover:text-white p-2 hover:bg-white/5 rounded-full transition-colors">
-                                <X size={20} />
-                            </button>
-                        </div>
-
-                        {/* Dossier Body */}
-                        <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar">
-
-                            {/* API Secret — key is only shown once at approval or rotation, stored as hash only */}
-
-                            {/* App Details */}
-                            <div className="space-y-3">
-                                <h3 className="text-xs font-bold uppercase tracking-widest text-primary-400 flex items-center gap-2">
-                                    <Info size={14} /> App Details
-                                </h3>
-                                <div className="bg-white/5 border border-white/5 rounded-xl divide-y divide-white/5 overflow-hidden">
-                                    <div className="flex justify-between items-center px-4 py-3 text-sm">
-                                        <span className="text-primary-400">Full App ID</span>
-                                        <code className="text-xs font-mono text-primary-100 bg-black/30 px-2 py-0.5 rounded border border-white/5 max-w-[200px] truncate" title={selectedClient.id}>
-                                            {selectedClient.id}
-                                        </code>
-                                    </div>
-                                    <div className="flex justify-between items-center px-4 py-3 text-sm">
-                                        <span className="text-primary-400">Registered On</span>
-                                        <span className="text-white font-mono text-xs">{formatDate(selectedClient.createdAt)}</span>
-                                    </div>
-                                    <div className="flex justify-between items-center px-4 py-3 text-sm">
-                                        <span className="text-primary-400">Current Status</span>
-                                        <span className={`text-xs font-bold uppercase ${selectedClient.status === 'ACTIVE' ? 'text-emerald-400' : selectedClient.status === 'PENDING' ? 'text-amber-400' : 'text-red-400'}`}>
+                            {/* Dossier Header */}
+                            <div className="p-6 border-b border-white/5 bg-[#0b1121] flex justify-between items-start">
+                                <div>
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border ${selectedClient.status === 'ACTIVE' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : selectedClient.status === 'PENDING' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
                                             {selectedClient.status}
+                                        </span>
+                                        <span className="text-xs text-primary-400 font-mono">ID: {selectedClient.id?.substring(0, 8)}</span>
+                                    </div>
+                                    <h2 className="text-2xl font-bold text-white tracking-tight">{selectedClient.name}</h2>
+                                </div>
+                                <button onClick={closeDossier} className="text-primary-400 hover:text-white p-2 hover:bg-white/5 rounded-full transition-colors">
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            {/* Dossier Body */}
+                            <div className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar relative">
+                                {/* API Secret Section */}
+                                <div className="space-y-3">
+                                    <h3 className="text-xs font-bold uppercase tracking-widest text-primary-400 flex items-center gap-2">
+                                        <Key size={14} /> Production API Secret
+                                    </h3>
+
+                                    {revealState === 'hidden' && (
+                                        <div className="flex items-center justify-between bg-black/30 border border-white/10 rounded-xl p-4">
+                                            <div className="text-2xl tracking-widest text-primary-500 font-mono select-none">•••••••••••••••••••••</div>
+                                            <button
+                                                onClick={() => setRevealState('prompting')}
+                                                className="p-2 text-cyan-400 hover:bg-cyan-500/10 rounded-lg transition-colors"
+                                                title="Reveal Secret"
+                                            >
+                                                <Eye size={18} />
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    {revealState === 'prompting' && (
+                                        <div className="bg-primary-900 border border-cyan-500/30 rounded-xl p-4 animate-fade-in shadow-lg">
+                                            <p className="text-xs text-cyan-300 font-bold mb-3 flex items-center gap-2">
+                                                <Lock size={14} /> Admin Verification Required
+                                            </p>
+                                            <form onSubmit={handleRevealSecret} className="flex gap-2">
+                                                <input
+                                                    type="password"
+                                                    autoFocus
+                                                    placeholder="Enter admin password..."
+                                                    className="flex-1 bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-sm text-white outline-none focus:border-cyan-500 transition-colors"
+                                                    value={adminPassword}
+                                                    onChange={e => setAdminPassword(e.target.value)}
+                                                />
+                                                <button
+                                                    type="submit"
+                                                    className="px-4 py-2 bg-cyan-500 text-black font-bold text-sm rounded-lg hover:bg-cyan-400 transition-colors"
+                                                >
+                                                    Verify
+                                                </button>
+                                            </form>
+                                            <button
+                                                onClick={() => setRevealState('hidden')}
+                                                className="text-primary-400 text-xs mt-3 hover:text-white"
+                                            >
+                                                Cancel
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    {revealState === 'revealed' && (
+                                        <div className="bg-amber-500/5 border border-amber-500/20 rounded-xl p-4 animate-fade-in space-y-2">
+                                            <div className="text-amber-400 text-[10px] uppercase font-bold tracking-wider flex items-center gap-1.5">
+                                                <Lock size={10} /> Key Not Stored in Plaintext
+                                            </div>
+                                            <p className="text-primary-300 text-sm">
+                                                The API key is <strong>only shown once</strong> at the moment of approval or key rotation. It is stored as a hash and cannot be retrieved.
+                                            </p>
+                                            <p className="text-primary-400 text-xs">
+                                                If the partner has lost their key, approve a <strong>Key Rotation</strong> request from the Security Approvals tab.
+                                            </p>
+                                            <button
+                                                onClick={() => setRevealState('hidden')}
+                                                className="text-primary-500 text-xs hover:text-white transition-colors mt-1"
+                                            >
+                                                ← Hide
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Usage Quotas */}
+                                <div className="space-y-3">
+                                    <h3 className="text-xs font-bold uppercase tracking-widest text-primary-400 flex items-center gap-2">
+                                        <BarChart3 size={14} /> Usage & Quotas (24h)
+                                    </h3>
+                                    <div className="bg-white/5 border border-white/5 rounded-xl p-5 flex items-center justify-center text-center min-h-[80px]">
+                                        <div>
+                                            <p className="text-primary-400 text-sm font-medium">Usage analytics coming soon</p>
+                                            <p className="text-primary-600 text-xs mt-1">API call tracking is not yet available</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Webhook Health */}
+                                <div className="space-y-3">
+                                    <h3 className="text-xs font-bold uppercase tracking-widest text-primary-400 flex items-center gap-2">
+                                        <Globe size={14} /> Webhook Health
+                                    </h3>
+                                    <div className="bg-white/5 border border-white/5 rounded-xl p-5 flex items-center justify-center text-center min-h-[80px]">
+                                        <div>
+                                            <p className="text-primary-400 text-sm font-medium">Webhook monitoring coming soon</p>
+                                            <p className="text-primary-600 text-xs mt-1">No webhook URL has been registered for this app</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* API Key Lifecycle */}
+                                <div className="space-y-3">
+                                    <h3 className="text-xs font-bold uppercase tracking-widest text-primary-400 flex items-center gap-2">
+                                        <Clock size={14} /> Lifecycle
+                                    </h3>
+                                    <div className="bg-white/5 border border-white/5 rounded-xl p-4 flex justify-between items-center text-sm">
+                                        <span className="text-primary-300">Registered</span>
+                                        <span className="text-white font-mono">
+                                            {selectedClient.createdAt
+                                                ? new Date(selectedClient.createdAt).toLocaleString()
+                                                : '—'}
                                         </span>
                                     </div>
                                 </div>
+
                             </div>
 
-                            {/* Key Management Info */}
-                            <div className="space-y-3">
-                                <h3 className="text-xs font-bold uppercase tracking-widest text-primary-400 flex items-center gap-2">
-                                    <Calendar size={14} /> Key Management
-                                </h3>
-                                <div className="bg-white/5 border border-white/5 rounded-xl p-4 text-sm text-primary-300 space-y-2">
-                                    <p>API keys are generated <strong className="text-white">once</strong> at approval time and stored only as a secure hash.</p>
-                                    <p className="text-primary-500 text-xs">To rotate a key, the partner must submit a rotation request. Navigate to <strong className="text-primary-300">Security Approvals</strong> to manage pending requests.</p>
-                                </div>
+                            {/* Dossier Footer / Kill Switch */}
+                            <div className="p-6 border-t border-white/5 bg-black/20">
+                                {selectedClient.status === 'ACTIVE' ? (
+                                    <button
+                                        onClick={() => handleAction(selectedClient.id, 'ACTIVE')}
+                                        className="w-full flex items-center justify-center gap-2 py-3.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 hover:border-red-500/40 rounded-xl font-bold transition-all"
+                                    >
+                                        <Power size={18} /> Emergency Kill Switch
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={() => handleAction(selectedClient.id, selectedClient.status)}
+                                        className="w-full flex items-center justify-center gap-2 py-3.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 hover:border-emerald-500/40 rounded-xl font-bold transition-all"
+                                    >
+                                        <CheckCircle size={18} /> Restore Client Access
+                                    </button>
+                                )}
                             </div>
                         </div>
+                    </>
+                )}
 
-                        {/* Dossier Footer */}
-                        <div className="p-6 border-t border-white/5 bg-black/20">
-                            {selectedClient.status === 'PENDING' && (
-                                <button
-                                    onClick={() => handleAction(selectedClient.id, 'PENDING')}
-                                    className="w-full flex items-center justify-center gap-2 py-3.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 hover:border-emerald-500/40 rounded-xl font-bold transition-all"
-                                >
-                                    <CheckCircle size={18} /> Approve This App
-                                </button>
-                            )}
-                            {selectedClient.status === 'ACTIVE' && (
-                                <button
-                                    onClick={() => handleAction(selectedClient.id, 'ACTIVE')}
-                                    className="w-full flex items-center justify-center gap-2 py-3.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 hover:border-red-500/40 rounded-xl font-bold transition-all"
-                                >
-                                    <Power size={18} /> Emergency Kill Switch
-                                </button>
-                            )}
-                            {selectedClient.status === 'DISABLED' && (
-                                <button
-                                    onClick={() => handleAction(selectedClient.id, 'DISABLED')}
-                                    className="w-full flex items-center justify-center gap-2 py-3.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20 hover:border-emerald-500/40 rounded-xl font-bold transition-all"
-                                >
-                                    <CheckCircle size={18} /> Restore Client Access
-                                </button>
-                            )}
-                        </div>
-                    </div>
-                </>
-            )}
         </div>
     );
 }
