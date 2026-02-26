@@ -425,7 +425,6 @@ export const partnerService = {
     // Partner Money Ops
     deposit: async (amount, note) => {
         const idempotencyKey = generateIdempotencyKey('DEP');
-        // Guide: POST /api/v1/partner/me/deposit
         const response = await partnerApi.post('/partner/me/deposit', {
             amount: Number(amount),
             note
@@ -478,12 +477,10 @@ export const partnerService = {
         const response = await partnerApi.get('/partner/portal/keys/rotation-requests');
         return response.data;
     },
-
 };
 
-// Re-export atmService as transactionService for backward compatibility where possible,
-// but components should migrate.
+// Re-export for backward compatibility
 export const transactionService = atmService;
 
-export default adminApi; // Default export adminApi to minimize breakage if someone imports 'api' default
-
+// Default export to minimize breakage
+export default adminApi;
