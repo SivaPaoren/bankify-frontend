@@ -1,104 +1,127 @@
 import React, { useState, useEffect } from 'react';
 import { partnerService } from '../../api';
-import { Key, RefreshCw, Clock, ShieldAlert, Copy, CheckCircle } from 'lucide-react';
+import { Key, RefreshCw, Clock, ShieldCheck, AlertTriangle } from 'lucide-react';
 
 export default function ClientDeveloper() {
-  const [rotationHistory, setRotationHistory] = useState([]);
   const [partnerInfo, setPartnerInfo] = useState(null);
+  const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showRotateModal, setShowRotateModal] = useState(false);
-  const [reason, setReason] = useState('');
+  const [rotateReason, setRotateReason] = useState('');
+  const [isRotating, setIsRotating] = useState(false);
 
   useEffect(() => {
-    fetchData();
+    const loadData = async () => {
+      try {
+        const [info, logs] = await Promise.all([
+          partnerService.getPartnerInfo(),
+          partnerService.getRotationHistory()
+        ]);
+        setPartnerInfo(info);
+        setHistory(logs);
+      } catch (err) {
+        console.error("Error loading dev settings", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadData();
   }, []);
 
-  const fetchData = async () => {
+  const handleRotate = async () => {
+    if (!rotateReason) return alert("Please provide a reason for rotation.");
+    setIsRotating(true);
     try {
-      const [info, history] = await Promise.all([
-        partnerService.getPartnerInfo(),
-        partnerService.getRotationHistory()
-      ]);
-      setPartnerInfo(info);
-      setRotationHistory(history);
+      await partnerService.requestRotation(rotateReason);
+      setRotateReason('');
+      alert("Rotation request submitted for Admin approval.");
+      // Refresh history to show PENDING status
+      const logs = await partnerService.getRotationHistory();
+      setHistory(logs);
     } catch (err) {
-      console.error("Failed to load developer data", err);
+      alert("Failed to request rotation.");
     } finally {
-      setLoading(false);
+      setIsRotating(false);
     }
   };
 
-  const handleRequestRotation = async () => {
-    try {
-      await partnerService.requestRotation(reason);
-      setShowRotateModal(false);
-      fetchData(); // Refresh history
-    } catch (err) {
-      alert("Failed to submit request: " + err.response?.data?.message);
-    }
-  };
+  if (loading) return <div className="p-8 text-white">Loading Developer Console...</div>;
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-white">Developer Settings</h1>
+    <div className="p-8 space-y-8 max-w-5xl mx-auto">
+      <header>
+        <h1 className="text-3xl font-bold text-white">Developer Console</h1>
+        <p className="text-slate-400">Manage your API integration and security keys.</p>
+      </header>
 
-      {/* API Details Card */}
-      <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
-        <div className="flex justify-between items-start mb-6">
-          <div className="flex items-center gap-3">
-            <div className="p-3 bg-orange-500/10 rounded-xl border border-orange-500/20 text-orange-400">
-              <Key size={24} />
-            </div>
-            <div>
-              <h2 className="text-lg font-bold text-white">API Credentials</h2>
-              <p className="text-sm text-slate-400">Use these to authenticate server-to-server requests.</p>
-            </div>
-          </div>
-          <button 
-            onClick={() => setShowRotateModal(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold transition-all"
-          >
-            <RefreshCw size={16} />
-            Request Rotation
-          </button>
+      {/* Section 1: API Details */}
+      <section className="bg-slate-900 border border-white/10 rounded-2xl p-6 shadow-xl">
+        <div className="flex items-center gap-3 mb-6">
+          <Key className="text-orange-400" size={24} />
+          <h2 className="text-xl font-bold text-white">API Credentials</h2>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-black/20 p-4 rounded-xl border border-white/5">
-            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">App ID</label>
-            <p className="font-mono text-sm text-white mt-1">{partnerInfo?.id || 'Loading...'}</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-1">
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Partner App ID</p>
+            <p className="font-mono text-white bg-black/30 p-3 rounded-lg border border-white/5">{partnerInfo?.id}</p>
           </div>
-          <div className="bg-black/20 p-4 rounded-xl border border-white/5">
-            <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">API Key</label>
-            <p className="font-mono text-sm text-slate-400 mt-1">••••••••••••••••••••••••</p>
-            <p className="text-[10px] text-orange-400/60 mt-2 italic">Hidden for security. Request rotation if lost.</p>
+          <div className="space-y-1">
+            <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">API Key</p>
+            <div className="flex items-center justify-between font-mono text-slate-400 bg-black/30 p-3 rounded-lg border border-white/5">
+              <span>••••••••••••••••••••••••</span>
+              <ShieldCheck size={16} className="text-slate-600" />
+            </div>
+            <p className="text-[10px] text-orange-400/60 mt-2">Key is hidden after initial setup. Request rotation if compromised.</p>
           </div>
         </div>
-      </div>
 
-      {/* Request History Table */}
-      <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
-        <div className="p-4 border-b border-white/10 bg-white/5">
-          <h3 className="font-bold text-white flex items-center gap-2">
-            <Clock size={16} className="text-slate-400" />
-            Rotation Requests
+        <div className="mt-8 pt-8 border-t border-white/5">
+          <h3 className="text-white font-bold mb-4 flex items-center gap-2">
+            <RefreshCw size={18} className="text-orange-400" />
+            Request Key Rotation
           </h3>
+          <div className="flex gap-4">
+            <input 
+              type="text" 
+              placeholder="Reason for rotation (e.g. key leaked, security update)..."
+              className="flex-1 bg-black/30 border border-white/10 rounded-xl px-4 py-2 text-white text-sm outline-none focus:border-orange-500"
+              value={rotateReason}
+              onChange={(e) => setRotateReason(e.target.value)}
+            />
+            <button 
+              onClick={handleRotate}
+              disabled={isRotating}
+              className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-6 py-2 rounded-xl transition-all disabled:opacity-50"
+            >
+              {isRotating ? 'Submitting...' : 'Request Rotation'}
+            </button>
+          </div>
+        </div>
+      </section>
+
+      {/* Section 2: Rotation History */}
+      <section className="bg-slate-900 border border-white/10 rounded-2xl overflow-hidden shadow-xl">
+        <div className="p-6 border-b border-white/10">
+          <h2 className="text-xl font-bold text-white flex items-center gap-3">
+            <Clock className="text-slate-400" size={20} />
+            Request History
+          </h2>
         </div>
         <table className="w-full text-left">
-          <thead className="bg-black/20 text-[10px] uppercase text-slate-500 font-bold">
+          <thead className="bg-black/20 text-xs font-bold text-slate-500 uppercase">
             <tr>
-              <th className="px-6 py-3">Date</th>
-              <th className="px-6 py-3">Reason</th>
-              <th className="px-6 py-3 text-right">Status</th>
+              <th className="px-6 py-4">Requested Date</th>
+              <th className="px-6 py-4">Reason</th>
+              <th className="px-6 py-4 text-right">Status</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-white/5">
-            {rotationHistory.map((req) => (
-              <tr key={req.id} className="text-sm text-slate-300">
-                <td className="px-6 py-4 font-mono text-xs">{new Date(req.createdAt).toLocaleDateString()}</td>
-                <td className="px-6 py-4">{req.reason || 'No reason provided'}</td>
+            {history.length > 0 ? history.map(req => (
+              <tr key={req.id} className="text-sm">
+                <td className="px-6 py-4 text-slate-300 font-mono">{new Date(req.createdAt).toLocaleDateString()}</td>
+                <td className="px-6 py-4 text-white">{req.reason}</td>
                 <td className="px-6 py-4 text-right">
-                  <span className={`px-2 py-1 rounded-md text-[10px] font-bold border ${
+                  <span className={`px-3 py-1 rounded-full text-[10px] font-bold border ${
                     req.status === 'APPROVED' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' :
                     req.status === 'PENDING' ? 'bg-amber-500/10 border-amber-500/20 text-amber-400' :
                     'bg-red-500/10 border-red-500/20 text-red-400'
@@ -107,32 +130,12 @@ export default function ClientDeveloper() {
                   </span>
                 </td>
               </tr>
-            ))}
+            )) : (
+              <tr><td colSpan="3" className="p-12 text-center text-slate-600 italic">No rotation requests found.</td></tr>
+            )}
           </tbody>
         </table>
-      </div>
-
-      {/* Rotation Modal */}
-      {showRotateModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-          <div className="bg-slate-900 border border-white/10 rounded-3xl p-6 w-full max-w-md">
-            <h3 className="text-xl font-bold text-white mb-4">Request New API Key</h3>
-            <p className="text-sm text-slate-400 mb-6">
-              This will notify the bank administrator. Once approved, your current key will be deactivated.
-            </p>
-            <textarea
-              className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-white text-sm focus:border-orange-500 outline-none h-32 mb-4"
-              placeholder="Reason for rotation (e.g., Key leaked, Periodic security update)"
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-            />
-            <div className="flex gap-3">
-              <button onClick={() => setShowRotateModal(false)} className="flex-1 py-3 text-slate-400 font-bold hover:text-white transition-colors">Cancel</button>
-              <button onClick={handleRequestRotation} className="flex-1 py-3 bg-orange-500 text-white rounded-xl font-bold hover:bg-orange-600 transition-all">Submit Request</button>
-            </div>
-          </div>
-        </div>
-      )}
+      </section>
     </div>
   );
 }
