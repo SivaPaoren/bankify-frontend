@@ -79,6 +79,7 @@ const ACTION_GROUPS = [
     label: 'Accounts',
     options: [
       { key: 'ACCOUNT_CREATE', label: 'Create Account' },
+      { key: 'ACCOUNT_UPDATE', label: 'Update Account' },
       { key: 'ACCOUNT_FREEZE', label: 'Freeze Account' },
       { key: 'ACCOUNT_REACTIVATE', label: 'Reactivate Account' },
       { key: 'ACCOUNT_CLOSE', label: 'Close Account' },
@@ -90,6 +91,7 @@ const ACTION_GROUPS = [
     label: 'Customers',
     options: [
       { key: 'CUSTOMER_CREATE', label: 'Create Customer' },
+      { key: 'CUSTOMER_UPDATE', label: 'Update Customer' },
       { key: 'CUSTOMER_FREEZE', label: 'Freeze Customer' },
       { key: 'CUSTOMER_REACTIVATE', label: 'Reactivate Customer' },
       { key: 'CUSTOMER_CLOSE', label: 'Close Customer' },
