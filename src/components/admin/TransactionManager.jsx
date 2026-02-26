@@ -252,7 +252,7 @@ export default function TransactionManager() {
                                                 title="View Accounting Entries"
                                             >
                                                 <BookOpen size={14} />
-                                                <span>Audit Logs</span>
+                                                <span>Global Ledger</span>
                                             </button>
                                         </td>
                                     </tr>

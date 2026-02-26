@@ -379,7 +379,7 @@ export const atmService = {
     transfer: async (accountNumber, amount, note) => {
         const idempotencyKey = generateIdempotencyKey('TRF');
         const response = await atmApi.post('/atm/me/transfer', {
-            accountNumber,
+            toAccountNumber: accountNumber,
             amount: Number(amount),
             note
         }, {

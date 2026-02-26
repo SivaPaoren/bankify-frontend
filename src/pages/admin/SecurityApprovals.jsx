@@ -72,7 +72,7 @@ export default function SecurityApprovals() {
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
                 <div>
                     <h1 className="text-3xl font-bold text-white tracking-tight flex items-center gap-3">
-                        <Shield className="text-cyan-400" size={32} />
+                        {/* <Shield className="text-cyan-400" size={32} /> */}
                         Security Approvals
                     </h1>
                     <p className="text-primary-300 mt-1">Review and manage pending security requests, including API key rotations.</p>

@@ -151,42 +151,42 @@ export default function AuditLogs() {
   }, [actorFilter, actionFilter, dateFrom, dateTo, pageSize, sortConfig]);
 
   const filteredLogs = useMemo(() => {
-    let result = logs.filter(log => {
-      // Date filtering
-      const logDate = log.createdAt ? log.createdAt.slice(0, 10) : '';
-      if (dateFrom && logDate < dateFrom) return false;
-      if (dateTo && logDate > dateTo) return false;
-      if (actionFilter !== 'ALL' && log.action !== actionFilter) return false;
-      if (actorFilter !== 'ALL') {
-        if (actorFilter === 'ADMIN' && (log.actorType === 'ADMIN' || log.actorType === 'USER')) {
-          // matched explicitly
-        } else if (log.actorType !== actorFilter) {
-          return false;
-        }
-      }
-      return true;
-    });
+  let result = logs.filter((log) => {
+    // Date filtering
+    const logDate = log.createdAt ? log.createdAt.slice(0, 10) : '';
+    if (dateFrom && logDate < dateFrom) return false;
+    if (dateTo && logDate > dateTo) return false;
 
-    result.sort((a, b) => {
-      let valA = a[sortConfig.key];
-      let valB = b[sortConfig.key];
+    // Action filtering
+    if (actionFilter !== 'ALL' && log.action !== actionFilter) return false;
 
-      if (sortConfig.key === 'createdAt') {
-        valA = new Date(valA || 0).getTime();
-        valB = new Date(valB || 0).getTime();
-      } else {
-        valA = String(valA || '').toLowerCase();
-        valB = String(valB || '').toLowerCase();
-      }
+    // Actor filtering 
+    if (actorFilter !== 'ALL') {
+      if (log.actorType !== actorFilter) return false;
+    }
 
-      if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
-      if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
-      return 0;
-    });
+    return true;
+  });
 
-    return result;
-  }, [logs, dateFrom, dateTo, sortConfig]);
+  result.sort((a, b) => {
+    let valA = a[sortConfig.key];
+    let valB = b[sortConfig.key];
 
+    if (sortConfig.key === 'createdAt') {
+      valA = new Date(valA || 0).getTime();
+      valB = new Date(valB || 0).getTime();
+    } else {
+      valA = String(valA || '').toLowerCase();
+      valB = String(valB || '').toLowerCase();
+    }
+
+    if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
+    if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  return result;
+}, [logs, dateFrom, dateTo, actionFilter, actorFilter, sortConfig.key, sortConfig.direction]);
   // Pagination
   const totalPages = Math.max(1, Math.ceil(filteredLogs.length / pageSize));
   const paginatedLogs = filteredLogs.slice((currentPage - 1) * pageSize, currentPage * pageSize);
@@ -270,13 +270,13 @@ export default function AuditLogs() {
           <div className="text-2xl font-bold text-emerald-400 group-hover:text-emerald-300 transition-colors">{stats.recent}</div>
         </button>
 
-        <button
+        {/* <button
           onClick={() => applyQuickFilter('ADMIN', 'ALL')}
           className="text-left bg-white/5 border border-white/10 rounded-2xl p-4 hover:bg-white/10 hover:border-emerald-500/30 transition-all group"
         >
           <div className="text-xs text-emerald-400/80 uppercase tracking-widest font-bold mb-1">Admin Actions</div>
           <div className="text-2xl font-bold text-emerald-400 group-hover:text-emerald-300 transition-colors">{stats.admins}</div>
-        </button>
+        </button> */}
       </div>
 
       {/* ── Toolbar — date left, filters right ── */}
