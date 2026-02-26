@@ -36,21 +36,33 @@ export default function ClientManager() {
         try {
             if (currentStatus === 'PENDING') {
                 const response = await adminService.approveClient(clientId);
-                if (response?.apiKeyPlain) {
-                    setNewKeyDialog({ open: true, key: response.apiKeyPlain });
+                closeDossier();
+                fetchClients();
+                if (response?.apiKey) {
+                    setNewKeyDialog({ open: true, key: response.apiKey });
                 }
             } else if (currentStatus === 'ACTIVE') {
                 await adminService.disableClient(clientId);
+                closeDossier();
+                fetchClients();
             } else {
                 await adminService.activateClient(clientId);
+                closeDossier();
+                fetchClients();
             }
-            closeDossier();
-            fetchClients();
         } catch (e) {
+            // Always refresh to clear any stale status shown in the UI
+            fetchClients();
+            closeDossier();
             const errorMsg = e.response?.data?.message || e.message;
-            alert(`Failed: ${errorMsg}`);
+            if (errorMsg?.includes('not pending')) {
+                alert(`This partner app is no longer pending — it was already approved.\n\nThe API key may have been generated but the display was interrupted. Please ask the partner to request a Key Rotation from their portal, then approve it from Security Approvals to issue a new key.`);
+            } else {
+                alert(`Failed: ${errorMsg}`);
+            }
         }
     };
+
 
     const filteredClients = clients.filter(c => {
         if (statusFilter !== 'ALL' && c.status !== statusFilter) return false;
@@ -77,7 +89,6 @@ export default function ClientManager() {
 
     const closeDossier = () => {
         setSelectedClient(null);
-        setKeyRevealed(false);
     };
 
     const formatDate = (iso) => {
@@ -162,7 +173,7 @@ export default function ClientManager() {
                                     <tr
                                         key={row.id}
                                         className="hover:bg-white/5 transition-colors group cursor-pointer"
-                                        onClick={() => { setSelectedClient(row); setKeyRevealed(false); }}
+                                        onClick={() => setSelectedClient(row)}
                                     >
                                         <td className="px-6 py-4">
                                             <div className="flex items-center gap-3">

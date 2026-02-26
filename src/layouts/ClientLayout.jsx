@@ -26,13 +26,13 @@ export default function ClientLayout() {
     const getPageTitle = () => {
         const path = location.pathname.split('/').pop();
         if (!path || path === 'client') return 'Dashboard';
-        if (path === 'developers') return 'Developer Console';
+        if (path === 'developers') return 'API Console';
         return 'Bankify Partner';
     };
 
     const navItems = [
         { to: '/client', end: true, label: 'Overview', icon: LayoutDashboard },
-        { to: '/client/developers', label: 'Developer API', icon: Code2 },
+        { to: '/client/developers', label: 'API Console', icon: Code2 },
     ];
 
     const navLinkClass = ({ isActive }) =>
