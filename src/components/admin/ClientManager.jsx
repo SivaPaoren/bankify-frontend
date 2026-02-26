@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { adminService } from '../../api';
-import { Shield, Power, CheckCircle, XCircle, Clock, Search, Filter, RefreshCw, Key, Eye, EyeOff, Lock, Activity, AlertTriangle, X, Trash2, Globe, BarChart3, Calendar } from 'lucide-react';
+import { Shield, Power, CheckCircle, XCircle, Clock, Search, RefreshCw, Key, Eye, EyeOff, Lock, X, Globe, BarChart3, Calendar } from 'lucide-react';
 import FilterDropdown from '../common/FilterDropdown';
 
 export default function ClientManager() {
@@ -404,19 +404,10 @@ export default function ClientManager() {
                                     <h3 className="text-xs font-bold uppercase tracking-widest text-primary-400 flex items-center gap-2">
                                         <BarChart3 size={14} /> Usage & Quotas (24h)
                                     </h3>
-                                    <div className="bg-white/5 border border-white/5 rounded-xl p-5">
-                                        <div className="flex justify-between items-end mb-2">
-                                            <div>
-                                                <div className="text-2xl font-bold text-white">45,200</div>
-                                                <div className="text-xs text-primary-400 mt-1">API Calls Made</div>
-                                            </div>
-                                            <div className="text-right">
-                                                <div className="text-sm font-medium text-cyan-400">45.2%</div>
-                                                <div className="text-[10px] text-primary-500 uppercase tracking-widest mt-1">of 100k Limit</div>
-                                            </div>
-                                        </div>
-                                        <div className="w-full bg-black/40 rounded-full h-2 mt-4 overflow-hidden">
-                                            <div className="bg-cyan-500 h-2 rounded-full" style={{ width: '45.2%' }}></div>
+                                    <div className="bg-white/5 border border-white/5 rounded-xl p-5 flex items-center justify-center text-center min-h-[80px]">
+                                        <div>
+                                            <p className="text-primary-400 text-sm font-medium">Usage analytics coming soon</p>
+                                            <p className="text-primary-600 text-xs mt-1">API call tracking is not yet available</p>
                                         </div>
                                     </div>
                                 </div>
@@ -426,20 +417,10 @@ export default function ClientManager() {
                                     <h3 className="text-xs font-bold uppercase tracking-widest text-primary-400 flex items-center gap-2">
                                         <Globe size={14} /> Webhook Health
                                     </h3>
-                                    <div className="bg-white/5 border border-white/5 rounded-xl p-5 flex items-start gap-4">
-                                        <div className={`p-2.5 rounded-lg ${selectedClient.status === 'ACTIVE' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-orange-500/10 text-orange-400'}`}>
-                                            {selectedClient.status === 'ACTIVE' ? <Activity size={20} /> : <AlertTriangle size={20} />}
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <span className={`text-sm font-bold ${selectedClient.status === 'ACTIVE' ? 'text-emerald-400' : 'text-orange-400'}`}>
-                                                    {selectedClient.status === 'ACTIVE' ? '200 OK (Healthy)' : '503 Service Unavailable'}
-                                                </span>
-                                            </div>
-                                            <p className="text-xs text-primary-400 font-mono truncate" title="https://api.partner.com/webhooks/bankify">
-                                                https://api.partner.com/webhooks/bankify
-                                            </p>
-                                            <div className="text-[10px] text-primary-500 mt-2">Last ping: 2 mins ago</div>
+                                    <div className="bg-white/5 border border-white/5 rounded-xl p-5 flex items-center justify-center text-center min-h-[80px]">
+                                        <div>
+                                            <p className="text-primary-400 text-sm font-medium">Webhook monitoring coming soon</p>
+                                            <p className="text-primary-600 text-xs mt-1">No webhook URL has been registered for this app</p>
                                         </div>
                                     </div>
                                 </div>
@@ -450,8 +431,12 @@ export default function ClientManager() {
                                         <Clock size={14} /> Lifecycle
                                     </h3>
                                     <div className="bg-white/5 border border-white/5 rounded-xl p-4 flex justify-between items-center text-sm">
-                                        <span className="text-primary-300">Last Used</span>
-                                        <span className="text-white font-mono">{new Date().toLocaleString()}</span>
+                                        <span className="text-primary-300">Registered</span>
+                                        <span className="text-white font-mono">
+                                            {selectedClient.createdAt
+                                                ? new Date(selectedClient.createdAt).toLocaleString()
+                                                : '—'}
+                                        </span>
                                     </div>
                                 </div>
 

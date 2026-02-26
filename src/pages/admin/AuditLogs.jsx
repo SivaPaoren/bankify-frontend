@@ -137,7 +137,16 @@ export default function AuditLogs() {
     const fetchLogs = async () => {
       setLoading(true);
       try {
-        const data = await adminService.getAuditLogs({});
+        // Build params — only send non-ALL filters to the backend
+        const params = {};
+        if (actorFilter !== 'ALL') {
+          // Backend uses 'USER' for admin actors; map ADMIN → USER
+          params.actorType = actorFilter === 'ADMIN' ? 'USER' : actorFilter;
+        }
+        if (actionFilter !== 'ALL') {
+          params.action = actionFilter;
+        }
+        const data = await adminService.getAuditLogs(params);
         setLogs(Array.isArray(data) ? data : (data.content || []));
       } catch (err) {
         console.error('Failed to fetch logs', err);

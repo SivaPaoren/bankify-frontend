@@ -104,7 +104,7 @@ export default function ATMHistory() {
                               <tr key={i} className="hover:bg-slate-800/50 transition-colors">
                                 <td className={`py-5 ${t.amount > 0 ? 'text-emerald-500' : 'text-red-400'}`}>
                                   {t.type} <br />
-                                  <span className="text-[8px] text-slate-500">{new Date(t.date).toLocaleDateString()}</span>
+                                  <span className="text-[8px] text-slate-500">{new Date(t.createdAt).toLocaleString()}</span>
                                 </td>
                                 <td className="py-5 text-right font-bold text-lg tracking-tighter">
                                   {t.amount > 0 ? '+' : ''}{t.amount.toLocaleString()} ฿

@@ -56,7 +56,7 @@ export default function AdminLedger() {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
                     <h1 className="text-3xl font-bold text-white tracking-tight flex items-center gap-3">
-                        <BookOpen size={28} className="text-cyan-400" />
+                        {/* <BookOpen size={28} className="text-cyan-400" /> */}
                         Global Ledger
                     </h1>
                     <p className="text-primary-300 mt-1">Every DEBIT and CREDIT entry in the bank's accounting book.</p>

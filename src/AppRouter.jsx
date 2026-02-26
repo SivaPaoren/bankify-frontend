@@ -25,6 +25,7 @@ import ATMTransfer from "./pages/atm/ATMTransfer";
 import ATMHistory from "./pages/atm/History";
 import ATMChangePin from "./pages/atm/ATMChangePin";
 import ATMLogin from "./pages/auth/ATMLogin";
+import Balance from "./pages/atm/Balance";
 
 // Auth
 import AdminLoginPage from "./pages/auth/AdminLoginPage";
@@ -38,7 +39,6 @@ export default function AppRouter() {
     return <div className="flex h-screen items-center justify-center bg-slate-50 text-slate-500">Loading Bankify...</div>;
   }
 
-  // Helper component to protect routes based on authentication and role
   // Helper component to protect routes based on authentication and role
   const ProtectedRoute = ({ children, allowedRoles }) => {
     const location = useLocation();
@@ -116,6 +116,7 @@ export default function AppRouter() {
         }
       >
         <Route index element={<ATMHome />} />
+        <Route path="balance" element={<Balance />} />
         <Route path="deposit" element={<ATMDeposit />} />
         <Route path="withdraw" element={<ATMWithdraw />} />
         <Route path="transfer" element={<ATMTransfer />} />

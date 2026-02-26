@@ -20,7 +20,7 @@ export default function AccountManager() {
         open: false, accountId: null, accountNumber: null, newPin: '', loading: false, error: null, success: false
     });
     const [newAccount, setNewAccount] = useState({
-        customerId: '', accountType: 'SAVINGS', currency: 'THB'
+        customerId: '', accountType: 'SAVINGS', currency: 'THB', pin: ''
     });
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('ALL');
@@ -49,13 +49,13 @@ export default function AccountManager() {
                 customerId: newAccount.customerId.trim(),
                 type: newAccount.accountType,
                 currency: newAccount.currency,
-                pin: '123456'
+                pin: newAccount.pin
             };
 
             await adminService.createAccount(accountData);
 
             setShowCreateModal(false);
-            setNewAccount({ customerId: '', accountType: 'SAVINGS', currency: 'THB' });
+            setNewAccount({ customerId: '', accountType: 'SAVINGS', currency: 'THB', pin: '' });
             fetchAccounts();
         } catch (error) {
             console.error("Create account error", error);
@@ -398,8 +398,28 @@ export default function AccountManager() {
                                 </div>
                             </div>
 
+                            <div className="space-y-1.5">
+                                <label className="text-xs font-bold uppercase text-primary-300 tracking-wider">
+                                    Initial ATM PIN <span className="text-red-400">*</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    inputMode="numeric"
+                                    className="w-full bg-black/20 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-emerald-500 transition-all placeholder:text-primary-600 font-mono text-center tracking-widest text-lg"
+                                    placeholder="6-digit PIN"
+                                    value={newAccount.pin}
+                                    onChange={e => setNewAccount({ ...newAccount, pin: e.target.value.replace(/\D/g, '').slice(0, 6) })}
+                                    maxLength="6"
+                                    required
+                                />
+                                <p className="text-xs text-primary-500">This PIN will be given to the customer to access the ATM. They will be prompted to change it on first login.</p>
+                            </div>
                             <div className="pt-2">
-                                <button type="submit" className="w-full bg-linear-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-cyan-500/20 transition-all active:scale-[0.98]">
+                                <button
+                                    type="submit"
+                                    disabled={newAccount.pin.length !== 6}
+                                    className="w-full bg-linear-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-cyan-500/20 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
                                     Confirm & Open Account
                                 </button>
                             </div>
@@ -447,7 +467,7 @@ export default function AccountManager() {
 
                             <div className="relative z-10">
                                 <div className="flex items-center gap-3 mb-2">
-                                    <span className="px-2.5 py-1 rounded-lg bg-white/10 text-xs font-bold text-primary-200 uppercase tracking-wider">{selectedAccount.accountType}</span>
+                                    <span className="px-2.5 py-1 rounded-lg bg-white/10 text-xs font-bold text-primary-200 uppercase tracking-wider">{selectedAccount.type}</span>
                                     <span className={`px-2.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wider border ${selectedAccount.status === 'ACTIVE'
                                         ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
                                         : selectedAccount.status === 'FROZEN'

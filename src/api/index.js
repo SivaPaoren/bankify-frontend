@@ -113,8 +113,8 @@ export const authService = {
     },
 
     // 2. ATM Auth
-    atmLogin: async (accountNumber, pin) => {
-        const response = await atmApi.post('/atm/auth/login', { accountNumber, pin });
+    atmLogin: async (toAccountNumber, pin) => {
+        const response = await atmApi.post('/atm/auth/login', { toAccountNumber, pin });
         const { token } = response.data;
         localStorage.setItem('bankify_atm_token', token);
         return response.data;
@@ -264,7 +264,7 @@ export const adminService = {
 
     // 1.4 Admin Operations
     resetAtmPin: async (accountId, newPin) => {
-        await adminApi.patch(`/admin/accounts/${accountId}/pin`, { newPin });
+        await adminApi.patch(`/admin/accounts/${accountId}/pin`, { pin: newPin });
     },
 
     // 4. Admin Transactions (Internal/Optional but recommended)
@@ -379,7 +379,7 @@ export const atmService = {
     transfer: async (accountNumber, amount, note) => {
         const idempotencyKey = generateIdempotencyKey('TRF');
         const response = await atmApi.post('/atm/me/transfer', {
-            accountNumber,
+            toAccountNumber: accountNumber,
             amount: Number(amount),
             note
         }, {
@@ -446,7 +446,6 @@ export const partnerService = {
     transfer: async (toAccountNumber, amount, note) => {
         const idempotencyKey = generateIdempotencyKey('TRF');
         const response = await partnerApi.post('/partner/me/transfer', {
-            accountNumber: toAccountNumber, // Guide says "accountNumber"
             amount: Number(amount),
             note
         }, {
@@ -469,6 +468,13 @@ export const partnerService = {
         const response = await partnerApi.post('/partner/portal/keys/rotate-request', { reason });
         return response.data;
     },
+
+    // View own rotation request history
+    getRotationHistory: async () => {
+        const response = await partnerApi.get('/partner/portal/keys/rotation-requests');
+        return response.data;
+    },
+
 };
 
 // Re-export atmService as transactionService for backward compatibility where possible,
