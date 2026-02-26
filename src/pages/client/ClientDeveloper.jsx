@@ -54,49 +54,63 @@ export default function ClientDeveloper() {
       </header>
 
       {/* Section 1: API Details */}
-      <section className="bg-slate-900 border border-white/10 rounded-2xl p-6 shadow-xl">
-        <div className="flex items-center gap-3 mb-6">
-          <Key className="text-orange-400" size={24} />
-          <h2 className="text-xl font-bold text-white">API Credentials</h2>
-        </div>
+      <section className="bg-slate-900 border border-white/10 rounded-3xl p-8 shadow-2xl">
+          <div className="flex items-center gap-4 mb-8">
+              <div className="p-3 bg-orange-500/10 rounded-2xl border border-orange-500/20 text-orange-400">
+                  <Key size={24} />
+              </div>
+              <div>
+                  <h2 className="text-xl font-bold text-white">API Credentials</h2>
+                  <p className="text-sm text-slate-400">Production environment identifiers.</p>
+              </div>
+          </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-1">
-            <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">Partner App ID</p>
-            <p className="font-mono text-white bg-black/30 p-3 rounded-lg border border-white/5">{partnerInfo?.id}</p>
-          </div>
-          <div className="space-y-1">
-            <p className="text-xs font-bold text-slate-500 uppercase tracking-widest">API Key</p>
-            <div className="flex items-center justify-between font-mono text-slate-400 bg-black/30 p-3 rounded-lg border border-white/5">
-              <span>••••••••••••••••••••••••</span>
-              <ShieldCheck size={16} className="text-slate-600" />
-            </div>
-            <p className="text-[10px] text-orange-400/60 mt-2">Key is hidden after initial setup. Request rotation if compromised.</p>
-          </div>
-        </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* App ID Field */}
+              <div className="space-y-2">
+                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">Partner App ID</p>
+                  <div className="bg-black/40 border border-white/5 rounded-2xl p-4 font-mono text-white text-sm">
+                      {partnerInfo?.id || '---'}
+                  </div>
+              </div>
 
-        <div className="mt-8 pt-8 border-t border-white/5">
-          <h3 className="text-white font-bold mb-4 flex items-center gap-2">
-            <RefreshCw size={18} className="text-orange-400" />
-            Request Key Rotation
-          </h3>
-          <div className="flex gap-4">
-            <input 
-              type="text" 
-              placeholder="Reason for rotation (e.g. key leaked, security update)..."
-              className="flex-1 bg-black/30 border border-white/10 rounded-xl px-4 py-2 text-white text-sm outline-none focus:border-orange-500"
-              value={rotateReason}
-              onChange={(e) => setRotateReason(e.target.value)}
-            />
-            <button 
-              onClick={handleRotate}
-              disabled={isRotating}
-              className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-6 py-2 rounded-xl transition-all disabled:opacity-50"
-            >
-              {isRotating ? 'Submitting...' : 'Request Rotation'}
-            </button>
+              {/* API Key Field (The part you asked about) */}
+              <div className="space-y-2">
+                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-[0.2em]">API Secret Key</p>
+                  <div className="flex items-center justify-between font-mono text-slate-500 bg-black/40 p-4 rounded-2xl border border-white/5 italic text-sm">
+                      <span>••••••••••••••••••••••••</span>
+                      <ShieldCheck size={18} className="text-slate-700" />
+                  </div>
+                  
+                  {/* Educational Tooltip for the User */}
+                  <div className="mt-4 p-4 bg-blue-500/5 border border-blue-500/10 rounded-2xl flex gap-3">
+                      <AlertCircle size={16} className="text-blue-400 shrink-0 mt-0.5" />
+                      <p className="text-[10px] text-blue-400/80 leading-relaxed">
+                          <strong>Security Notice:</strong> To maintain zero-knowledge security, your API key is only shown once by the Bank Administrator during approval or rotation. If you do not have your key, please request a rotation below.
+                      </p>
+                  </div>
+              </div>
           </div>
-        </div>
+
+          {/* Rotation Request Input */}
+          <div className="mt-10 pt-8 border-t border-white/5">
+              <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-widest mb-3">Request New Credentials</label>
+              <div className="flex flex-col sm:flex-row gap-3">
+                  <input 
+                      type="text" 
+                      placeholder="Reason for rotation (e.g. security update, key lost)..."
+                      className="flex-1 bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-orange-500 transition-all"
+                      value={rotateReason}
+                      onChange={(e) => setRotateReason(e.target.value)}
+                  />
+                  <button 
+                      onClick={handleRotate}
+                      className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-8 py-3 rounded-xl transition-all shadow-lg active:scale-95 whitespace-nowrap"
+                  >
+                      Request Rotation
+                  </button>
+              </div>
+          </div>
       </section>
 
       {/* Section 2: Rotation History */}

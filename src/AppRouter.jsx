@@ -100,10 +100,10 @@ export default function AppRouter() {
           </ProtectedRoute>
         }
       >
-        <Route index element={<ClientDashboard />} />
-        <Route path="dashboard" element={<Navigate to="/client" replace />} />
+        <Route index element={<ClientDeveloper />} />
+        {/* <Route path="dashboard" element={<Navigate to="/client" replace />} />
         <Route path="actions" element={<ClientDashboard />} />
-        <Route path="developers" element={<ClientDeveloper />} />
+        <Route path="developers" element={<ClientDeveloper />} /> */}
       </Route>
 
       {/* ATM Routes */}
