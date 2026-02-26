@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import bankifyLogo from "../../assets/BankifyWhiteLogo.png";
 import { atmService } from "../../api";
+// Import the new helper logic
+import { getTransactionDisplay } from "../../utils/formatters"; 
 
 /* ---------- SHARED HARDWARE UI COMPONENTS ---------- */
 
@@ -40,23 +42,28 @@ const KeyButton = ({ label, color, onClick }) => {
 export default function ATMHistory() {
   const navigate = useNavigate();
   const [transactions, setTransactions] = useState([]);
+  const [myAccountId, setMyAccountId] = useState(null); // Step 2: Add state to track your ID
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchTransactions = async () => {
+    const fetchHistory = async () => {
       try {
+        // Step 3: Get your account ID first so we can compare it with transactions
+        const bal = await atmService.getBalance();
+        setMyAccountId(bal.accountId);
+
         const response = await atmService.getTransactions();
         // Response may be { content: [...] } or [...] directly
         const txs = response.content || response || [];
         setTransactions(txs.slice(0, 10)); // Show recent 10
       } catch (error) {
-        console.error("Failed to fetch transactions:", error);
+        console.error("Failed to fetch history:", error);
         setTransactions([]);
       } finally {
         setLoading(false);
       }
     };
-    fetchTransactions();
+    fetchHistory();
   }, []);
 
   return (
@@ -92,25 +99,31 @@ export default function ATMHistory() {
                   </div>
 
                   <div className="w-full h-full p-6 font-mono text-white flex flex-col">
-                    <h2 className="text-cyan-500 text-xs font-bold uppercase mb-4 tracking-widest text-center border-b border-cyan-900/50 pb-2">Last 3 Transactions</h2>
+                    <h2 className="text-cyan-500 text-xs font-bold uppercase mb-4 tracking-widest text-center border-b border-cyan-900/50 pb-2">Last 10 Transactions</h2>
 
                     <div className="flex-1 overflow-hidden pr-2">
                       <table className="w-full text-[10px] uppercase">
                         <tbody className="divide-y divide-slate-800">
-                          {transactions.length === 0 ? (
+                          {loading ? (
+                             <tr><td className="py-12 text-center text-slate-600 tracking-widest">Loading...</td></tr>
+                          ) : transactions.length === 0 ? (
                             <tr><td className="py-12 text-center text-slate-600 tracking-widest">No Records Found</td></tr>
                           ) : (
-                            transactions.map((t, i) => (
-                              <tr key={i} className="hover:bg-slate-800/50 transition-colors">
-                                <td className={`py-5 ${t.amount > 0 ? 'text-emerald-500' : 'text-red-400'}`}>
-                                  {t.type} <br />
-                                  <span className="text-[8px] text-slate-500">{new Date(t.createdAt).toLocaleString()}</span>
-                                </td>
-                                <td className="py-5 text-right font-bold text-lg tracking-tighter">
-                                  {t.amount > 0 ? '+' : ''}{t.amount.toLocaleString()} ฿
-                                </td>
-                              </tr>
-                            ))
+                            transactions.map((t, i) => {
+                              // Step 4: Use the helper to get the correct sign and color
+                              const { sign, colorClass } = getTransactionDisplay(t, myAccountId);
+                              return (
+                                <tr key={i} className="hover:bg-slate-800/50 transition-colors">
+                                  <td className={`py-5 ${colorClass}`}>
+                                    {t.type} <br />
+                                    <span className="text-[8px] text-slate-500">{new Date(t.createdAt).toLocaleString()}</span>
+                                  </td>
+                                  <td className={`py-5 text-right font-bold text-lg tracking-tighter ${colorClass}`}>
+                                    {sign}{t.amount.toLocaleString()} ฿
+                                  </td>
+                                </tr>
+                              );
+                            })
                           )}
                         </tbody>
                       </table>
@@ -151,7 +164,7 @@ export default function ATMHistory() {
               </div>
             </div>
 
-            {/* CORRECTED RECEIPT SLOT (Matches h-32 size from Home/Transfer) */}
+            {/* CORRECTED RECEIPT SLOT */}
             <div className="bg-gray-200 p-3 rounded-lg border border-gray-400 shadow-inner flex flex-col items-center justify-center h-32">
               <div className="w-3/4 h-1.5 bg-gray-900 rounded-full mb-2 border-b border-white/10 shadow-inner" />
               <span className="text-[11px] text-gray-500 font-black uppercase tracking-widest">Receipt</span>

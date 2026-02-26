@@ -379,16 +379,16 @@ export const atmService = {
 
     // 2.4 Transfer
     transfer: async (accountNumber, amount, note) => {
-        const idempotencyKey = generateIdempotencyKey('TRF');
-        const response = await atmApi.post('/atm/me/transfer', {
-            toAccountNumber: accountNumber,
-            amount: Number(amount),
-            note
-        }, {
-            headers: { 'Idempotency-Key': idempotencyKey }
-        });
-        return response.data;
-    },
+    const idempotencyKey = generateIdempotencyKey('TRF');
+    const response = await atmApi.post('/atm/me/transfer', {
+        toAccountNumber: accountNumber, 
+        amount: Number(amount),
+        note
+    }, {
+        headers: { 'Idempotency-Key': idempotencyKey }
+    });
+    return response.data;
+},
 
     // 2.5 Transaction history (ATM View)
     getTransactions: async () => {
@@ -465,8 +465,8 @@ export const partnerService = {
         return partnerService.getTransactions();
     },
 
-    // Request API key rotation (partner submits reason, admin reviews and approves)
-    requestRotation: async (reason = '') => {
+    // Request API key rotation
+    requestRotation: async (reason) => {
         const response = await partnerApi.post('/partner/portal/keys/rotate-request', { reason });
         return response.data;
     },
