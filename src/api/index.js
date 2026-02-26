@@ -113,8 +113,8 @@ export const authService = {
     },
 
     // 2. ATM Auth
-    atmLogin: async (toAccountNumber, pin) => {
-        const response = await atmApi.post('/atm/auth/login', { toAccountNumber, pin });
+    atmLogin: async (accountNumber, pin) => {
+        const response = await atmApi.post('/atm/auth/login', { accountNumber, pin });
         const { token } = response.data;
         localStorage.setItem('bankify_atm_token', token);
         return response.data;
@@ -377,16 +377,16 @@ export const atmService = {
 
     // 2.4 Transfer
     transfer: async (accountNumber, amount, note) => {
-        const idempotencyKey = generateIdempotencyKey('TRF');
-        const response = await atmApi.post('/atm/me/transfer', {
-            toAccountNumber: accountNumber,
-            amount: Number(amount),
-            note
-        }, {
-            headers: { 'Idempotency-Key': idempotencyKey }
-        });
-        return response.data;
-    },
+    const idempotencyKey = generateIdempotencyKey('TRF');
+    const response = await atmApi.post('/atm/me/transfer', {
+        toAccountNumber: accountNumber, 
+        amount: Number(amount),
+        note
+    }, {
+        headers: { 'Idempotency-Key': idempotencyKey }
+    });
+    return response.data;
+},
 
     // 2.5 Transaction history (ATM View)
     getTransactions: async () => {

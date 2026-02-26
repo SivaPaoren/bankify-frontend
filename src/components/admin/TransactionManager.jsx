@@ -244,6 +244,7 @@ export default function TransactionManager() {
                                                 {tx.type === 'DEPOSIT' ? '+' : ''} {formatCurrency(tx.amount)}
                                             </span>
                                         </td>
+                                        
                                         <td className="px-6 py-4 text-right">
                                             <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide border w-fit ml-auto ${tx.status === 'SUCCESS' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' :
                                                 tx.status === 'PENDING' ? 'bg-amber-500/10 text-amber-400 border-amber-500/20' :
