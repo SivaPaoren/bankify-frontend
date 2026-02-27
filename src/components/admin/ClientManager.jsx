@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { adminService } from '../../api';
-import { 
-    Shield, Power, CheckCircle, XCircle, Clock, Search, 
+import {
+    Shield, Power, CheckCircle, XCircle, Clock, Search,
     RefreshCw, Key, Eye, Lock, X, BarChart3, Globe,
     ArrowRightLeft, AlertCircle
 } from 'lucide-react';
@@ -14,7 +14,7 @@ export default function ClientManager() {
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [statusFilter, setStatusFilter] = useState('ALL');
-    const [newKeyDialog, setNewKeyDialog] = useState({ open: false, key: '' });
+
 
     // Dossier Slide-Over State
     const [selectedClient, setSelectedClient] = useState(null);
@@ -52,10 +52,7 @@ export default function ClientManager() {
     const handleAction = async (clientId, currentStatus) => {
         try {
             if (currentStatus === 'PENDING') {
-                const response = await adminService.approveClient(clientId);
-                if (response?.apiKey) {
-                    setNewKeyDialog({ open: true, key: response.apiKey });
-                }
+                await adminService.approveClient(clientId);
             } else if (currentStatus === 'ACTIVE') {
                 await adminService.disableClient(clientId);
             } else {
@@ -70,10 +67,7 @@ export default function ClientManager() {
     const handleRotationAction = async (rotationId, action) => {
         try {
             if (action === 'approve') {
-                const response = await adminService.approveKeyRotation(rotationId);
-                if (response?.apiKey) {
-                    setNewKeyDialog({ open: true, key: response.apiKey });
-                }
+                await adminService.approveKeyRotation(rotationId);
             } else {
                 await adminService.rejectKeyRotation(rotationId);
             }
@@ -121,13 +115,13 @@ export default function ClientManager() {
 
             {/* Tab Switcher */}
             <div className="flex border-b border-white/10 space-x-8">
-                <button 
+                <button
                     onClick={() => setActiveTab('partners')}
                     className={`pb-4 px-2 font-bold text-sm transition-all border-b-2 ${activeTab === 'partners' ? 'text-cyan-400 border-cyan-400' : 'text-slate-500 border-transparent hover:text-slate-300'}`}
                 >
                     Partner Apps
                 </button>
-                <button 
+                <button
                     onClick={() => setActiveTab('rotations')}
                     className={`pb-4 px-2 font-bold text-sm transition-all border-b-2 flex items-center gap-2 ${activeTab === 'rotations' ? 'text-cyan-400 border-cyan-400' : 'text-slate-500 border-transparent hover:text-slate-300'}`}
                 >
@@ -231,44 +225,7 @@ export default function ClientManager() {
                 </div>
             )}
 
-            {/* ONE-TIME API KEY MODAL */}
-            {/* In src/components/admin/ClientManager.jsx */}
-            {newKeyDialog.open && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
-                    <div className="bg-slate-900 border-2 border-emerald-500/50 rounded-3xl p-10 w-full max-w-xl shadow-[0_0_50px_rgba(16,185,129,0.2)]">
-                        <div className="flex flex-col items-center text-center">
-                            <div className="w-20 h-20 bg-emerald-500/20 rounded-full flex items-center justify-center mb-6">
-                                <Shield size={40} className="text-emerald-400" />
-                            </div>
-                            <h2 className="text-3xl font-bold text-white mb-2">New API Key Generated!</h2>
-                            <p className="text-emerald-400 font-bold text-sm uppercase tracking-widest mb-6">Action Required: Secure Hand-off</p>
-                            
-                            <div className="bg-black/50 border border-white/10 rounded-2xl p-6 w-full mb-8">
-                                <p className="text-slate-400 text-xs mb-4 uppercase font-bold italic">
-                                    This key is NOT stored in the database. You must copy and send it to the partner now.
-                                </p>
-                                <code className="text-2xl text-white font-mono break-all block select-all">
-                                    {newKeyDialog.key}
-                                </code>
-                            </div>
 
-                            <button 
-                                onClick={() => {
-                                    navigator.clipboard.writeText(newKeyDialog.key);
-                                    alert("Copied! Send this to the partner via secure channel.");
-                                }}
-                                className="w-full py-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-2xl transition-all shadow-lg mb-4"
-                            >
-                                Copy Key & Notify Partner
-                            </button>
-                            
-                            <button onClick={() => setNewKeyDialog({ open: false, key: '' })} className="text-slate-500 hover:text-slate-300 text-xs font-bold uppercase underline">
-                                I have safely delivered this key
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     );
 }

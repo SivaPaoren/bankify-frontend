@@ -479,6 +479,12 @@ export const partnerService = {
         const response = await partnerApi.get('/partner/portal/keys/rotation-requests');
         return response.data;
     },
+
+    // Retrieve one-time API key from vault after admin approval or rotation
+    retrieveKey: async () => {
+        const response = await partnerApi.get('/partner/portal/key/retrieve');
+        return response.data;
+    },
 };
 
 // Re-export for backward compatibility
