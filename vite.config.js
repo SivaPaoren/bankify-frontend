@@ -7,7 +7,7 @@ export default defineConfig({
   base: "/finance/",
   server: {
     proxy: {
-      '/api': {
+      '/finance/api': {
         target: 'http://localhost:8080',
         changeOrigin: true,
         secure: false,
