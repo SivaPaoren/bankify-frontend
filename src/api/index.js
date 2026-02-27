@@ -63,12 +63,10 @@ const handleResponseError = (error, type) => {
         if (type === 'PARTNER') localStorage.removeItem('bankify_partner_token');
         if (type === 'ATM') {
             localStorage.removeItem('bankify_atm_token');
-            // Auto-redirect to ATM login on token expiry (3-minute backend limit)
-            // Skip redirect for /atm/change-pin so it can attempt a silent re-auth
             const isLogin = window.location.pathname.includes('/atm-login');
-            const isChangePin = window.location.pathname.includes('/atm/change-pin');
-            if (!isLogin && !isChangePin) {
-                window.location.href = '/atm-login?expired=1';
+            if (!isLogin) {
+                // ADDED: /finance prefix for AU server
+                window.location.href = '/finance/atm-login?expired=1';
             }
         }
     }
@@ -142,7 +140,7 @@ export const authService = {
         localStorage.removeItem('bankify_atm_token');
         localStorage.removeItem('bankify_partner_token');
         localStorage.removeItem('bankify_user');
-        window.location.href = '/login';
+        window.location.href = '/finance/login';
     }
 };
 
@@ -168,15 +166,19 @@ export const adminService = {
         const response = await adminApi.patch(`/admin/partner-apps/${clientId}/disable`);
         return response.data;
     },
-    // 1.5 Key Rotation Approvals
+    /// 1.5 Key Rotation Approvals
     listRotationRequests: async () => {
         const response = await adminApi.get('/admin/partner-apps/rotation-requests');
         return response.data;
     },
+
+    // 1.5.1 Approve rotation (Note: Key is sent to Partner vault, not Admin response)
     approveKeyRotation: async (requestId) => {
         const response = await adminApi.patch(`/admin/partner-apps/rotation-requests/${requestId}/approve`);
         return response.data;
     },
+
+    // 1.5.2 Reject rotation
     rejectKeyRotation: async (requestId) => {
         const response = await adminApi.patch(`/admin/partner-apps/rotation-requests/${requestId}/reject`);
         return response.data;
