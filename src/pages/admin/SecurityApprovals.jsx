@@ -77,12 +77,20 @@ export default function SecurityApprovals() {
                     </h1>
                     <p className="text-primary-300 mt-1">Review and manage pending security requests, including API key rotations.</p>
                 </div>
-                <div className="text-sm font-medium text-emerald-400 bg-emerald-500/10 px-4 py-2 rounded-xl border border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.1)] flex items-center gap-2">
+                <div className={`text-sm font-medium flex items-center gap-2 px-4 py-2 rounded-xl border shadow-lg ${
+                    pendingCount === 0
+                        ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20 shadow-emerald-500/10'
+                        : 'text-amber-400 bg-amber-500/10 border-amber-500/20 shadow-amber-500/10'
+                }`}>
                     <span className="relative flex h-2 w-2">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                        <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
+                            pendingCount === 0 ? 'bg-emerald-400' : 'bg-amber-400'
+                        }`}></span>
+                        <span className={`relative inline-flex rounded-full h-2 w-2 ${
+                            pendingCount === 0 ? 'bg-emerald-500' : 'bg-amber-500'
+                        }`}></span>
                     </span>
-                    {pendingCount} Pending Requests
+                    {pendingCount === 0 ? 'Queue Clear' : `${pendingCount} Pending`}
                 </div>
             </div>
 
@@ -99,14 +107,16 @@ export default function SecurityApprovals() {
             {/* ── Requests Table ── */}
             <div className="bg-white/5 backdrop-blur-md rounded-3xl shadow-xl border border-white/10 overflow-hidden">
                 <table className="w-full text-left border-collapse">
-                    <thead>
-                        <tr className="bg-white/5 border-b border-white/5 text-xs uppercase tracking-widest text-primary-200 font-bold">
-                            <th className="px-6 py-4">App ID</th>
-                            <th className="px-6 py-4">Request Reason</th>
-                            <th className="px-6 py-4">Requested At</th>
-                            <th className="px-6 py-4 text-right">Actions</th>
-                        </tr>
-                    </thead>
+                    {requests.length > 0 && (
+                        <thead>
+                            <tr className="bg-white/5 border-b border-white/5 text-xs uppercase tracking-widest text-primary-200 font-bold">
+                                <th className="px-6 py-4">App ID</th>
+                                <th className="px-6 py-4">Request Reason</th>
+                                <th className="px-6 py-4">Requested At</th>
+                                <th className="px-6 py-4 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                    )}
                     <tbody className="divide-y divide-white/5">
                         {loading ? (
                             <tr>
@@ -202,9 +212,10 @@ export default function SecurityApprovals() {
                 </table>
             </div>
 
-            <p className="text-xs text-center text-primary-500 font-medium">
-                Approving a key rotation will immediately invalidate the partner's old API key and send them a new one.
-            </p>
+            <div className="flex items-start gap-3 bg-amber-500/5 border border-amber-500/20 rounded-2xl px-4 py-3 text-sm text-amber-300/80">
+                <AlertTriangle size={16} className="shrink-0 mt-0.5 text-amber-400" />
+                <span>Approving a key rotation will immediately invalidate the partner's old API key and issue a new one. This action cannot be undone.</span>
+            </div>
         </div>
     );
 }

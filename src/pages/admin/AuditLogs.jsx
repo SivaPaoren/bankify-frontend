@@ -246,8 +246,9 @@ export default function AuditLogs() {
           </h1>
           <p className="text-primary-300 mt-1">Full audit trail of all system actions and events.</p>
         </div>
-        <div className="text-xs font-mono text-primary-400 bg-black/20 px-3 py-1.5 rounded-lg border border-white/5">
-          {logs.length} total events
+        <div className="inline-flex items-center gap-2 bg-white/5 border border-white/10 px-3 py-1.5 rounded-xl text-xs font-bold text-primary-300">
+          <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
+          {logs.length} events
         </div>
       </div>
 
@@ -274,16 +275,16 @@ export default function AuditLogs() {
           className="text-left bg-white/5 border border-white/10 rounded-2xl p-4 hover:bg-white/10 hover:border-white/20 transition-all group"
         >
           <div className="text-xs text-primary-400 uppercase tracking-widest font-bold mb-1">Last 24h</div>
-          <div className="text-2xl font-bold text-emerald-400 group-hover:text-emerald-300 transition-colors">{stats.recent}</div>
+          <div className="text-2xl font-bold text-white group-hover:text-cyan-200 transition-colors">{stats.recent}</div>
         </button>
 
-        <button
+        {/* <button
           onClick={() => applyQuickFilter('ADMIN', 'ALL')}
           className="text-left bg-white/5 border border-white/10 rounded-2xl p-4 hover:bg-white/10 hover:border-emerald-500/30 transition-all group"
         >
           <div className="text-xs text-emerald-400/80 uppercase tracking-widest font-bold mb-1">Admin Actions</div>
           <div className="text-2xl font-bold text-emerald-400 group-hover:text-emerald-300 transition-colors">{stats.admins}</div>
-        </button>
+        </button> */}
       </div>
 
       {/* ── Toolbar — date left, filters right ── */}
@@ -399,7 +400,7 @@ export default function AuditLogs() {
                       </div>
                     </td>
 
-                    <td className="px-6 py-4 w-48">
+                    <td className="px-6 py-4 w-48 border-r border-white/5">
                       <div className="flex flex-col gap-1">
                         <span className={`inline-flex items-center gap-1.5 self-start px-2 py-0.5 rounded-md border text-[10px] font-bold uppercase tracking-wider ${actor.cls}`}>
                           <ActorIcon size={10} />

@@ -205,7 +205,7 @@ export default function ClientManager() {
                                 {clients.length === 0 && (
                                     <tr>
                                         <td colSpan="4" className="px-6 py-16 text-center">
-                                            <Globe size={36} className="mx-auto mb-3 text-slate-600" />
+                                            {/* <Globe size={36} className="mx-auto mb-3 text-slate-600" /> */}
                                             <p className="text-slate-400 font-medium">No partner applications registered yet.</p>
                                             <p className="text-slate-600 text-sm mt-1">Partners can sign up from the partner portal.</p>
                                         </td>

@@ -168,19 +168,46 @@ export default function AccountManager() {
         { key: 'CURRENT', label: 'Current' },
         { key: 'WALLET', label: 'Wallet' },
     ];
-
+    const ACCOUNT_DIALOG_CFG = {
+        FROZEN: {
+            title: 'Freeze Account?',
+            bar: 'from-amber-500 to-yellow-500',
+            btnCls: 'bg-amber-500 hover:bg-amber-400 shadow-amber-500/20',
+            btnLabel: 'Freeze',
+            desc: (num, name) => <>Are you sure you want to freeze account <b className="font-mono text-white">{num}</b> belonging to <b className="text-white">{name}</b>?</>,
+        },
+        ACTIVE: {
+            title: 'Activate Account?',
+            bar: 'from-emerald-500 to-cyan-500',
+            btnCls: 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-500/20',
+            btnLabel: 'Activate',
+            desc: (num, name) => <>Are you sure you want to activate account <b className="font-mono text-white">{num}</b> belonging to <b className="text-white">{name}</b>?</>,
+        },
+        CLOSED: {
+            title: 'Close Account Permanently?',
+            bar: 'from-red-600 to-rose-500',
+            btnCls: 'bg-red-600 hover:bg-red-500 shadow-red-500/20',
+            btnLabel: 'Close Permanently',
+            desc: (num, name) => (
+                <>
+                    Account <b className="font-mono text-white">{num}</b> ({name}) will be permanently closed.
+                    <br /><span className="text-red-400 text-xs font-semibold">⚠ This action cannot be reversed.</span>
+                </>
+            ),
+        },
+    };
     return (
-        <div className="space-y-6 relative">
-            {/* Page-level error banner */}
-            {pageError && (
-                <div className="flex items-center gap-3 bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded-2xl text-sm font-medium">
-                    <AlertCircle size={18} className="shrink-0" />
-                    <span className="flex-1">{pageError}</span>
-                    <button onClick={() => setPageError(null)} className="p-1 hover:bg-red-500/20 rounded-lg transition-colors">
-                        <X size={16} />
-                    </button>
-                </div>
-            )}
+    <div className="space-y-6 relative">
+    {/* Page-level error banner */}
+    {pageError && (
+        <div className="flex items-center gap-3 bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded-2xl text-sm font-medium">
+            <AlertCircle size={18} className="shrink-0" />
+            <span className="flex-1">{pageError}</span>
+            <button onClick={() => setPageError(null)} className="p-1 hover:bg-red-500/20 rounded-lg transition-colors">
+                <X size={16} />
+            </button>
+        </div>
+    )}
             {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
@@ -199,15 +226,15 @@ export default function AccountManager() {
             {/* Stats Summary Row */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[
-                    { label: 'Total Accounts', value: stats.total, color: 'text-white', sub: `${stats.active} active` },
+                    { label: 'Total', value: stats.total, color: 'text-white', sub: 'total accounts' },
                     { label: 'Active', value: stats.active, color: 'text-emerald-400', sub: 'earning interest' },
                     { label: 'Frozen', value: stats.frozen, color: 'text-amber-400', sub: 'access suspended' },
                     { label: 'Closed', value: stats.closed, color: 'text-red-400', sub: 'permanently closed' },
                 ].map(s => (
                     <div key={s.label} className="bg-white/5 border border-white/10 rounded-2xl px-5 py-4">
-                        <div className="text-xs text-primary-400 uppercase tracking-widest font-bold mb-1">{s.label}</div>
+                        <div className={`text-xs text-primary-400 uppercase tracking-widest font-bold mb-1 ${s.color}`}>{s.label}</div>
                         <div className={`text-3xl font-bold ${s.color}`}>{s.value}</div>
-                        <div className="text-xs text-primary-500 mt-1">{s.sub}</div>
+                        <div className={`text-xs text-primary-500 mt-1 ${s.color}`}>{s.sub}</div>
                     </div>
                 ))}
             </div>
@@ -278,7 +305,7 @@ export default function AccountManager() {
                                                 <div className="w-10 h-10 rounded-xl bg-primary-600/20 flex items-center justify-center text-primary-300 border border-white/5">
                                                     <CreditCard size={18} />
                                                 </div>
-                                                <span className="font-mono text-white tracking-wide group-hover:text-emerald-300 transition-colors">{account.accountNumber}</span>
+                                                <span className="font-mono text-white tracking-wide group-hover:text-cyan-400 transition-colors">{account.accountNumber}</span>
                                             </div>
                                         </td>
                                         <td className="px-6 py-4 text-primary-100 font-medium">
@@ -621,48 +648,36 @@ export default function AccountManager() {
                     </>
                 )}
             </div>
-
+            
+            
             {/* ── Confirmation Dialog ─────────────────────────────── */}
             {confirmDialog.open && (() => {
-                const cfg = {
-                    FROZEN: { label: 'Freeze Account', verb: 'freeze', icon: '❄️', accent: 'blue', btnCls: 'bg-blue-500 hover:bg-blue-400 shadow-blue-500/30' },
-                    ACTIVE: { label: 'Activate Account', verb: 'activate', icon: '✅', accent: 'emerald', btnCls: 'bg-emerald-500 hover:bg-emerald-400 shadow-emerald-500/30' },
-                    CLOSED: { label: 'Close Account', verb: 'close', icon: '🔒', accent: 'red', btnCls: 'bg-red-500 hover:bg-red-400 shadow-red-500/30' },
-                }[confirmDialog.newStatus] || {};
+                const cfg = ACCOUNT_DIALOG_CFG[confirmDialog.newStatus];
+                if (!cfg) return null;
+
                 return (
-                    <div className="fixed inset-0 z-100 flex items-center justify-center p-4" onClick={() => setConfirmDialog({ open: false })}>
-                        {/* Backdrop */}
-                        <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
-                        {/* Panel */}
-                        <div
-                            className="relative bg-primary-900 border border-white/10 rounded-2xl shadow-2xl w-full max-w-md p-8 animate-fade-in"
-                            onClick={e => e.stopPropagation()}
-                        >
-                            {/* Icon */}
-                            <div className="flex justify-center mb-5">
-                                <span className="text-5xl">{cfg.icon}</span>
-                            </div>
-                            <h2 className="text-xl font-bold text-white text-center mb-2">{cfg.label}</h2>
-                            <p className="text-primary-300 text-center text-sm mb-6">
-                                Are you sure you want to <span className="font-semibold text-white">{cfg.verb}</span> account
-                                {' '}<span className="font-mono text-primary-100">{confirmDialog.accountNumber}</span>
-                                {' '}belonging to <span className="font-semibold text-white">{confirmDialog.customerName}</span>?
-                                {confirmDialog.newStatus === 'CLOSED' && (
-                                    <span className="block mt-2 text-red-400 font-semibold">⚠️ This action cannot be undone.</span>
-                                )}
+                    <div className="fixed inset-0 z-100 flex items-center justify-center p-4 bg-primary-950/90 backdrop-blur-md animate-fade-in">
+                        <div className="bg-primary-900 border border-white/10 rounded-3xl shadow-2xl w-full max-w-md p-6 text-center relative overflow-hidden">
+                            {/* The Color Bar at the top */}
+                            <div className={`absolute top-0 left-0 w-full h-1 bg-linear-to-r ${cfg.bar}`} />
+                            
+                            <h3 className="text-xl font-bold text-white mb-2">{cfg.title}</h3>
+                            <p className="text-primary-300 mb-6 leading-relaxed text-sm">
+                                {cfg.desc(confirmDialog.accountNumber, confirmDialog.customerName)}
                             </p>
+
                             <div className="flex gap-3">
                                 <button
                                     onClick={() => setConfirmDialog({ open: false })}
-                                    className="flex-1 py-3 rounded-xl border border-white/10 text-primary-200 font-semibold hover:bg-white/5 transition-all"
+                                    className="flex-1 px-4 py-3 bg-white/5 hover:bg-white/10 text-white rounded-xl font-bold transition-colors border border-white/5"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     onClick={confirmAndUpdate}
-                                    className={`flex-1 py-3 rounded-xl text-white font-bold shadow-lg transition-all active:scale-[0.98] ${cfg.btnCls}`}
+                                    className={`flex-1 px-4 py-3 text-white rounded-xl font-bold transition-colors shadow-lg ${cfg.btnCls}`}
                                 >
-                                    Confirm
+                                    {cfg.btnLabel}
                                 </button>
                             </div>
                         </div>
@@ -675,9 +690,9 @@ export default function AccountManager() {
                 <div className="fixed inset-0 z-100 flex items-center justify-center p-4">
                     <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setResetPinDialog({ open: false })} />
                     <div className="relative bg-primary-900 border border-white/10 rounded-2xl shadow-2xl w-full max-w-md p-8 animate-fade-in" onClick={e => e.stopPropagation()}>
-                        <div className="flex justify-center mb-5">
+                        {/* <div className="flex justify-center mb-5">
                             <span className="text-5xl">🔐</span>
-                        </div>
+                        </div> */}
                         <h2 className="text-xl font-bold text-white text-center mb-2">Reset ATM PIN</h2>
                         <p className="text-primary-300 text-center text-sm mb-6">
                             Enter the new 6-digit ATM PIN for account <span className="font-mono text-primary-100">{resetPinDialog.accountNumber}</span>.

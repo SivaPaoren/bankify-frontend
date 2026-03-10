@@ -79,7 +79,7 @@ export default function AdminLedger() {
                     { label: 'Total Volume', value: formatCurrency(stats.totalVolume), color: 'text-cyan-400' },
                 ].map(s => (
                     <div key={s.label} className="bg-white/5 border border-white/10 rounded-2xl px-5 py-4">
-                        <div className="text-xs text-primary-400 uppercase tracking-widest font-bold mb-1">{s.label}</div>
+                        <div className={`text-xs text-primary-400 uppercase tracking-widest font-bold mb-1 ${s.color}`}>{s.label}</div>
                         <div className={`text-2xl font-bold ${s.color}`}>{s.value}</div>
                     </div>
                 ))}
@@ -187,9 +187,10 @@ export default function AdminLedger() {
                 </div>
             </div>
 
-            <p className="text-xs text-center text-primary-500 font-mono">
-                Every transfer generates 1 DEBIT entry and 1 CREDIT entry. Deposits generate 1 CREDIT. Withdrawals generate 1 DEBIT.
-            </p>
+            <div className="flex items-start gap-3 bg-cyan-500/5 border border-cyan-500/20 rounded-2xl px-4 py-3 text-xs text-cyan-300/70">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 mt-0.5 text-cyan-400"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                <span>Every transfer generates 1 DEBIT entry and 1 CREDIT entry. Deposits generate 1 CREDIT. Withdrawals generate 1 DEBIT.</span>
+            </div>
         </div>
     );
 }

@@ -334,7 +334,15 @@ export default function AdminDashboard() {
                             )}
                         </div>
                         {pendingActions.length === 0 ? (
-                            <div className="py-6 text-center text-primary-500 text-sm italic">System clear. No pending approvals.</div>
+                            <div className="py-5 flex items-center gap-3 bg-emerald-500/5 border border-emerald-500/20 rounded-2xl px-4">
+                                <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
+                                    <ArrowDownRight size={18} className="text-emerald-400" />
+                                </div>
+                                <div>
+                                    <p className="text-sm font-bold text-emerald-300">System clear</p>
+                                    <p className="text-xs text-emerald-400/60 mt-0.5">No pending approvals</p>
+                                </div>
+                            </div>
                         ) : (
                             <div className="space-y-3">
                                 {pendingActions.slice(0, 3).map((action, i) => (
@@ -390,12 +398,21 @@ export default function AdminDashboard() {
                                             onClick={() => navigate('/admin/audit-logs')}
                                             className="group flex items-start gap-3 p-3.5 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 hover:border-white/10 transition-all cursor-pointer"
                                         >
-                                            <div className={`mt-0.5 p-2 rounded-xl border group-hover:scale-110 transition-transform ${isError
-                                                ? 'bg-red-500/10 text-red-400 border-red-500/10'
-                                                : 'bg-orange-500/10 text-orange-400 border-orange-500/10'
-                                                }`}>
-                                                <AlertTriangle size={14} />
-                                            </div>
+                                            {/* Color-coded action badge (D4) */}
+                                            {(() => {
+                                                const a = event.action ?? '';
+                                                let cls = 'bg-slate-500/10 text-slate-400 border-slate-500/20';
+                                                if (a.includes('CREATE')) cls = 'bg-blue-500/10 text-blue-400 border-blue-500/20';
+                                                else if (a.includes('LOGIN')) cls = 'bg-slate-500/10 text-slate-300 border-slate-500/20';
+                                                else if (a.includes('FREEZE') || a.includes('DISABLED') || a.includes('SUSPEND')) cls = 'bg-amber-500/10 text-amber-400 border-amber-500/20';
+                                                else if (a.includes('CLOSE') || a.includes('FAIL') || a.includes('ERROR') || a.includes('REJECT')) cls = 'bg-red-500/10 text-red-400 border-red-500/20';
+                                                else if (a.includes('REACTIVATE') || a.includes('ACTIVATED') || a.includes('APPROVED')) cls = 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20';
+                                                return (
+                                                    <div className={`mt-0.5 p-2 rounded-xl border group-hover:scale-110 transition-transform ${cls}`}>
+                                                        <AlertTriangle size={14} />
+                                                    </div>
+                                                );
+                                            })()}
                                             <div className="min-w-0">
                                                 <p className="text-sm font-bold text-slate-100 group-hover:text-white transition-colors truncate">
                                                     {event.action?.replace(/_/g, ' ')}

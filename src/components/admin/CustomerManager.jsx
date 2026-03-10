@@ -28,7 +28,7 @@ function StatusBadge({ status }) {
 const DIALOG_CFG = {
     freeze: {
         title: 'Freeze Customer?',
-        icon: <Snowflake size={32} className="text-amber-400" />,
+        // icon: <Snowflake size={32} className="text-amber-400" />,
         ring: 'border-amber-500/20 bg-amber-500/10',
         bar: 'from-amber-500 to-yellow-500',
         btnCls: 'bg-amber-500 hover:bg-amber-400 shadow-amber-500/20',
@@ -37,7 +37,7 @@ const DIALOG_CFG = {
     },
     reactivate: {
         title: 'Re-activate Customer?',
-        icon: <CheckCircle size={32} className="text-emerald-400" />,
+        // icon: <CheckCircle size={32} className="text-emerald-400" />,
         ring: 'border-emerald-500/20 bg-emerald-500/10',
         bar: 'from-emerald-500 to-cyan-500',
         btnCls: 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-500/20',
@@ -46,7 +46,7 @@ const DIALOG_CFG = {
     },
     close: {
         title: 'Close Customer Permanently?',
-        icon: <XCircle size={32} className="text-red-400" />,
+        // icon: <XCircle size={32} className="text-red-400" />,
         ring: 'border-red-500/20 bg-red-500/10',
         bar: 'from-red-600 to-rose-500',
         btnCls: 'bg-red-600 hover:bg-red-500 shadow-red-500/20',
@@ -67,9 +67,9 @@ function ConfirmDialog({ action, customer, onConfirm, onCancel, loading }) {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-primary-950/90 backdrop-blur-md animate-fade-in">
             <div className="bg-primary-900 border border-white/10 rounded-3xl shadow-2xl w-full max-w-md p-6 text-center relative overflow-hidden">
                 <div className={`absolute top-0 left-0 w-full h-1 bg-linear-to-r ${cfg.bar}`} />
-                <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 border ${cfg.ring}`}>
+                {/* <div className={`w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4 border ${cfg.ring}`}>
                     {cfg.icon}
-                </div>
+                </div> */}
                 <h3 className="text-xl font-bold text-white mb-2">{cfg.title}</h3>
                 <p className="text-primary-300 mb-6 leading-relaxed text-sm">{cfg.desc(`${customer.firstName} ${customer.lastName}`)}</p>
                 <div className="flex gap-3">
@@ -234,15 +234,15 @@ export default function CustomerManager() {
             {/* Stats Summary Row */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[
-                    { label: 'Total Customers', value: stats.total, color: 'text-white', sub: 'total profiles' },
+                    { label: 'Total', value: stats.total, color: 'text-white', sub: 'total profiles' },
                     { label: 'Active', value: stats.active, color: 'text-emerald-400', sub: 'fully verified' },
                     { label: 'Frozen', value: stats.frozen, color: 'text-amber-400', sub: 'temporarily suspended' },
                     { label: 'Closed', value: stats.closed, color: 'text-red-400', sub: 'archived profiles' },
                 ].map(s => (
                     <div key={s.label} className="bg-white/5 border border-white/10 rounded-2xl px-5 py-4">
-                        <div className="text-xs text-primary-400 uppercase tracking-widest font-bold mb-1">{s.label}</div>
+                        <div className={`text-xs text-primary-400 uppercase tracking-widest font-bold mb-1 ${s.color}`}>{s.label}</div>
                         <div className={`text-3xl font-bold ${s.color}`}>{s.value}</div>
-                        <div className="text-xs text-primary-500 mt-1">{s.sub}</div>
+                        <div className={`text-xs text-primary-500 mt-1 ${s.color}`}>{s.sub}</div>
                     </div>
                 ))}
             </div>
@@ -325,7 +325,6 @@ export default function CustomerManager() {
                                                         onClick={(e) => {
                                                             e.stopPropagation();
                                                             navigator.clipboard.writeText(c.id);
-                                                            // Optional: toast or tooltip could go here
                                                         }}
                                                         className="p-1 hover:bg-white/10 rounded-md text-primary-500 hover:text-cyan-400 transition-colors"
                                                         title="Copy Customer ID"
@@ -357,52 +356,47 @@ export default function CustomerManager() {
                                         </span>
                                     </td>
 
-                                    {/* Status */}
+                                    {/* Status - Clean Badge Column */}
                                     <td className="px-6 py-4 text-center">
                                         <StatusBadge status={c.status} />
                                     </td>
 
-                                    {/* Actions */}
-                                    <td className="px-6 py-4">
-                                        <div className="flex items-center justify-center gap-1.5" onClick={e => e.stopPropagation()}>
+                                    {/* Actions - Button Only Column */}
+                                    <td className="px-6 py-4 text-center">
+                                        <div className="flex items-center justify-center gap-2">
                                             {c.status === 'ACTIVE' && (
-                                                <>
-                                                    <button
-                                                        onClick={e => openDialog('freeze', c, e)}
-                                                        title="Freeze customer"
-                                                        className="p-2 rounded-xl text-primary-400 hover:text-amber-400 hover:bg-amber-500/10 border border-transparent hover:border-amber-500/20 transition-all"
-                                                    >
-                                                        <Snowflake size={16} />
-                                                    </button>
-                                                    <button
-                                                        onClick={e => openDialog('close', c, e)}
-                                                        title="Close permanently"
-                                                        className="p-2 rounded-xl text-primary-400 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all"
-                                                    >
-                                                        <XCircle size={16} />
-                                                    </button>
-                                                </>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); openDialog('freeze', c, e); }}
+                                                    className="p-2 rounded-xl text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 transition-all"
+                                                    title="Freeze customer"
+                                                >
+                                                    <Snowflake size={18} />
+                                                </button>
                                             )}
+                                            
                                             {c.status === 'FROZEN' && (
-                                                <>
-                                                    <button
-                                                        onClick={e => openDialog('reactivate', c, e)}
-                                                        title="Re-activate customer"
-                                                        className="p-2 rounded-xl text-primary-400 hover:text-emerald-400 hover:bg-emerald-500/10 border border-transparent hover:border-emerald-500/20 transition-all"
-                                                    >
-                                                        <CheckCircle size={16} />
-                                                    </button>
-                                                    <button
-                                                        onClick={e => openDialog('close', c, e)}
-                                                        title="Close permanently"
-                                                        className="p-2 rounded-xl text-primary-400 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all"
-                                                    >
-                                                        <XCircle size={16} />
-                                                    </button>
-                                                </>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); openDialog('reactivate', c, e); }}
+                                                    className="p-2 rounded-xl text-emerald-400 hover:text-emerald-300 hover:bg-emerald-500/10 transition-all"
+                                                    title="Re-activate customer"
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                        <polyline points="20 6 9 17 4 12" />
+                                                    </svg>
+                                                </button>
                                             )}
-                                            {c.status === 'CLOSED' && (
-                                                <span className="text-xs text-primary-600 italic px-2">Closed</span>
+
+                                            {c.status !== 'CLOSED' && (
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); openDialog('close', c, e); }}
+                                                    className="p-2 rounded-xl text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all"
+                                                    title="Close permanently"
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                        <line x1="18" y1="6" x2="6" y2="18" />
+                                                        <line x1="6" y1="6" x2="18" y2="18" />
+                                                    </svg>
+                                                </button>
                                             )}
                                         </div>
                                     </td>
