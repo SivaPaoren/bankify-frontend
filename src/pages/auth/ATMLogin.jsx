@@ -142,7 +142,7 @@ export default function ATMLogin() {
   // Hard exit — clears saved account, returns to fresh ATM login
   const exitSession = () => {
     sessionStorage.removeItem('bankify_atm_last_account');
-    window.location.href = '/atm-login'; // full reload, clears isExpired flag
+    navigate('/atm-login', { replace: true }); // full reload, clears isExpired flag safely
   };
 
   const handleEnter = async () => {
@@ -355,8 +355,8 @@ export default function ATMLogin() {
           {/* RIGHT UNIT: CARD SLOT, KEYPAD, RECEIPT */}
           <div className="flex flex-col gap-6 w-72">
 
-            <div className="bg-gray-200 p-4 rounded-xl border border-gray-400 shadow-inner relative z-0">
-              <div className="h-10 bg-gray-900 rounded relative flex items-center justify-center border-b border-gray-700 z-10">
+            <div className="bg-gray-200 p-4 pt-14 rounded-xl border border-gray-400 shadow-inner relative z-0">
+              <div className="h-10 bg-gray-900 rounded relative flex items-center justify-center border-b border-gray-700 z-10 overflow-hidden">
                 <div className={`w-16 h-1 animate-pulse shadow-[0_0_5px_rgba(34,197,94,0.5)] ${cardInserted ? 'bg-green-500' : 'bg-cyan-500'}`} />
               </div>
 
@@ -374,7 +374,7 @@ export default function ATMLogin() {
                   bg-linear-to-br from-slate-800 via-slate-700 to-slate-900
                   border border-white/10 ring-1 ring-black/20
                   transition-all duration-700 ease-in-out
-                  ${cardInserted ? "top-[18px] translate-y-8 opacity-0 scale-95" : "-top-10 hover:-translate-y-2"}
+                  ${cardInserted ? "top-[48px] opacity-0 scale-95" : "top-2 hover:-translate-y-2"}
                 `}
               >
                 <div className="absolute top-3 left-3 w-5 h-4 bg-linear-to-br from-yellow-200 to-yellow-600 rounded-sm" />
