@@ -74,12 +74,8 @@ export default function TransactionManager() {
         <div className="space-y-6">
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-white tracking-tight flex items-center gap-3">
+                    <h1 className="text-3xl font-bold text-white tracking-tight">
                         Transactions
-                        <span className="relative flex h-3 w-3 mt-1">
-                            {/* <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span> */}
-                            {/* <span className="relative inline-flex rounded-full h-3 w-3 bg-cyan-500"></span> */}
-                        </span>
                     </h1>
                     <p className="text-primary-300 mt-1">Securely monitoring system-wide network movements.</p>
                 </div>
@@ -109,7 +105,7 @@ export default function TransactionManager() {
                 <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
                     <div className="text-xs text-emerald-400/80 uppercase tracking-widest font-bold mb-1">Success Rate</div>
                     <div className="text-2xl font-bold text-emerald-400">
-                        {stats.count > 0 ? Math.round((stats.successCount / stats.count) * 100) : 0}%
+                        {stats.count > 0 ? `${Math.round((stats.successCount / stats.count) * 100)}%` : '—'}
                     </div>
                 </div>
                 <div className="bg-white/5 border border-white/10 rounded-2xl p-4">

@@ -121,6 +121,7 @@ export default function AdminLedger() {
                         <thead>
                             <tr className="bg-white/5 border-b border-white/5 text-xs uppercase tracking-widest text-primary-200 font-bold">
                                 <th className="px-6 py-4">Transaction ID</th>
+                                <th className="px-6 py-4">Account</th>
                                 <th className="px-6 py-4">Direction</th>
                                 <th className="px-6 py-4 text-right">Amount</th>
                                 <th className="px-6 py-4">Currency</th>
@@ -130,7 +131,7 @@ export default function AdminLedger() {
                         <tbody className="divide-y divide-white/5">
                             {loading ? (
                                 <tr>
-                                    <td colSpan="5" className="px-6 py-12 text-center text-primary-300 italic">
+                                    <td colSpan="6" className="px-6 py-12 text-center text-primary-300 italic">
                                         Loading ledger…
                                     </td>
                                 </tr>
@@ -142,6 +143,11 @@ export default function AdminLedger() {
                                             <td className="px-6 py-4">
                                                 <code className="text-xs font-mono text-primary-300 bg-black/30 px-2 py-1 rounded">
                                                     {entry.transactionId ? String(entry.transactionId).substring(0, 16) + '…' : '—'}
+                                                </code>
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <code className="text-xs font-mono text-cyan-300/80 bg-black/20 px-2 py-1 rounded">
+                                                    {entry.accountId ? String(entry.accountId).substring(0, 12) + '…' : '—'}
                                                 </code>
                                             </td>
                                             <td className="px-6 py-4">
@@ -171,7 +177,7 @@ export default function AdminLedger() {
                                 })
                             ) : (
                                 <tr>
-                                    <td colSpan="5" className="px-6 py-16 text-center text-primary-400/60 italic">
+                                    <td colSpan="6" className="px-6 py-16 text-center text-primary-400/60 italic">
                                         {reference ? `No ledger entries for reference: "${reference}"` : 'No ledger entries found.'}
                                     </td>
                                 </tr>

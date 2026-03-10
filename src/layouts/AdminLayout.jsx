@@ -180,8 +180,6 @@ export default function AdminLayout() {
                         >
                             {collapsed ? <Menu size={20} /> : <ChevronLeft size={20} />}
                         </button>
-                        <div className="h-8 w-px bg-white/10 mx-1 hidden sm:block"></div>
-                        <h2 className="text-lg sm:text-2xl font-bold text-white tracking-tight drop-shadow-sm truncate">{getPageTitle()}</h2>
                     </div>
 
                     <div className="flex items-center gap-5">

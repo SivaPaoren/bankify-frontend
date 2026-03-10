@@ -488,19 +488,19 @@ export default function CustomerManager() {
                         <div className="p-6 border-b border-white/5 bg-linear-to-r from-primary-900 to-primary-950 relative overflow-hidden shrink-0">
                             <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl -mr-10 -mt-10 pointer-events-none" />
                             <div className="flex justify-between items-start mb-4 relative z-10">
-                                <button onClick={() => setShowDrawer(false)} className="p-2 text-primary-400 hover:text-white hover:bg-white/5 rounded-xl transition-all">
-                                    <X size={24} />
-                                </button>
-                            </div>
-                            <div className="relative z-10">
-                                <h2 className="text-2xl font-bold text-white mb-1">{selectedCustomer.firstName} {selectedCustomer.lastName}</h2>
-                                <p className="text-primary-300 text-sm mb-3">{selectedCustomer.email}</p>
-                                <div className="flex items-center gap-3 flex-wrap">
-                                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase ${selectedCustomer.type === 'BUSINESS' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'}`}>
-                                        {selectedCustomer.type}
-                                    </span>
-                                    <StatusBadge status={selectedCustomer.status} />
+                                <div>
+                                    <h2 className="text-2xl font-bold text-white mb-1">{selectedCustomer.firstName} {selectedCustomer.lastName}</h2>
+                                    <p className="text-primary-300 text-sm mb-3">{selectedCustomer.email}</p>
+                                    <div className="flex items-center gap-3 flex-wrap">
+                                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase ${selectedCustomer.type === 'BUSINESS' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'}`}>
+                                            {selectedCustomer.type}
+                                        </span>
+                                        <StatusBadge status={selectedCustomer.status} />
+                                    </div>
                                 </div>
+                                <button onClick={() => setShowDrawer(false)} className="p-2 text-primary-400 hover:text-white hover:bg-white/10 rounded-xl transition-all shrink-0 ml-4">
+                                    <X size={22} />
+                                </button>
                             </div>
                         </div>
                         <div className="flex-1 overflow-y-auto p-6 space-y-4">

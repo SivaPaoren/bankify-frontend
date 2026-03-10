@@ -87,6 +87,12 @@ export default function ClientManager() {
         rotations: rotations.filter(r => r.status === 'PENDING').length,
     };
 
+    const filteredClients = clients.filter(c => {
+        if (statusFilter !== 'ALL' && c.status !== statusFilter) return false;
+        if (searchTerm && !c.name?.toLowerCase().includes(searchTerm.toLowerCase())) return false;
+        return true;
+    });
+
     return (
         <div className="space-y-6">
             <header className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
@@ -156,6 +162,16 @@ export default function ClientManager() {
                                 onChange={e => setSearchTerm(e.target.value)}
                             />
                         </div>
+                        <FilterDropdown
+                            value={statusFilter}
+                            onChange={setStatusFilter}
+                            options={[
+                                { key: 'ALL', label: 'All Status' },
+                                { key: 'ACTIVE', label: 'Active' },
+                                { key: 'PENDING', label: 'Pending' },
+                                { key: 'DISABLED', label: 'Disabled' },
+                            ]}
+                        />
                     </div>
 
                     {/* Partners Table */}
@@ -170,7 +186,7 @@ export default function ClientManager() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-white/5">
-                                {clients.map((row) => (
+                                {filteredClients.map((row) => (
                                     <tr key={row.id} className="hover:bg-white/5 transition-colors cursor-pointer" onClick={() => setSelectedClient(row)}>
                                         <td className="px-6 py-4 font-bold text-white">{row.name}</td>
                                         <td className="px-6 py-4 font-mono text-xs text-primary-300">{row.id?.substring(0, 8)}</td>
