@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { adminService } from '../../api';
 import { formatCurrency } from '../../utils/formatters';
 import FilterDropdown from '../common/FilterDropdown';
-import { Search, Plus, CreditCard, DollarSign, Calendar, X, ArrowRight, ArrowUpRight, ArrowDownLeft, Ban, AlertCircle, FileText, CheckCircle } from 'lucide-react';
+import { Search, Plus, CreditCard, DollarSign, Calendar, X, ArrowRight, ArrowUpRight, ArrowDownLeft, Ban, AlertCircle, FileText, CheckCircle, Snowflake } from 'lucide-react';
 
 export default function AccountManager() {
     const [accounts, setAccounts] = useState([]);
@@ -312,7 +312,7 @@ export default function AccountManager() {
                                             <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wide border ${account.status === 'ACTIVE'
                                                 ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
                                                 : account.status === 'FROZEN'
-                                                    ? 'bg-blue-500/10 text-blue-400 border-blue-500/20'
+                                                    ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
                                                     : 'bg-red-500/10 text-red-400 border-red-500/20'
                                                 }`}>
                                                 {account.status}
@@ -323,10 +323,10 @@ export default function AccountManager() {
                                                 {account.status === 'ACTIVE' && (
                                                     <button
                                                         onClick={(e) => { e.stopPropagation(); openConfirm(account, 'FROZEN'); }}
-                                                        className="p-2 rounded-xl text-blue-400 hover:text-blue-300 hover:bg-blue-500/10 transition-all"
+                                                        className="p-2 rounded-xl text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 transition-all"
                                                         title="Freeze Account"
                                                     >
-                                                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12h20M12 2v20M6 6l12 12M6 18L18 6" /></svg>
+                                                        <Snowflake size={18} />
                                                     </button>
                                                 )}
                                                 {account.status === 'FROZEN' && (
@@ -471,9 +471,9 @@ export default function AccountManager() {
                                     {selectedAccount.status === 'ACTIVE' ? (
                                         <button
                                             onClick={() => openConfirm(selectedAccount, 'FROZEN')}
-                                            className="flex items-center gap-2 px-4 py-2 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-xl font-bold text-sm hover:bg-blue-500/20 transition-colors"
+                                            className="flex items-center gap-2 px-4 py-2 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-xl font-bold text-sm hover:bg-amber-500/20 transition-colors"
                                         >
-                                            <Ban size={16} /> Freeze
+                                            <Snowflake size={16} /> Freeze
                                         </button>
                                     ) : (
                                         <button
@@ -492,7 +492,7 @@ export default function AccountManager() {
                                     <span className={`px-2.5 py-1 rounded-lg text-xs font-bold uppercase tracking-wider border ${selectedAccount.status === 'ACTIVE'
                                         ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30'
                                         : selectedAccount.status === 'FROZEN'
-                                            ? 'bg-blue-500/20 text-blue-300 border-blue-500/30'
+                                            ? 'bg-amber-500/20 text-amber-300 border-amber-500/30'
                                             : 'bg-red-500/20 text-red-300 border-red-500/30'
                                         }`}>
                                         {selectedAccount.status}

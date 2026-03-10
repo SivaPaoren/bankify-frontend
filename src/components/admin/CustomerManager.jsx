@@ -234,7 +234,7 @@ export default function CustomerManager() {
             {/* Stats Summary Row */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {[
-                    { label: 'Total Customers', value: stats.total, color: 'text-white', sub: `${stats.active} active` },
+                    { label: 'Total Customers', value: stats.total, color: 'text-white', sub: 'total profiles' },
                     { label: 'Active', value: stats.active, color: 'text-emerald-400', sub: 'fully verified' },
                     { label: 'Frozen', value: stats.frozen, color: 'text-amber-400', sub: 'temporarily suspended' },
                     { label: 'Closed', value: stats.closed, color: 'text-red-400', sub: 'archived profiles' },

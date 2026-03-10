@@ -3,7 +3,7 @@ import { adminService } from '../../api';
 import {
     Shield, Power, CheckCircle, XCircle, Clock, Search,
     RefreshCw, Key, Eye, Lock, X, BarChart3, Globe,
-    ArrowRightLeft, AlertCircle
+    ArrowRightLeft, AlertCircle, Building2, Calendar
 } from 'lucide-react';
 import FilterDropdown from '../common/FilterDropdown';
 
@@ -186,6 +186,15 @@ export default function ClientManager() {
                                         </td>
                                     </tr>
                                 ))}
+                                {clients.length === 0 && (
+                                    <tr>
+                                        <td colSpan="4" className="px-6 py-16 text-center">
+                                            <Globe size={36} className="mx-auto mb-3 text-slate-600" />
+                                            <p className="text-slate-400 font-medium">No partner applications registered yet.</p>
+                                            <p className="text-slate-600 text-sm mt-1">Partners can sign up from the partner portal.</p>
+                                        </td>
+                                    </tr>
+                                )}
                             </tbody>
                         </table>
                     </div>
@@ -236,6 +245,99 @@ export default function ClientManager() {
             )}
 
 
+            {/* Partner Details Slide-Over */}
+            {selectedClient && (
+                <>
+                    {/* Backdrop */}
+                    <div
+                        className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
+                        onClick={() => setSelectedClient(null)}
+                    />
+                    {/* Drawer */}
+                    <div className="fixed right-0 top-0 h-full w-full max-w-sm bg-[#0f1f35] border-l border-white/10 z-50 flex flex-col shadow-2xl">
+                        {/* Header */}
+                        <div className="flex items-center justify-between p-6 border-b border-white/10">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-xl bg-cyan-500/10 border border-cyan-500/20 flex items-center justify-center">
+                                    <Building2 size={20} className="text-cyan-400" />
+                                </div>
+                                <div>
+                                    <h2 className="font-bold text-white text-lg leading-tight">{selectedClient.name}</h2>
+                                    <p className="text-xs text-primary-400">Partner Application</p>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => setSelectedClient(null)}
+                                className="p-2 rounded-xl hover:bg-white/10 text-primary-400 hover:text-white transition-colors"
+                            >
+                                <X size={18} />
+                            </button>
+                        </div>
+
+                        {/* Body */}
+                        <div className="flex-1 overflow-y-auto p-6 space-y-5">
+                            {/* Status Badge */}
+                            <div className="flex items-center justify-between bg-white/5 border border-white/10 rounded-2xl px-5 py-4">
+                                <span className="text-sm text-primary-300 font-medium">Status</span>
+                                <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase border ${
+                                    selectedClient.status === 'ACTIVE'
+                                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                                        : selectedClient.status === 'PENDING'
+                                            ? 'bg-amber-500/10 text-amber-400 border-amber-500/20'
+                                            : 'bg-red-500/10 text-red-400 border-red-500/20'
+                                }`}>
+                                    {selectedClient.status}
+                                </span>
+                            </div>
+
+                            {/* App ID */}
+                            <div className="bg-white/5 border border-white/10 rounded-2xl px-5 py-4 space-y-1">
+                                <p className="text-xs text-primary-400 uppercase tracking-widest font-bold">App ID</p>
+                                <p className="font-mono text-sm text-white break-all select-all">{selectedClient.id}</p>
+                            </div>
+
+                            {/* Registration Date */}
+                            {selectedClient.createdAt && (
+                                <div className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-2xl px-5 py-4">
+                                    <Calendar size={16} className="text-primary-400 shrink-0" />
+                                    <div>
+                                        <p className="text-xs text-primary-400 uppercase tracking-widest font-bold">Registered</p>
+                                        <p className="text-sm text-white">{new Date(selectedClient.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</p>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Footer Action */}
+                        <div className="p-6 border-t border-white/10">
+                            {selectedClient.status === 'PENDING' && (
+                                <button
+                                    onClick={async () => { await handleAction(selectedClient.id, selectedClient.status); setSelectedClient(null); }}
+                                    className="w-full flex items-center justify-center gap-2 py-3 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-2xl font-bold hover:bg-emerald-500/20 transition-colors"
+                                >
+                                    <CheckCircle size={18} /> Approve Application
+                                </button>
+                            )}
+                            {selectedClient.status === 'ACTIVE' && (
+                                <button
+                                    onClick={async () => { await handleAction(selectedClient.id, selectedClient.status); setSelectedClient(null); }}
+                                    className="w-full flex items-center justify-center gap-2 py-3 bg-red-500/10 text-red-400 border border-red-500/20 rounded-2xl font-bold hover:bg-red-500/20 transition-colors"
+                                >
+                                    <Power size={18} /> Disable Application
+                                </button>
+                            )}
+                            {selectedClient.status === 'DISABLED' && (
+                                <button
+                                    onClick={async () => { await handleAction(selectedClient.id, selectedClient.status); setSelectedClient(null); }}
+                                    className="w-full flex items-center justify-center gap-2 py-3 bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 rounded-2xl font-bold hover:bg-emerald-500/20 transition-colors"
+                                >
+                                    <Power size={18} /> Reactivate Application
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </>
+            )}
         </div>
     );
 }
