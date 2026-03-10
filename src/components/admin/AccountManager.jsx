@@ -570,7 +570,10 @@ export default function AccountManager() {
 
                                         {activeTab === 'transactions' ? (
                                             <div className="space-y-4">
-                                                {accountTransactions.length > 0 ? accountTransactions.map((tx) => (
+                                                {accountTransactions.length > 0 ? accountTransactions.map((tx) => {
+                                                    const isIncoming = tx.type === 'DEPOSIT' || (tx.type === 'TRANSFER' && tx.toAccountId === selectedAccount.id);
+
+                                                    return (
                                                     <div key={tx.id} className="bg-white/5 border border-white/5 rounded-2xl p-5 flex items-center justify-between hover:bg-white/10 transition-colors group">
                                                         <div className="flex items-center gap-4">
                                                             <div className={`w-12 h-12 rounded-xl flex items-center justify-center border ${tx.type === 'DEPOSIT' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' :
@@ -590,13 +593,13 @@ export default function AccountManager() {
                                                             </div>
                                                         </div>
                                                         <div className="text-right">
-                                                            <div className={`font-bold text-lg ${tx.type === 'DEPOSIT' ? 'text-emerald-400' : 'text-white'}`}>
-                                                                {tx.type === 'DEPOSIT' ? '+' : '-'}{new Intl.NumberFormat('en-US', { style: 'currency', currency: selectedAccount.currency || 'THB' }).format(tx.amount)}
+                                                            <div className={`font-bold text-lg ${isIncoming ? 'text-emerald-400' : 'text-white'}`}>
+                                                                {isIncoming ? '+' : '-'}{new Intl.NumberFormat('en-US', { style: 'currency', currency: selectedAccount.currency || 'THB' }).format(tx.amount)}
                                                             </div>
                                                             <div className="text-xs text-primary-400 font-mono mt-0.5">Ref: {tx.reference ? tx.reference.substring(0, 8) + '...' : '—'}</div>
                                                         </div>
                                                     </div>
-                                                )) : (
+                                                )}) : (
                                                     <div className="flex flex-col items-center justify-center py-20 text-primary-400/60">
                                                         <div className="w-16 h-16 bg-white/5 rounded-full flex items-center justify-center mb-4">
                                                             <AlertCircle size={32} />

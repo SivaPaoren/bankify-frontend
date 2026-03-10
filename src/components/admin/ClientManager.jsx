@@ -137,7 +137,7 @@ export default function ClientManager() {
                 >
                     Partner Apps
                 </button>
-                <button
+                {/* <button
                     onClick={() => setActiveTab('rotations')}
                     className={`pb-4 px-2 font-bold text-sm transition-all border-b-2 flex items-center gap-2 ${activeTab === 'rotations' ? 'text-cyan-400 border-cyan-400' : 'text-slate-500 border-transparent hover:text-slate-300'}`}
                 >
@@ -145,7 +145,7 @@ export default function ClientManager() {
                     {stats.rotations > 0 && (
                         <span className="bg-orange-500 text-white text-[10px] px-2 py-0.5 rounded-full">{stats.rotations}</span>
                     )}
-                </button>
+                </button> */}
             </div>
 
             {activeTab === 'partners' ? (

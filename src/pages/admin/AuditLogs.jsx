@@ -7,15 +7,20 @@ import {
 } from 'lucide-react';
 import FilterDropdown from '../../components/common/FilterDropdown';
 
-// Parse "reason=admin_FROZEN" → "Admin → FROZEN"
 function parseDetails(details, entityType, entityId) {
   if (!details && !entityId) return null;
   if (details) {
+    let result = details;
     const match = details.match(/^reason=admin_(.+)$/);
-    if (match) return `Admin → ${match[1]}`;
-    const txMatch = details.match(/^reason=(.+)$/);
-    if (txMatch) return txMatch[1].replace(/_/g, ' ');
-    return details;
+    if (match) {
+      result = `Admin → ${match[1]}`;
+    } else {
+      const txMatch = details.match(/^reason=(.+)$/);
+      if (txMatch) {
+        result = txMatch[1];
+      }
+    }
+    return result.replace(/_/g, ' ');
   }
   return `${entityType ?? ''}: ${entityId ?? ''}`;
 }
