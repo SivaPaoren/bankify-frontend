@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { atmService } from "../../api";
-// Import the new helper logic
-import { getTransactionDisplay } from "../../utils/formatters"; 
+import { getTransactionDisplay } from "../../utils/formatters";
 
 /* ---------- SHARED HARDWARE UI COMPONENTS ---------- */
 
@@ -41,7 +40,7 @@ const KeyButton = ({ label, color, onClick }) => {
 export default function ATMHistory() {
   const navigate = useNavigate();
   const [transactions, setTransactions] = useState([]);
-  const [myAccountId, setMyAccountId] = useState(null); // Step 2: Add state to track your ID
+  const [myAccountId, setMyAccountId] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -104,12 +103,12 @@ export default function ATMHistory() {
                       <table className="w-full text-[10px] uppercase">
                         <tbody className="divide-y divide-slate-800">
                           {loading ? (
-                             <tr><td className="py-12 text-center text-slate-600 tracking-widest">Loading...</td></tr>
+                            <tr><td className="py-12 text-center text-slate-600 tracking-widest">Loading...</td></tr>
                           ) : transactions.length === 0 ? (
                             <tr><td className="py-12 text-center text-slate-600 tracking-widest">No Records Found</td></tr>
                           ) : (
                             transactions.map((t, i) => {
-                              // Step 4: Use the helper to get the correct sign and color
+
                               const { sign, colorClass } = getTransactionDisplay(t, myAccountId);
                               return (
                                 <tr key={i} className="hover:bg-slate-800/50 transition-colors">
@@ -140,7 +139,7 @@ export default function ATMHistory() {
               <div className="w-full max-w-[400px] h-16 bg-linear-to-b from-gray-900 to-gray-800 rounded-md border-b-2 border-gray-600 flex items-center justify-center relative shadow-2xl">
                 <div className="w-[85%] h-3 bg-black rounded-full shadow-[inset_0_4px_8px_rgba(0,0,0,0.8)]" />
               </div>
-              <div className="text-[12px] text-gray-500 font-extrabold uppercase mt-3 tracking-widest">Cash Slot</div>
+              <div className="text-[12px] text-gray-500 font-extrabold uppercase mt-3 tracking-widest">Cash Dispenser</div>
             </div>
           </div>
 

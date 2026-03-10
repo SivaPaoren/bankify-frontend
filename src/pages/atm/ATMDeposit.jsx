@@ -103,10 +103,10 @@ export default function ATMDeposit() {
       {/* HEADER */}
       <div className="bg-slate-800 w-full max-w-5xl rounded-t-2xl p-4 border-b-8 border-slate-900 flex justify-between items-center shadow-2xl">
         <div className="flex items-center gap-3">
-          <img 
-            src={`${import.meta.env.BASE_URL}BankifyLogo.png`} 
-            alt="Bankify Logo" 
-            className="w-8 h-8" 
+          <img
+            src={`${import.meta.env.BASE_URL}BankifyLogo.png`}
+            alt="Bankify Logo"
+            className="w-8 h-8"
           />
           <h1 className="text-2xl text-white font-bold">Bankify</h1>
         </div>
@@ -203,7 +203,7 @@ export default function ATMDeposit() {
 
                 <div className={`w-[85%] h-3 bg-black rounded-full shadow-[inset_0_4px_8px_rgba(0,0,0,0.8)] z-10 ${step === 'CONFIRM' ? 'ring-2 ring-green-500' : ''}`} />
               </div>
-              <div className="text-[12px] text-gray-500 font-extrabold uppercase mt-3 tracking-widest">THB Deposit Slot</div>
+              <div className="text-[12px] text-gray-500 font-extrabold uppercase mt-3 tracking-widest">Cash Dispenser</div>
             </div>
           </div>
 
