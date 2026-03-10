@@ -18,8 +18,7 @@ export default function ClientManager() {
 
     // Dossier Slide-Over State
     const [selectedClient, setSelectedClient] = useState(null);
-    const [revealState, setRevealState] = useState('hidden');
-    const [adminPassword, setAdminPassword] = useState('');
+    const [actionError, setActionError] = useState(null);
 
     const fetchClients = async () => {
         try {
@@ -50,6 +49,7 @@ export default function ClientManager() {
     }, []);
 
     const handleAction = async (clientId, currentStatus) => {
+        setActionError(null);
         try {
             if (currentStatus === 'PENDING') {
                 await adminService.approveClient(clientId);
@@ -60,11 +60,13 @@ export default function ClientManager() {
             }
             fetchClients();
         } catch (e) {
-            alert(`Failed: ${e.response?.data?.message || e.message}`);
+            setActionError(e.response?.data?.message || e.message || 'Action failed.');
+            setTimeout(() => setActionError(null), 5000);
         }
     };
 
     const handleRotationAction = async (rotationId, action) => {
+        setActionError(null);
         try {
             if (action === 'approve') {
                 await adminService.approveKeyRotation(rotationId);
@@ -73,7 +75,8 @@ export default function ClientManager() {
             }
             loadData();
         } catch (e) {
-            alert(`Failed: ${e.response?.data?.message || e.message}`);
+            setActionError(e.response?.data?.message || e.message || 'Rotation action failed.');
+            setTimeout(() => setActionError(null), 5000);
         }
     };
 
@@ -92,6 +95,13 @@ export default function ClientManager() {
                     <p className="text-primary-300 mt-1">Review registrations and security rotation requests.</p>
                 </div>
             </header>
+
+            {actionError && (
+                <div className="flex items-center gap-3 bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded-2xl text-sm font-medium">
+                    <span className="flex-1">{actionError}</span>
+                    <button onClick={() => setActionError(null)} className="p-1 hover:bg-red-500/20 rounded-lg transition-colors text-red-300">&times;</button>
+                </div>
+            )}
 
             {/* Stats Row */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 animate-fade-in">

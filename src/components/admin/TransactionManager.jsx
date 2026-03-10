@@ -22,7 +22,6 @@ export default function TransactionManager() {
         setLoading(true);
         try {
             const data = await adminService.getTransactions();
-            console.log(data);
             setTransactions(Array.isArray(data) ? data : (data.content || []));
         } catch (error) {
             console.error("Failed to fetch transactions", error);

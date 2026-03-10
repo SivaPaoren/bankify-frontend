@@ -104,6 +104,7 @@ export default function CustomerManager() {
     const [selectedCustomer, setSelectedCustomer] = useState(null);
     const [customerAccounts, setCustomerAccounts] = useState([]);
     const [showDrawer, setShowDrawer] = useState(false);
+    const [copiedId, setCopiedId] = useState(false);
     const [newCustomer, setNewCustomer] = useState({
         firstName: '', lastName: '', email: '', phone: '', type: 'INDIVIDUAL'
     });
@@ -509,13 +510,19 @@ export default function CustomerManager() {
                                     <button
                                         onClick={() => {
                                             navigator.clipboard.writeText(selectedCustomer.id);
-                                            // You might want to implement a toast here instead of alert
-                                            // But keeping alert for now as it's simple feedback
-                                            alert(`Customer ID copied! \n${selectedCustomer.id}`);
+                                            setCopiedId(true);
+                                            setTimeout(() => setCopiedId(false), 2000);
                                         }}
-                                        className="px-4 py-2 bg-linear-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-sm font-bold rounded-xl transition-all flex items-center gap-2 shadow-lg shadow-blue-500/20"
+                                        className={`px-4 py-2 text-white text-sm font-bold rounded-xl transition-all flex items-center gap-2 shadow-lg ${
+                                            copiedId
+                                                ? 'bg-emerald-600 shadow-emerald-500/20'
+                                                : 'bg-linear-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 shadow-blue-500/20'
+                                        }`}
                                     >
-                                        <Copy size={16} /> Copy ID to Open Account
+                                        {copiedId
+                                            ? <><CheckCircle size={16} /> Copied!</>
+                                            : <><Copy size={16} /> Copy ID to Open Account</>
+                                        }
                                     </button>
                                 )}
                             </div>

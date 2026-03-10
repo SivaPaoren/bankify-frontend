@@ -1,494 +1,291 @@
 import axios from 'axios';
 
-// ----------------------------------------------------------------------
+// ─────────────────────────────────────────────────────────────────
 // API CONFIGURATION
-// ----------------------------------------------------------------------
+// Backend context-path: /finance  (application-dev.yml)
+// Vite proxy: /finance/api  →  http://localhost:8080
+// All endpoints are under /finance/api/v1/...
+// ─────────────────────────────────────────────────────────────────
 
-// Base URL for the entire application
-// Base URL for the entire application
-export const API = "/finance";
-const API_PREFIX = "/api/v1";
+export const APP_BASE   = '/finance';            // used by router & href redirects
+const BASE_URL          = `${APP_BASE}/api/v1`;  // base for all axios instances
 
-const BASE_URL = `${API}${API_PREFIX}`;
+// Shared default headers
+const defaultHeaders = { 'Content-Type': 'application/json' };
 
-// Common Headers
-const commonHeaders = {
-    'Content-Type': 'application/json',
-};
+// ─────────────────────────────────────────────────────────────────
+// AXIOS INSTANCES  (one per actor / JWT namespace)
+// ─────────────────────────────────────────────────────────────────
 
-// ----------------------------------------------------------------------
-// AXIOS INSTANCES
-// ----------------------------------------------------------------------
+function createInstance(tokenKey) {
+    const instance = axios.create({ baseURL: BASE_URL, headers: defaultHeaders });
 
-// 1. Admin API (Staff) - Uses Bearer <ADMIN_JWT>
-export const adminApi = axios.create({ baseURL: BASE_URL, headers: commonHeaders });
+    // Attach token from localStorage before every request
+    instance.interceptors.request.use(
+        (config) => {
+            const token = localStorage.getItem(tokenKey);
+            if (token) config.headers['Authorization'] = `Bearer ${token}`;
+            return config;
+        },
+        (error) => Promise.reject(error)
+    );
 
-adminApi.interceptors.request.use(
-    (config) => {
-        const token = localStorage.getItem('bankify_admin_token');
-        if (token) config.headers['Authorization'] = `Bearer ${token}`;
-        return config;
-    },
-    (error) => Promise.reject(error)
-);
+    return instance;
+}
 
-// 2. ATM API (Customer) - Uses Bearer <ATM_JWT>
-export const atmApi = axios.create({ baseURL: BASE_URL, headers: commonHeaders });
+export const adminApi   = createInstance('bankify_admin_token');
+export const atmApi     = createInstance('bankify_atm_token');
+export const partnerApi = createInstance('bankify_partner_token');
 
-atmApi.interceptors.request.use(
-    (config) => {
-        const token = localStorage.getItem('bankify_atm_token');
-        if (token) config.headers['Authorization'] = `Bearer ${token}`;
-        return config;
-    },
-    (error) => Promise.reject(error)
-);
+// ─────────────────────────────────────────────────────────────────
+// RESPONSE INTERCEPTORS  — handle 401 per actor type
+// ─────────────────────────────────────────────────────────────────
 
-// 3. Partner Portal API - Uses Bearer <PORTAL_JWT>
-export const partnerApi = axios.create({ baseURL: BASE_URL, headers: commonHeaders });
-
-partnerApi.interceptors.request.use(
-    (config) => {
-        const token = localStorage.getItem('bankify_partner_token');
-        if (token) config.headers['Authorization'] = `Bearer ${token}`;
-        return config;
-    },
-    (error) => Promise.reject(error)
-);
-
-// Generic Response Interceptor (Applied to all)
-const handleResponseError = (error, type) => {
-    if (error.response && error.response.status === 401) {
-        if (type === 'ADMIN') localStorage.removeItem('bankify_admin_token');
-        if (type === 'PARTNER') localStorage.removeItem('bankify_partner_token');
-        if (type === 'ATM') {
+function onResponseError(error, actorType) {
+    if (error.response?.status === 401) {
+        if (actorType === 'ADMIN')   localStorage.removeItem('bankify_admin_token');
+        if (actorType === 'PARTNER') localStorage.removeItem('bankify_partner_token');
+        if (actorType === 'ATM') {
             localStorage.removeItem('bankify_atm_token');
-            const isLogin = window.location.pathname.includes('/atm-login');
-            if (!isLogin) {
-                // ADDED: /finance prefix for AU server
-                window.location.href = '/finance/atm-login?expired=1';
+            if (!window.location.pathname.includes('/atm-login')) {
+                window.location.href = `${APP_BASE}/atm-login?expired=1`;
             }
         }
     }
     return Promise.reject(error);
-};
+}
 
-adminApi.interceptors.response.use(r => r, e => handleResponseError(e, 'ADMIN'));
-atmApi.interceptors.response.use(r => r, e => handleResponseError(e, 'ATM'));
-partnerApi.interceptors.response.use(r => r, e => handleResponseError(e, 'PARTNER'));
+adminApi.interceptors.response.use(  (r) => r, (e) => onResponseError(e, 'ADMIN'));
+atmApi.interceptors.response.use(    (r) => r, (e) => onResponseError(e, 'ATM'));
+partnerApi.interceptors.response.use((r) => r, (e) => onResponseError(e, 'PARTNER'));
 
-// ----------------------------------------------------------------------
-// HELPER FUNCTIONS
-// ----------------------------------------------------------------------
+// ─────────────────────────────────────────────────────────────────
+// HELPER — Idempotency key generator
+// Used on deposit / withdraw / transfer to prevent double-posting
+// ─────────────────────────────────────────────────────────────────
 
-// Helper to generate UUID for idempotency
-export const generateIdempotencyKey = (prefix = 'TX') => {
-    const uuid = (typeof crypto !== 'undefined' && crypto.randomUUID)
-        ? crypto.randomUUID()
-        : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-            var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
-            return v.toString(16);
+export function generateIdempotencyKey(prefix = 'TX') {
+    const id = crypto?.randomUUID?.() ??
+        'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+            const r = Math.random() * 16 | 0;
+            return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
         });
-    return `${prefix}-${uuid}`;
-};
+    return `${prefix}-${id}`;
+}
 
-// ----------------------------------------------------------------------
+// ─────────────────────────────────────────────────────────────────
 // AUTH SERVICE
-// ----------------------------------------------------------------------
+// ─────────────────────────────────────────────────────────────────
 
 export const authService = {
-    // 1.1 Admin Auth
+    // Admin login  →  POST /api/v1/admin/auth/login
     login: async (email, password) => {
-        // baseURL includes /api/v1, so we just need /admin/auth/login
-        const response = await adminApi.post('/admin/auth/login', { email, password });
-        const { token, role, ...userData } = response.data;
-
-        // Store Admin Token
+        const { data } = await adminApi.post('/admin/auth/login', { email, password });
+        const { token, role, ...userData } = data;
         localStorage.setItem('bankify_admin_token', token);
         localStorage.setItem('bankify_user', JSON.stringify({ ...userData, role }));
-
-        return response.data;
+        return data;
     },
 
-    // 2. ATM Auth
+    // ATM (customer) login  →  POST /api/v1/atm/auth/login
     atmLogin: async (accountNumber, pin) => {
-        const response = await atmApi.post('/atm/auth/login', { accountNumber, pin });
-        const { token } = response.data;
-        localStorage.setItem('bankify_atm_token', token);
-        return response.data;
+        const { data } = await atmApi.post('/atm/auth/login', { accountNumber, pin });
+        localStorage.setItem('bankify_atm_token', data.token);
+        return data;
     },
 
-    
-
-    // 3. Partner Auth (Portal)
+    // Partner portal login  →  POST /api/v1/partner/auth/login
     partnerLogin: async (email, password) => {
-        const response = await partnerApi.post('/partner/auth/login', { email, password });
-        const { token } = response.data;
-        localStorage.setItem('bankify_partner_token', token);
-        return response.data;
+        const { data } = await partnerApi.post('/partner/auth/login', { email, password });
+        localStorage.setItem('bankify_partner_token', data.token);
+        return data;
     },
 
-    // Partner Signup
+    // Partner portal signup  →  POST /api/v1/partner/auth/signup
     partnerSignup: async (appName, email, password) => {
-    // BUG: Ensure this says /signup, NOT /login
-        const response = await partnerApi.post('/partner/auth/signup', { appName, email, password });
-        return response.data;
+        const { data } = await partnerApi.post('/partner/auth/signup', { appName, email, password });
+        return data;
     },
 
+    // Clear all sessions and return to login page
     logout: () => {
         localStorage.removeItem('bankify_admin_token');
         localStorage.removeItem('bankify_atm_token');
         localStorage.removeItem('bankify_partner_token');
         localStorage.removeItem('bankify_user');
-        window.location.href = '/finance/login';
-    }
+        window.location.href = `${APP_BASE}/login`;
+    },
 };
 
-// Mock data helpers removed to enforce true backend sync
+// ─────────────────────────────────────────────────────────────────
+// ADMIN SERVICE  (requires ADMIN or OPERATOR role)
+// ─────────────────────────────────────────────────────────────────
+
 export const adminService = {
-    // 1.2 View all API clients
-    getClients: async () => {
-        const response = await adminApi.get('/admin/partner-apps');
-        return response.data;
+    // ── Partner Apps ──────────────────────────────────────────────
+    getClients:           async ()          => (await adminApi.get('/admin/partner-apps')).data,
+    approveClient:        async (id)        => (await adminApi.patch(`/admin/partner-apps/${id}/approve`)).data,
+    activateClient:       async (id)        => (await adminApi.patch(`/admin/partner-apps/${id}/activate`)).data,
+    disableClient:        async (id)        => (await adminApi.patch(`/admin/partner-apps/${id}/disable`)).data,
+
+    // ── Key Rotation Requests ─────────────────────────────────────
+    listRotationRequests: async ()          => (await adminApi.get('/admin/partner-apps/rotation-requests')).data,
+    approveKeyRotation:   async (requestId) => (await adminApi.patch(`/admin/partner-apps/rotation-requests/${requestId}/approve`)).data,
+    rejectKeyRotation:    async (requestId) => (await adminApi.patch(`/admin/partner-apps/rotation-requests/${requestId}/reject`)).data,
+
+    // ── Customers ─────────────────────────────────────────────────
+    getCustomers:     async ()                     => (await adminApi.get('/admin/customers')).data,
+    getCustomer:      async (id)                   => (await adminApi.get(`/admin/customers/${id}`)).data,
+    createCustomer:   async (data)                 => (await adminApi.post('/admin/customers', data)).data,
+    updateCustomer:   async (id, data)             => (await adminApi.patch(`/admin/customers/${id}`, data)).data,
+    freezeCustomer:   async (id)                   => (await adminApi.patch(`/admin/customers/${id}/disable`)).data,
+    reactivateCustomer: async (id)                 => (await adminApi.patch(`/admin/customers/${id}/reactivate`)).data,
+    closeCustomer:    async (id)                   => (await adminApi.patch(`/admin/customers/${id}/close`)).data,
+
+    // ── Accounts ──────────────────────────────────────────────────
+    getAccounts:      async (params = {})          => (await adminApi.get('/admin/accounts', { params })).data,
+    getAccount:       async (id)                   => (await adminApi.get(`/admin/accounts/${id}`)).data,
+    createAccount:    async (data)                 => (await adminApi.post('/admin/accounts', data)).data,
+    updateAccountStatus: async (id, status)        => (await adminApi.patch(`/admin/accounts/${id}`, { status })).data,
+    freezeAccount:    async (id)                   => (await adminApi.patch(`/admin/accounts/${id}/disable`)).data,
+    getAccountLedger: async (id)                   => (await adminApi.get(`/admin/accounts/${id}/ledger`)).data,
+    resetAtmPin:      async (accountId, newPin)    => (await adminApi.patch(`/admin/accounts/${accountId}/pin`, { pin: newPin })).data,
+
+    // ── Transactions (Admin view) ─────────────────────────────────
+    getTransactions:  async (params = {})          => (await adminApi.get('/admin/transactions', { params })).data,
+    getTransaction:   async (id)                   => (await adminApi.get(`/admin/transactions/${id}`)).data,
+    getAccountTransactions: async (accountId)      => (await adminApi.get('/admin/transactions', { params: { accountId } })).data,
+    getLedger:        async (params = {})          => (await adminApi.get('/admin/transactions/ledger', { params })).data,
+
+    // ── Admin-initiated Money Ops (requires ADMIN role, not OPERATOR) ──
+    deposit: async (accountId, amount, note = 'Admin Deposit') => {
+        const { data } = await adminApi.post('/admin/transactions/deposit',
+            { accountId, amount, note },
+            { headers: { 'Idempotency-Key': generateIdempotencyKey('DEP') } }
+        );
+        return data;
     },
-    // 1.3 Approve a client
-    approveClient: async (clientId) => {
-        const response = await adminApi.patch(`/admin/partner-apps/${clientId}/approve`);
-        return response.data;
+    withdraw: async (accountId, amount, note = 'Admin Withdraw') => {
+        const { data } = await adminApi.post('/admin/transactions/withdraw',
+            { accountId, amount, note },
+            { headers: { 'Idempotency-Key': generateIdempotencyKey('WDR') } }
+        );
+        return data;
     },
-    // 1.3.1 Activate a client
-    activateClient: async (clientId) => {
-        const response = await adminApi.patch(`/admin/partner-apps/${clientId}/activate`);
-        return response.data;
-    },
-    // 1.4 Disable a client
-    disableClient: async (clientId) => {
-        const response = await adminApi.patch(`/admin/partner-apps/${clientId}/disable`);
-        return response.data;
-    },
-    /// 1.5 Key Rotation Approvals
-    listRotationRequests: async () => {
-        const response = await adminApi.get('/admin/partner-apps/rotation-requests');
-        return response.data;
+    transfer: async (fromAccountId, toAccountId, amount, note = 'Admin Transfer') => {
+        const { data } = await adminApi.post('/admin/transactions/transfer',
+            { fromAccountId, toAccountId, amount, note },
+            { headers: { 'Idempotency-Key': generateIdempotencyKey('TRF') } }
+        );
+        return data;
     },
 
-    // 1.5.1 Approve rotation (Note: Key is sent to Partner vault, not Admin response)
-    approveKeyRotation: async (requestId) => {
-        const response = await adminApi.patch(`/admin/partner-apps/rotation-requests/${requestId}/approve`);
-        return response.data;
-    },
+    // ── Audit Logs ────────────────────────────────────────────────
+    // Filterable by ?actorType=ADMIN|ATM|PARTNER & ?action=...
+    getAuditLogs: async (params = {}) => (await adminApi.get('/admin/audit-logs', { params })).data,
 
-    // 1.5.2 Reject rotation
-    rejectKeyRotation: async (requestId) => {
-        const response = await adminApi.patch(`/admin/partner-apps/rotation-requests/${requestId}/reject`);
-        return response.data;
-    },
-
-    // Customers (Admin manages these)
-    getCustomers: async () => {
-        const response = await adminApi.get('/admin/customers');
-        return response.data;
-    },
-    getCustomer: async (customerId) => {
-        const response = await adminApi.get(`/admin/customers/${customerId}`);
-        return response.data;
-    },
-    createCustomer: async (customerData) => {
-        const response = await adminApi.post('/admin/customers', customerData);
-        return response.data;
-    },
-    updateCustomer: async (customerId, updateData) => {
-        const response = await adminApi.patch(`/admin/customers/${customerId}`, updateData);
-        return response.data;
-    },
-    // Freeze (disable) a customer
-    freezeCustomer: async (customerId) => {
-        const response = await adminApi.patch(`/admin/customers/${customerId}/disable`);
-        return response.data;
-    },
-    // Re-activate a previously frozen customer
-    reactivateCustomer: async (customerId) => {
-        const response = await adminApi.patch(`/admin/customers/${customerId}/reactivate`);
-        return response.data;
-    },
-    // Permanently close a customer and all their accounts
-    closeCustomer: async (customerId) => {
-        const response = await adminApi.patch(`/admin/customers/${customerId}/close`);
-        return response.data;
-    },
-    getAccounts: async (params = {}) => {
-        const response = await adminApi.get('/admin/accounts', { params });
-        return response.data;
-    },
-    createAccount: async (accountData) => {
-        // Spec: { customerId, type, currency }
-        // Note: Initial deposit is NOT part of this endpoint.
-        const response = await adminApi.post('/admin/accounts', accountData);
-        return response.data;
-    },
-    getAccount: async (accountId) => {
-        const response = await adminApi.get(`/admin/accounts/${accountId}`);
-        return response.data;
-    },
-    getAccountLedger: async (accountId) => {
-        const response = await adminApi.get(`/admin/accounts/${accountId}/ledger`);
-        return response.data;
-    },
-    freezeAccount: async (accountId) => {
-        await adminApi.patch(`/admin/accounts/${accountId}/disable`);
-    },
-    // Close Account — uses PATCH with status=CLOSED (no DELETE endpoint in backend)
-    closeAccount: async (accountId) => {
-        const response = await adminApi.patch(`/admin/accounts/${accountId}`, { status: 'CLOSED' });
-        return response.data;
-    },
-    updateAccountStatus: async (accountId, status) => {
-        const response = await adminApi.patch(`/admin/accounts/${accountId}`, { status });
-        return response.data;
-    },
-    getAccountTransactions: async (accountId) => {
-        const response = await adminApi.get('/admin/transactions', { params: { accountId } });
-        return response.data;
-    },
-    // List ALL transactions (admin view)
-    getTransactions: async (params = {}) => {
-        const response = await adminApi.get('/admin/transactions', { params });
-        return response.data;
-    },
-    // Single transaction
-    getTransaction: async (transactionId) => {
-        const response = await adminApi.get(`/admin/transactions/${transactionId}`);
-        return response.data;
-    },
-    // Global Ledger — every transfer creates DEBIT + CREDIT entries
-    // Filter by reference: getLedger({ reference: 'unique-id-123' })
-    getLedger: async (params = {}) => {
-        const response = await adminApi.get('/admin/transactions/ledger', { params });
-        return response.data;
-    },
-
-    // 1.4 Admin Operations
-    resetAtmPin: async (accountId, newPin) => {
-        await adminApi.patch(`/admin/accounts/${accountId}/pin`, { pin: newPin });
-    },
-
-    // 4. Admin Transactions (Internal/Optional but recommended)
-    deposit: async (accountId, amount, note = "Admin Deposit") => {
-        const idempotencyKey = generateIdempotencyKey('DEP');
-        const response = await adminApi.post('/admin/transactions/deposit', { accountId, amount, note }, {
-            headers: { 'Idempotency-Key': idempotencyKey }
-        });
-        return response.data;
-    },
-    withdraw: async (accountId, amount, note = "Admin Withdraw") => {
-        const idempotencyKey = generateIdempotencyKey('WDR');
-        const response = await adminApi.post('/admin/transactions/withdraw', { accountId, amount, note }, {
-            headers: { 'Idempotency-Key': idempotencyKey }
-        });
-        return response.data;
-    },
-    transfer: async (fromAccountId, toAccountId, amount, note = "Admin Transfer") => {
-        const idempotencyKey = generateIdempotencyKey('TRF');
-        const response = await adminApi.post('/admin/transactions/transfer', { fromAccountId, toAccountId, amount, note }, {
-            headers: { 'Idempotency-Key': idempotencyKey }
-        });
-        return response.data;
-    },
-
-    // Customer status actions
-    // /** Temporarily freeze customer + cascade freeze their ACTIVE accounts */
-    // freezeCustomer: async (customerId) => {
-    //     const response = await adminApi.patch(`/admin/customers/${customerId}/disable`);
-    //     return response.data;
-    // },
-    // /** Re-activate a FROZEN customer + cascade restore their FROZEN accounts */
-    // reactivateCustomer: async (customerId) => {
-    //     const response = await adminApi.patch(`/admin/customers/${customerId}/reactivate`);
-    //     return response.data;
-    // },
-    // /** Permanently close customer + close ALL their accounts */
-    // closeCustomer: async (customerId) => {
-    //     const response = await adminApi.patch(`/admin/customers/${customerId}/close`);
-    //     return response.data;
-    // },
-    /** @deprecated use freezeCustomer instead */
-    deleteCustomer: async (customerId) => {
-        const response = await adminApi.patch(`/admin/customers/${customerId}/disable`);
-        return response.data;
-    },
-
-    // Audit Logs
-    getAuditLogs: async (params = {}) => {
-        const response = await adminApi.get('/admin/audit-logs', { params });
-        return response.data;
-    },
-    // Transactions (Admin View)
-    // getTransactions: async (params = {}) => {
-    //     const response = await adminApi.get('/admin/transactions', { params });
-    //     return response.data;
-    // },
-    // Global Ledger (Admin View)
-    getGlobalLedger: async (params = {}) => {
-        const response = await adminApi.get('/admin/transactions/ledger', { params });
-        return response.data;
-    },
-
+    // ── Aliases kept for backward compatibility ───────────────────
+    /** @deprecated use freezeCustomer() */
+    deleteCustomer: async (id) => (await adminApi.patch(`/admin/customers/${id}/disable`)).data,
+    /** @deprecated use getLedger() */
+    getGlobalLedger: async (params = {}) => (await adminApi.get('/admin/transactions/ledger', { params })).data,
+    /** @deprecated use updateAccountStatus() with status='CLOSED' */
+    closeAccount: async (id) => (await adminApi.patch(`/admin/accounts/${id}`, { status: 'CLOSED' })).data,
 };
 
-export const clientService = {
-    // Get current client profile (keys, webhooks)
-    getProfile: async () => {
-        // Guide: GET /api/v1/partner/portal/me
-        const response = await partnerApi.get('/partner/portal/me');
-        return response.data;
-    },
-    // Update webhook URL
-    updateWebhook: async () => {
-        // Guide doesn't specify, assuming similar endpoint
-        return { success: true };
-    }
-};
+// ─────────────────────────────────────────────────────────────────
+// ATM SERVICE  (requires ATM role — customer-facing)
+// ─────────────────────────────────────────────────────────────────
 
 export const atmService = {
-    // 2.1 Balance
-    getBalance: async () => {
-        const response = await atmApi.get('/atm/me/balance');
-        return response.data;
-    },
+    getBalance:    async ()                      => (await atmApi.get('/atm/me/balance')).data,
+    getTransactions: async ()                    => (await atmApi.get('/atm/me/transactions')).data,
+    changePin:     async ({ oldPin, newPin })    => (await atmApi.post('/atm/me/change-pin', { oldPin, newPin })).data,
 
-    // 2.2 Deposit
     deposit: async (amount, note) => {
-        const idempotencyKey = generateIdempotencyKey('DEP');
-        const response = await atmApi.post('/atm/me/deposit', {
-            amount: Number(amount),
-            note
-        }, {
-            headers: { 'Idempotency-Key': idempotencyKey }
-        });
-        return response.data;
+        const { data } = await atmApi.post('/atm/me/deposit',
+            { amount: Number(amount), note },
+            { headers: { 'Idempotency-Key': generateIdempotencyKey('DEP') } }
+        );
+        return data;
     },
-
-    // 2.3 Withdraw
     withdraw: async (amount, note) => {
-        const idempotencyKey = generateIdempotencyKey('WDR');
-        const response = await atmApi.post('/atm/me/withdraw', {
-            amount: Number(amount),
-            note
-        }, {
-            headers: { 'Idempotency-Key': idempotencyKey }
-        });
-        return response.data;
+        const { data } = await atmApi.post('/atm/me/withdraw',
+            { amount: Number(amount), note },
+            { headers: { 'Idempotency-Key': generateIdempotencyKey('WDR') } }
+        );
+        return data;
+    },
+    // Note: backend expects { toAccountNumber, amount, note }
+    transfer: async (toAccountNumber, amount, note) => {
+        const { data } = await atmApi.post('/atm/me/transfer',
+            { toAccountNumber, amount: Number(amount), note },
+            { headers: { 'Idempotency-Key': generateIdempotencyKey('TRF') } }
+        );
+        return data;
     },
 
-    // 2.4 Transfer
-    transfer: async (accountNumber, amount, note) => {
-    const idempotencyKey = generateIdempotencyKey('TRF');
-    const response = await atmApi.post('/atm/me/transfer', {
-        toAccountNumber: accountNumber, 
-        amount: Number(amount),
-        note
-    }, {
-        headers: { 'Idempotency-Key': idempotencyKey }
-    });
-    return response.data;
-},
-
-    // 2.5 Transaction history (ATM View)
-    getTransactions: async () => {
-        const response = await atmApi.get('/atm/me/transactions');
-        return response.data;
-    },
-
-    // 2.6 Change PIN — backend expects { oldPin, newPin }
-    changePin: async ({ oldPin, newPin }) => {
-        const response = await atmApi.post('/atm/me/change-pin', { oldPin, newPin });
-        return response.data;
-    },
-
-    // Legacy support for older components using getTransactionsByAccount(id)
-    getTransactionsByAccount: async () => {
-        return atmService.getTransactions();
-    },
+    /** @deprecated use getTransactions() */
+    getTransactionsByAccount: async () => atmService.getTransactions(),
 };
+
+// ─────────────────────────────────────────────────────────────────
+// PARTNER SERVICE  (requires PARTNER role — partner portal)
+// ─────────────────────────────────────────────────────────────────
 
 export const partnerService = {
-    // Partner Balance
-    getBalance: async () => {
-        const response = await partnerApi.get('/partner/me/balance');
-        return response.data;
-    },
+    // ── Portal info ───────────────────────────────────────────────
+    getPartnerInfo:  async () => (await partnerApi.get('/partner/portal/me')).data,
 
-    // Partner Portal Info
-    getPartnerInfo: async () => {
-        const response = await partnerApi.get('/partner/portal/me');
-        return response.data;
-    },
+    // ── Money ops ─────────────────────────────────────────────────
+    getBalance:      async () => (await partnerApi.get('/partner/me/balance')).data,
+    getTransactions: async () => (await partnerApi.get('/partner/me/transactions')).data,
 
-    // Partner Money Ops
     deposit: async (amount, note) => {
-        const idempotencyKey = generateIdempotencyKey('DEP');
-        const response = await partnerApi.post('/partner/me/deposit', {
-            amount: Number(amount),
-            note
-        }, {
-            headers: { 'Idempotency-Key': idempotencyKey }
-        });
-        return response.data;
+        const { data } = await partnerApi.post('/partner/me/deposit',
+            { amount: Number(amount), note },
+            { headers: { 'Idempotency-Key': generateIdempotencyKey('DEP') } }
+        );
+        return data;
     },
-
     withdraw: async (amount, note) => {
-        const idempotencyKey = generateIdempotencyKey('WDR');
-        const response = await partnerApi.post('/partner/me/withdraw', {
-            amount: Number(amount),
-            note
-        }, {
-            headers: { 'Idempotency-Key': idempotencyKey }
-        });
-        return response.data;
+        const { data } = await partnerApi.post('/partner/me/withdraw',
+            { amount: Number(amount), note },
+            { headers: { 'Idempotency-Key': generateIdempotencyKey('WDR') } }
+        );
+        return data;
     },
-
     transfer: async (toAccountNumber, amount, note) => {
-        const idempotencyKey = generateIdempotencyKey('TRF');
-        const response = await partnerApi.post('/partner/me/transfer', {
-            toAccountNumber,
-            amount: Number(amount),
-            note
-        }, {
-            headers: { 'Idempotency-Key': idempotencyKey }
-        });
-        return response.data;
+        const { data } = await partnerApi.post('/partner/me/transfer',
+            { toAccountNumber, amount: Number(amount), note },
+            { headers: { 'Idempotency-Key': generateIdempotencyKey('TRF') } }
+        );
+        return data;
     },
 
-    getTransactions: async () => {
-        const response = await partnerApi.get('/partner/me/transactions');
-        return response.data;
-    },
+    // ── API Key rotation ──────────────────────────────────────────
+    // POST /api/v1/partner/portal/keys/rotate-request
+    requestRotation:  async (reason)  => (await partnerApi.post('/partner/portal/keys/rotate-request', { reason })).data,
+    // GET  /api/v1/partner/portal/keys/rotation-requests
+    getRotationHistory: async ()      => (await partnerApi.get('/partner/portal/keys/rotation-requests')).data,
+    // GET  /api/v1/partner/portal/key/retrieve  (one-time read from vault)
+    retrieveKey:      async ()        => (await partnerApi.get('/partner/portal/key/retrieve')).data,
 
-    getTransactionsByAccount: async () => {
-        return partnerService.getTransactions();
-    },
-
-    // Request API key rotation
-    requestRotation: async (reason) => {
-        const response = await partnerApi.post('/partner/portal/keys/rotate-request', { reason });
-        return response.data;
-    },
-
-    // View own rotation request history
-    getRotationHistory: async () => {
-        const response = await partnerApi.get('/partner/portal/keys/rotation-requests');
-        return response.data;
-    },
-
-    // Retrieve one-time API key from vault after admin approval or rotation
-    retrieveKey: async () => {
-        const response = await partnerApi.get('/partner/portal/key/retrieve');
-        return response.data;
-    },
+    /** @deprecated use getTransactions() */
+    getTransactionsByAccount: async () => partnerService.getTransactions(),
 };
 
-// Re-export for backward compatibility
+// ─────────────────────────────────────────────────────────────────
+// BACKWARD-COMPAT ALIASES
+// ─────────────────────────────────────────────────────────────────
+
+/** @deprecated clientService merged into partnerService */
+export const clientService = {
+    getProfile:     partnerService.getPartnerInfo,
+    updateWebhook:  async () => ({ success: true }),  // not yet implemented in backend
+};
+
+/** @deprecated import atmService directly */
 export const transactionService = atmService;
 
-// Default export to minimize breakage
 export default adminApi;

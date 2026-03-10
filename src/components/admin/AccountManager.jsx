@@ -13,6 +13,8 @@ export default function AccountManager() {
     const [accountTransactions, setAccountTransactions] = useState([]);
     const [accountLedger, setAccountLedger] = useState([]);
     const [activeTab, setActiveTab] = useState('transactions');
+    const [pageError, setPageError] = useState(null);
+    const [createError, setCreateError] = useState(null);
     const [confirmDialog, setConfirmDialog] = useState({
         open: false, accountId: null, accountNumber: null, customerName: null, newStatus: null
     });
@@ -44,6 +46,7 @@ export default function AccountManager() {
 
     const handleCreateAccount = async (e) => {
         e.preventDefault();
+        setCreateError(null);
         try {
             const accountData = {
                 customerId: newAccount.customerId.trim(),
@@ -55,11 +58,12 @@ export default function AccountManager() {
             await adminService.createAccount(accountData);
 
             setShowCreateModal(false);
+            setCreateError(null);
             setNewAccount({ customerId: '', accountType: 'SAVINGS', currency: 'THB', pin: '' });
             fetchAccounts();
         } catch (error) {
             console.error("Create account error", error);
-            alert(`Failed: ${error.response?.data?.message || error.message}`);
+            setCreateError(error.response?.data?.message || error.message || 'Failed to create account.');
         }
     };
 
@@ -82,7 +86,8 @@ export default function AccountManager() {
             }
         } catch (error) {
             console.error("Status update failed", error);
-            alert("Failed to update account status.");
+            setPageError(error.response?.data?.message || 'Failed to update account status.');
+            setTimeout(() => setPageError(null), 5000);
         }
     };
 
@@ -117,7 +122,7 @@ export default function AccountManager() {
         setActiveTab('transactions');
         try {
             const [txs, ledger] = await Promise.all([
-                adminService.getAccountTransactions(account.id),
+                adminService.getTransactions({ accountId: account.id }),
                 adminService.getAccountLedger(account.id)
             ]);
             setAccountTransactions(txs.content || txs || []);
@@ -166,6 +171,16 @@ export default function AccountManager() {
 
     return (
         <div className="space-y-6 relative">
+            {/* Page-level error banner */}
+            {pageError && (
+                <div className="flex items-center gap-3 bg-red-500/10 border border-red-500/30 text-red-400 px-4 py-3 rounded-2xl text-sm font-medium">
+                    <AlertCircle size={18} className="shrink-0" />
+                    <span className="flex-1">{pageError}</span>
+                    <button onClick={() => setPageError(null)} className="p-1 hover:bg-red-500/20 rounded-lg transition-colors">
+                        <X size={16} />
+                    </button>
+                </div>
+            )}
             {/* Header */}
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                 <div>
@@ -357,6 +372,12 @@ export default function AccountManager() {
                             </button>
                         </div>
                         <form onSubmit={handleCreateAccount} className="p-6 space-y-5 relative z-10">
+                            {createError && (
+                                <div className="flex items-start gap-2 bg-red-500/10 border border-red-500/20 text-red-400 text-sm px-4 py-3 rounded-xl">
+                                    <AlertCircle size={16} className="shrink-0 mt-0.5" />
+                                    <span>{createError}</span>
+                                </div>
+                            )}
                             <div className="space-y-1.5">
                                 <label className="text-xs font-bold uppercase text-primary-300 tracking-wider">Customer ID</label>
                                 <input
@@ -442,7 +463,7 @@ export default function AccountManager() {
                                 </button>
                                 <div className="flex gap-2">
                                     <button
-                                        onClick={() => setResetPinDialog({ open: true, accountId: selectedAccount.id, accountNumber: selectedAccount.accountNumber, newPin: '123456' })}
+                                        onClick={() => setResetPinDialog({ open: true, accountId: selectedAccount.id, accountNumber: selectedAccount.accountNumber, newPin: '' })}
                                         className="flex items-center gap-2 px-4 py-2 bg-purple-500/10 text-purple-400 border border-purple-500/20 rounded-xl font-bold text-sm hover:bg-purple-500/20 transition-colors"
                                     >
                                         <AlertCircle size={16} /> Reset PIN
