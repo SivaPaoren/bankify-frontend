@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { partnerService } from '../../api';
-import { Key, RefreshCw, Clock, ShieldCheck, AlertTriangle, Shield, Copy, CheckCircle, Eye, EyeOff } from 'lucide-react';
+import { Key, RefreshCw, Clock, ShieldCheck, AlertTriangle, Shield, Copy, CheckCircle } from 'lucide-react';
 
 export default function ClientDeveloper() {
   const [partnerInfo, setPartnerInfo] = useState(null);
@@ -10,9 +10,12 @@ export default function ClientDeveloper() {
 
   // NEW STATE: One-time key storage
   const [oneTimeKey, setOneTimeKey] = useState(null);
-  const [showKeyModal, setShowKeyModal] = useState(false);
   const [keyError, setKeyError] = useState(null);
   const [showSecret, setShowSecret] = useState(false);
+
+  // Form feedback state
+  const [formError, setFormError] = useState('');
+  const [formSuccess, setFormSuccess] = useState('');
 
   useEffect(() => {
     let intervalId;
@@ -31,9 +34,8 @@ export default function ClientDeveloper() {
           console.log("Checking for waiting API key...");
           const keyData = await partnerService.retrieveKey();
           console.log("Response from retrieveKey:", keyData);
-          if (keyData && keyData.key) {
-            setOneTimeKey(keyData.key);
-            setShowKeyModal(true);
+          if (keyData && keyData.apiKey) {
+            setOneTimeKey(keyData.apiKey);
             setKeyError(null);
           }
         } catch (err) {
@@ -61,15 +63,23 @@ export default function ClientDeveloper() {
   }, []);
 
   const handleRotate = async () => {
-    if (!rotateReason) return alert("Please provide a reason for rotation.");
+    setFormError('');
+    setFormSuccess('');
+    if (!rotateReason) {
+      setFormError("Please provide a reason for rotation.");
+      return;
+    }
     try {
       await partnerService.requestRotation(rotateReason);
       setRotateReason('');
-      alert("Rotation request submitted. Once the Admin approves, your new key will appear here on your next visit.");
+      setFormSuccess("Rotation request submitted. Once the Admin approves, your new key will appear here.");
       const logs = await partnerService.getRotationHistory();
       setHistory(logs);
+
+      // Clear success message after 5 seconds
+      setTimeout(() => setFormSuccess(''), 5000);
     } catch (err) {
-      alert("Failed to request rotation.");
+      setFormError("Failed to request rotation.");
     }
   };
 
@@ -82,45 +92,6 @@ export default function ClientDeveloper() {
         <h1 className="text-3xl font-bold text-white">{partnerInfo?.appName || 'Developer Console'}</h1>
         <p className="text-slate-400">Manage your API credentials and security status.</p>
       </header>
-
-      {/* ONE-TIME SECRET MODAL */}
-      {showKeyModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
-          <div className="bg-slate-900 border-2 border-orange-500/50 rounded-3xl p-10 w-full max-w-xl shadow-[0_0_50px_rgba(249,115,22,0.2)] text-center">
-            <div className="w-20 h-20 bg-orange-500/20 rounded-full flex items-center justify-center mb-6 mx-auto">
-              <Shield size={40} className="text-orange-400" />
-            </div>
-            <h2 className="text-3xl font-bold text-white mb-2">Your API Key is Ready</h2>
-            <p className="text-orange-400 font-bold text-xs uppercase tracking-widest mb-6 italic">
-              This key is available for 5 minutes. Store it safely before the window closes.
-            </p>
-
-            <div className="bg-black/50 border border-white/10 rounded-2xl p-6 w-full mb-8">
-              <code className="text-2xl text-white font-mono break-all block select-all">
-                {oneTimeKey}
-              </code>
-            </div>
-
-            <button
-              onClick={() => {
-                navigator.clipboard.writeText(oneTimeKey);
-                alert("API Key copied to clipboard!");
-              }}
-              className="w-full py-4 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-2xl transition-all shadow-lg flex items-center justify-center gap-3 mb-4"
-            >
-              <Copy size={20} />
-              Copy Secret Key
-            </button>
-
-            <button
-              onClick={() => setShowKeyModal(false)}
-              className="text-slate-500 hover:text-slate-300 text-xs font-bold uppercase underline"
-            >
-              Close Window
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* API CREDENTIALS CARD */}
       <section className="bg-slate-900 border border-white/10 rounded-3xl p-8 shadow-2xl">
@@ -137,26 +108,21 @@ export default function ClientDeveloper() {
               <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">API Secret Key</p>
               {oneTimeKey && <span className="text-[10px] font-bold text-orange-400 uppercase animate-pulse">Available for 5m</span>}
             </div>
-            <div className={`flex items-center justify-between font-mono p-4 rounded-2xl border text-sm transition-colors ${oneTimeKey ? 'bg-orange-500/10 border-orange-500/30 text-white' : 'bg-black/40 border-white/5 text-slate-500 italic'
-              }`}>
-              <span className={oneTimeKey && showSecret ? 'select-all' : ''}>
+            <div
+              onDoubleClick={() => oneTimeKey && setShowSecret(!showSecret)}
+              className={`flex items-center justify-between font-mono p-4 rounded-2xl border text-sm transition-colors ${oneTimeKey ? 'bg-orange-500/10 border-orange-500/30 text-white cursor-pointer select-none' : 'bg-black/40 border-white/5 text-slate-500 italic'
+                }`}
+              title={oneTimeKey ? "Double-click to reveal key" : ""}
+            >
+              <span className={`break-all ${oneTimeKey && showSecret ? 'select-all' : ''}`}>
                 {oneTimeKey
-                  ? (showSecret ? oneTimeKey : '••••••••••••••••••••••••')
-                  : (partnerInfo?.apiKeyIssued ? '••••••••••••••••••••••••' : 'No Key Issued')}
+                  ? (showSecret ? oneTimeKey : '••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••')
+                  : (partnerInfo?.apiKeyIssued ? '••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••••' : 'No Key Issued')}
               </span>
-              <div className="flex items-center gap-2">
-                {oneTimeKey && (
-                  <button
-                    onClick={() => setShowSecret(!showSecret)}
-                    className="text-slate-400 hover:text-white transition-colors p-1"
-                    title={showSecret ? "Hide Key" : "Show Key"}
-                  >
-                    {showSecret ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
-                )}
+              <div className="flex items-center gap-2 shrink-0 ml-4">
                 {oneTimeKey ? (
                   <button
-                    onClick={() => { navigator.clipboard.writeText(oneTimeKey); alert("API Key copied to clipboard!"); }}
+                    onClick={(e) => { e.stopPropagation(); navigator.clipboard.writeText(oneTimeKey); alert("API Key copied to clipboard!"); }}
                     className="text-orange-400 hover:text-orange-300 transition-colors p-1"
                     title="Copy Key"
                   >
@@ -173,18 +139,24 @@ export default function ClientDeveloper() {
         {/* ROTATION REQUEST */}
         <div className="mt-10 pt-8 border-t border-white/5">
           <label className="block text-[10px] font-bold text-slate-500 uppercase mb-3">Need new credentials?</label>
-          <div className="flex gap-3">
+          <div className="flex gap-3 mb-2">
             <input
               type="text"
               placeholder="Reason for rotation..."
-              className="flex-1 bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-orange-500"
+              className={`flex-1 bg-black/30 border rounded-xl px-4 py-3 text-white text-sm outline-none transition-colors ${formError ? 'border-red-500/50 focus:border-red-500' : 'border-white/10 focus:border-orange-500'
+                }`}
               value={rotateReason}
-              onChange={(e) => setRotateReason(e.target.value)}
+              onChange={(e) => {
+                setRotateReason(e.target.value);
+                if (formError) setFormError('');
+              }}
             />
             <button onClick={handleRotate} className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-8 py-3 rounded-xl transition-all">
               Request Rotation
             </button>
           </div>
+          {formError && <p className="text-red-400 text-xs font-bold px-2 flex items-center gap-1"><AlertTriangle size={12} /> {formError}</p>}
+          {formSuccess && <p className="text-emerald-400 text-xs font-bold px-2 flex items-center gap-1"><CheckCircle size={12} /> {formSuccess}</p>}
         </div>
       </section>
 

@@ -104,7 +104,6 @@ export default function PartnerLoginPage() {
                                         type="email"
                                         required
                                         className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none transition-all font-medium text-slate-700 focus:bg-white focus:ring-4 focus:border-orange-500 focus:ring-orange-500/20"
-                                        placeholder="dev@partnerapp.com"
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
                                     />
@@ -121,7 +120,6 @@ export default function PartnerLoginPage() {
                                         type="password"
                                         required
                                         className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none transition-all font-medium text-slate-700 focus:bg-white focus:ring-4 focus:border-orange-500 focus:ring-orange-500/20"
-                                        placeholder="••••••••"
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
                                     />

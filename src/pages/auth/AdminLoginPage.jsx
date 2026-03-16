@@ -54,10 +54,10 @@ export default function AdminLoginPage() {
 
         <div className="relative z-10 text-center space-y-8 animate-page">
           <div className="w-32 h-32 mx-auto bg-white/10 backdrop-blur-md rounded-3xl flex items-center justify-center border border-white/20 shadow-2xl">
-            <img 
-              src={`${import.meta.env.BASE_URL}BankifyLogo.png`} 
-              alt="Bankify Logo" 
-              className="w-20 h-20 object-contain invert brightness-0 filter drop-shadow-xl" 
+            <img
+              src={`${import.meta.env.BASE_URL}BankifyLogo.png`}
+              alt="Bankify Logo"
+              className="w-20 h-20 object-contain invert brightness-0 filter drop-shadow-xl"
             />
           </div>
 
@@ -109,7 +109,6 @@ export default function AdminLoginPage() {
                     type="email"
                     required
                     className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none transition-all font-medium text-slate-700 focus:bg-white focus:ring-4 focus:border-indigo-500 focus:ring-indigo-500/20"
-                    placeholder="name@company.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                   />
@@ -126,7 +125,6 @@ export default function AdminLoginPage() {
                     type="password"
                     required
                     className="w-full pl-11 pr-4 py-3.5 bg-slate-50 border border-slate-200 rounded-xl outline-none transition-all font-medium text-slate-700 focus:bg-white focus:ring-4 focus:border-indigo-500 focus:ring-indigo-500/20"
-                    placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                   />
