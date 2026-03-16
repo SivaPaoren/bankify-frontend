@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { adminService } from '../../api';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -36,7 +36,7 @@ export default function AdminDashboard() {
     const [recentAlerts, setRecentAlerts] = useState([]);
     const [pendingActions, setPendingActions] = useState([]);
 
-    useEffect(() => {
+    const fetchDashboardData = useCallback(() => {
         adminService.getCustomers().then(data => {
             const list = Array.isArray(data) ? data : (data.content || []);
             const count = list.filter(c => c.status === 'ACTIVE').length;
@@ -100,6 +100,12 @@ export default function AdminDashboard() {
             setPendingActions([...pendingCl, ...pendingRot]);
         }).catch(console.error);
     }, []);
+
+    useEffect(() => {
+        fetchDashboardData();
+        const intervalId = setInterval(fetchDashboardData, 5000);
+        return () => clearInterval(intervalId);
+    }, [fetchDashboardData]);
 
     // Watch for timeframe changes and recalculate chart data
     useEffect(() => {

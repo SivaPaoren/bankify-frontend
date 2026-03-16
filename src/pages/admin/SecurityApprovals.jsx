@@ -32,8 +32,25 @@ export default function SecurityApprovals() {
     };
 
     useEffect(() => {
+        let intervalId;
+
+        // Fetch immediately on mount
         fetchRequests();
-    }, []);
+
+        // Auto-refresh every 5 seconds
+        intervalId = setInterval(() => {
+            // We only fetch if we aren't currently processing an approval/rejection
+            if (!processingId) {
+                adminService.listRotationRequests()
+                    .then(data => setRequests(Array.isArray(data) ? data : []))
+                    .catch(e => console.error("Auto-refresh failed", e));
+            }
+        }, 5000);
+
+        return () => {
+            if (intervalId) clearInterval(intervalId);
+        };
+    }, [processingId]);
 
     const handleApprove = async (partnerId, requestId) => {
         try {
@@ -77,18 +94,15 @@ export default function SecurityApprovals() {
                     </h1>
                     <p className="text-primary-300 mt-1">Review and manage pending security requests, including API key rotations.</p>
                 </div>
-                <div className={`text-sm font-medium flex items-center gap-2 px-4 py-2 rounded-xl border shadow-lg ${
-                    pendingCount === 0
+                <div className={`text-sm font-medium flex items-center gap-2 px-4 py-2 rounded-xl border shadow-lg ${pendingCount === 0
                         ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20 shadow-emerald-500/10'
                         : 'text-amber-400 bg-amber-500/10 border-amber-500/20 shadow-amber-500/10'
-                }`}>
+                    }`}>
                     <span className="relative flex h-2 w-2">
-                        <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${
-                            pendingCount === 0 ? 'bg-emerald-400' : 'bg-amber-400'
-                        }`}></span>
-                        <span className={`relative inline-flex rounded-full h-2 w-2 ${
-                            pendingCount === 0 ? 'bg-emerald-500' : 'bg-amber-500'
-                        }`}></span>
+                        <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${pendingCount === 0 ? 'bg-emerald-400' : 'bg-amber-400'
+                            }`}></span>
+                        <span className={`relative inline-flex rounded-full h-2 w-2 ${pendingCount === 0 ? 'bg-emerald-500' : 'bg-amber-500'
+                            }`}></span>
                     </span>
                     {pendingCount === 0 ? 'Queue Clear' : `${pendingCount} Pending`}
                 </div>

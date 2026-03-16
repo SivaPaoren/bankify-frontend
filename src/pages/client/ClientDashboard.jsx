@@ -78,6 +78,11 @@ export default function ClientDashboard() {
     useEffect(() => {
         fetchBalance();
         fetchPartnerInfo();
+        const intervalId = setInterval(() => {
+            fetchBalance();
+            fetchPartnerInfo();
+        }, 5000);
+        return () => clearInterval(intervalId);
     }, [fetchBalance, fetchPartnerInfo]);
 
     const openModal = (type) => {
@@ -128,10 +133,10 @@ export default function ClientDashboard() {
                             </div>
                         </div>
                         <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-bold ${appStatus === 'ACTIVE'
-                                ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
-                                : appStatus === 'PENDING'
-                                    ? 'bg-amber-500/10 border-amber-500/20 text-amber-400'
-                                    : 'bg-red-500/10 border-red-500/20 text-red-400'
+                            ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+                            : appStatus === 'PENDING'
+                                ? 'bg-amber-500/10 border-amber-500/20 text-amber-400'
+                                : 'bg-red-500/10 border-red-500/20 text-red-400'
                             }`}>
                             <span className={`w-2 h-2 rounded-full ${appStatus === 'ACTIVE' ? 'bg-emerald-500 animate-pulse' : appStatus === 'PENDING' ? 'bg-amber-500' : 'bg-red-500'}`} />
                             {appStatus}

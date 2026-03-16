@@ -1,18 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { partnerService } from '../../api';
-import { Key, RefreshCw, Clock, ShieldCheck, AlertTriangle, Shield, Copy, CheckCircle } from 'lucide-react';
+import { Key, RefreshCw, Clock, ShieldCheck, AlertTriangle, Shield, Copy, CheckCircle, Eye, EyeOff } from 'lucide-react';
 
 export default function ClientDeveloper() {
   const [partnerInfo, setPartnerInfo] = useState(null);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [rotateReason, setRotateReason] = useState('');
-  
+
   // NEW STATE: One-time key storage
   const [oneTimeKey, setOneTimeKey] = useState(null);
   const [showKeyModal, setShowKeyModal] = useState(false);
+  const [keyError, setKeyError] = useState(null);
+  const [showSecret, setShowSecret] = useState(false);
 
   useEffect(() => {
+    let intervalId;
+
     const loadData = async () => {
       try {
         const [info, logs] = await Promise.all([
@@ -22,17 +26,21 @@ export default function ClientDeveloper() {
         setPartnerInfo(info);
         setHistory(logs);
 
-        // NEW: Check if there is a key waiting to be retrieved
+        // Check if there is a key waiting to be retrieved
         try {
-            const keyData = await partnerService.retrieveKey();
-            if (keyData && keyData.key) {
-                setOneTimeKey(keyData.key);
-                setShowKeyModal(true);
-            }
+          console.log("Checking for waiting API key...");
+          const keyData = await partnerService.retrieveKey();
+          console.log("Response from retrieveKey:", keyData);
+          if (keyData && keyData.key) {
+            setOneTimeKey(keyData.key);
+            setShowKeyModal(true);
+            setKeyError(null);
+          }
         } catch (err) {
-            // If 404 or error, it means key was already retrieved. 
-            // We ignore it and show the standard "Hidden" UI.
-            console.log("No new key available for retrieval.");
+          console.error("Error from retrieveKey:", err?.response?.status, err?.response?.data || err.message);
+          if (err?.response?.status !== 404) {
+            setKeyError(err?.response?.data?.message || err.message);
+          }
         }
 
       } catch (err) {
@@ -41,7 +49,15 @@ export default function ClientDeveloper() {
         setLoading(false);
       }
     };
+
     loadData();
+
+    // Auto-refresh every 5 seconds
+    intervalId = setInterval(loadData, 5000);
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
   }, []);
 
   const handleRotate = async () => {
@@ -70,80 +86,118 @@ export default function ClientDeveloper() {
       {/* ONE-TIME SECRET MODAL */}
       {showKeyModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
-            <div className="bg-slate-900 border-2 border-orange-500/50 rounded-3xl p-10 w-full max-w-xl shadow-[0_0_50px_rgba(249,115,22,0.2)] text-center">
-                <div className="w-20 h-20 bg-orange-500/20 rounded-full flex items-center justify-center mb-6 mx-auto">
-                    <Shield size={40} className="text-orange-400" />
-                </div>
-                <h2 className="text-3xl font-bold text-white mb-2">Your API Key is Ready</h2>
-                <p className="text-orange-400 font-bold text-xs uppercase tracking-widest mb-6 italic">
-                    Show this once and store it safely. You won't be able to fetch it again.
-                </p>
-                
-                <div className="bg-black/50 border border-white/10 rounded-2xl p-6 w-full mb-8">
-                    <code className="text-2xl text-white font-mono break-all block select-all">
-                        {oneTimeKey}
-                    </code>
-                </div>
-
-                <button 
-                    onClick={() => {
-                        navigator.clipboard.writeText(oneTimeKey);
-                        alert("API Key copied to clipboard!");
-                    }}
-                    className="w-full py-4 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-2xl transition-all shadow-lg flex items-center justify-center gap-3 mb-4"
-                >
-                    <Copy size={20} />
-                    Copy Secret Key
-                </button>
-                
-                <button 
-                    onClick={() => setShowKeyModal(false)} 
-                    className="text-slate-500 hover:text-slate-300 text-xs font-bold uppercase underline"
-                >
-                    I have saved it, close this window
-                </button>
+          <div className="bg-slate-900 border-2 border-orange-500/50 rounded-3xl p-10 w-full max-w-xl shadow-[0_0_50px_rgba(249,115,22,0.2)] text-center">
+            <div className="w-20 h-20 bg-orange-500/20 rounded-full flex items-center justify-center mb-6 mx-auto">
+              <Shield size={40} className="text-orange-400" />
             </div>
+            <h2 className="text-3xl font-bold text-white mb-2">Your API Key is Ready</h2>
+            <p className="text-orange-400 font-bold text-xs uppercase tracking-widest mb-6 italic">
+              This key is available for 5 minutes. Store it safely before the window closes.
+            </p>
+
+            <div className="bg-black/50 border border-white/10 rounded-2xl p-6 w-full mb-8">
+              <code className="text-2xl text-white font-mono break-all block select-all">
+                {oneTimeKey}
+              </code>
+            </div>
+
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(oneTimeKey);
+                alert("API Key copied to clipboard!");
+              }}
+              className="w-full py-4 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-2xl transition-all shadow-lg flex items-center justify-center gap-3 mb-4"
+            >
+              <Copy size={20} />
+              Copy Secret Key
+            </button>
+
+            <button
+              onClick={() => setShowKeyModal(false)}
+              className="text-slate-500 hover:text-slate-300 text-xs font-bold uppercase underline"
+            >
+              Close Window
+            </button>
+          </div>
         </div>
       )}
 
       {/* API CREDENTIALS CARD */}
       <section className="bg-slate-900 border border-white/10 rounded-3xl p-8 shadow-2xl">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Partner App ID</p>
-                  <div className="bg-black/40 border border-white/5 rounded-2xl p-4 font-mono text-white text-sm">
-                      {partnerInfo?.id || '---'}
-                  </div>
-              </div>
-
-              <div className="space-y-2">
-                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">API Secret Key</p>
-                  <div className="flex items-center justify-between font-mono text-slate-500 bg-black/40 p-4 rounded-2xl border border-white/5 italic text-sm">
-                      <span>••••••••••••••••••••••••</span>
-                      <ShieldCheck size={18} className="text-slate-700" />
-                  </div>
-              </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-2">
+            <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Partner App ID</p>
+            <div className="bg-black/40 border border-white/5 rounded-2xl p-4 font-mono text-white text-sm">
+              {partnerInfo?.partnerAppId || '---'}
+            </div>
           </div>
 
-          {/* ROTATION REQUEST */}
-          <div className="mt-10 pt-8 border-t border-white/5">
-              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-3">Need new credentials?</label>
-              <div className="flex gap-3">
-                  <input 
-                      type="text" 
-                      placeholder="Reason for rotation..."
-                      className="flex-1 bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-orange-500"
-                      value={rotateReason}
-                      onChange={(e) => setRotateReason(e.target.value)}
-                  />
-                  <button onClick={handleRotate} className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-8 py-3 rounded-xl transition-all">
-                      Request Rotation
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">API Secret Key</p>
+              {oneTimeKey && <span className="text-[10px] font-bold text-orange-400 uppercase animate-pulse">Available for 5m</span>}
+            </div>
+            <div className={`flex items-center justify-between font-mono p-4 rounded-2xl border text-sm transition-colors ${oneTimeKey ? 'bg-orange-500/10 border-orange-500/30 text-white' : 'bg-black/40 border-white/5 text-slate-500 italic'
+              }`}>
+              <span className={oneTimeKey && showSecret ? 'select-all' : ''}>
+                {oneTimeKey
+                  ? (showSecret ? oneTimeKey : '••••••••••••••••••••••••')
+                  : (partnerInfo?.apiKeyIssued ? '••••••••••••••••••••••••' : 'No Key Issued')}
+              </span>
+              <div className="flex items-center gap-2">
+                {oneTimeKey && (
+                  <button
+                    onClick={() => setShowSecret(!showSecret)}
+                    className="text-slate-400 hover:text-white transition-colors p-1"
+                    title={showSecret ? "Hide Key" : "Show Key"}
+                  >
+                    {showSecret ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
+                )}
+                {oneTimeKey ? (
+                  <button
+                    onClick={() => { navigator.clipboard.writeText(oneTimeKey); alert("API Key copied to clipboard!"); }}
+                    className="text-orange-400 hover:text-orange-300 transition-colors p-1"
+                    title="Copy Key"
+                  >
+                    <Copy size={18} />
+                  </button>
+                ) : (
+                  <ShieldCheck size={18} className="text-slate-700" />
+                )}
               </div>
+            </div>
           </div>
+        </div>
+
+        {/* ROTATION REQUEST */}
+        <div className="mt-10 pt-8 border-t border-white/5">
+          <label className="block text-[10px] font-bold text-slate-500 uppercase mb-3">Need new credentials?</label>
+          <div className="flex gap-3">
+            <input
+              type="text"
+              placeholder="Reason for rotation..."
+              className="flex-1 bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white text-sm outline-none focus:border-orange-500"
+              value={rotateReason}
+              onChange={(e) => setRotateReason(e.target.value)}
+            />
+            <button onClick={handleRotate} className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-8 py-3 rounded-xl transition-all">
+              Request Rotation
+            </button>
+          </div>
+        </div>
       </section>
 
       {/* Section 2: Rotation History */}
+      {keyError && (
+        <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-2xl flex items-start gap-3">
+          <AlertTriangle size={20} className="shrink-0 mt-0.5" />
+          <div>
+            <h4 className="font-bold text-red-300">API Key Retrieval Error</h4>
+            <p className="text-sm opacity-90">{keyError}</p>
+          </div>
+        </div>
+      )}
       <section className="bg-slate-900 border border-white/10 rounded-2xl overflow-hidden shadow-xl">
         <div className="p-6 border-b border-white/10">
           <h2 className="text-xl font-bold text-white flex items-center gap-3">
@@ -165,11 +219,10 @@ export default function ClientDeveloper() {
                 <td className="px-6 py-4 text-slate-300 font-mono">{new Date(req.createdAt).toLocaleDateString()}</td>
                 <td className="px-6 py-4 text-white">{req.reason}</td>
                 <td className="px-6 py-4 text-right">
-                  <span className={`px-3 py-1 rounded-full text-[10px] font-bold border ${
-                    req.status === 'APPROVED' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' :
+                  <span className={`px-3 py-1 rounded-full text-[10px] font-bold border ${req.status === 'APPROVED' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' :
                     req.status === 'PENDING' ? 'bg-amber-500/10 border-amber-500/20 text-amber-400' :
-                    'bg-red-500/10 border-red-500/20 text-red-400'
-                  }`}>
+                      'bg-red-500/10 border-red-500/20 text-red-400'
+                    }`}>
                     {req.status}
                   </span>
                 </td>
@@ -179,6 +232,40 @@ export default function ClientDeveloper() {
             )}
           </tbody>
         </table>
+      </section>
+
+      {/* Section 3: API Endpoint Documentation */}
+      <section className="bg-slate-900 border border-white/10 rounded-2xl overflow-hidden shadow-xl">
+        <div className="p-6 border-b border-white/10">
+          <h2 className="text-xl font-bold text-white flex items-center gap-3">
+            <Shield className="text-slate-400" size={20} />
+            API Sandbox Endpoints
+          </h2>
+          <p className="text-slate-400 mt-2 text-sm">Include your API Key in the <code className="bg-black/40 px-2 py-1 rounded text-orange-400 border border-white/5">X-API-Key</code> HTTP header.</p>
+        </div>
+        <div className="divide-y divide-white/5">
+          {partnerInfo?.endpoints && partnerInfo.endpoints.length > 0 ? (
+            partnerInfo.endpoints.map((doc, idx) => (
+              <div key={idx} className="p-6 hover:bg-white/[0.02] transition-colors">
+                <div className="flex items-center gap-4 mb-2">
+                  <span className={`px-3 py-1 rounded font-mono text-xs font-bold ${doc.method === 'GET' ? 'bg-blue-500/20 text-blue-400 border border-blue-500/30' : 'bg-green-500/20 text-green-400 border border-green-500/30'}`}>
+                    {doc.method}
+                  </span>
+                  <code className="text-white font-mono text-sm">{doc.path}</code>
+                </div>
+                <p className="text-slate-300 text-sm ml-16">{doc.description}</p>
+                {doc.requiresIdempotencyKey && (
+                  <div className="mt-3 ml-16 flex items-center gap-2 text-xs text-orange-400 bg-orange-500/10 px-3 py-2 rounded-lg border border-orange-500/20 w-fit">
+                    <AlertTriangle size={14} />
+                    Requires <code className="font-bold">Idempotency-Key</code> header
+                  </div>
+                )}
+              </div>
+            ))
+          ) : (
+            <div className="p-12 text-center text-slate-600 italic">No endpoint documentation available.</div>
+          )}
+        </div>
       </section>
     </div>
   );

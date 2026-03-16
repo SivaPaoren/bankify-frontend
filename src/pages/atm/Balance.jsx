@@ -65,6 +65,9 @@ export default function ATMBalance() {
       }
     };
     fetchBalance();
+
+    const intervalId = setInterval(fetchBalance, 5000);
+    return () => clearInterval(intervalId);
   }, []);
 
   const handlePrintSlip = () => {

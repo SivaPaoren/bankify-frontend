@@ -62,6 +62,8 @@ export default function ATMHistory() {
       }
     };
     fetchHistory();
+    const intervalId = setInterval(fetchHistory, 5000);
+    return () => clearInterval(intervalId);
   }, []);
 
   return (
